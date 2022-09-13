@@ -8831,9 +8831,14 @@ class NeedleFinderLogic:
     #####################################################################################
     print 'setting ROI'
     c = 9
-    roi = slicer.mrmlScene.CreateNodeByClass('vtkMRMLAnnotationROINode')
-    slicer.mrmlScene.AddNode(roi)
-    roi.SetROIAnnotationVisibility(1)
+    if slicer.app.majorVersion*100+slicer.app.minorVersion > 502
+      # Slicer version > 5.0.2, annotations module is not available anymore
+      roi = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsROINode')
+    else:
+      # Old Slicer version, use annotation ROI node
+      roi = slicer.mrmlScene.CreateNodeByClass('vtkMRMLAnnotationROINode')
+      slicer.mrmlScene.AddNode(roi)
+      roi.SetROIAnnotationVisibility(1)
     roi.SetRadiusXYZ(100,100,imageDimensions[2]/c)
     roi.SetXYZ(0,0,m.GetElement(2,3)+imageDimensions[2]/c)
     roi.SetLocked(1)
