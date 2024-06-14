@@ -4,15 +4,15 @@ project(NeedleFinder)
 
 #-----------------------------------------------------------------------------
 # Extension meta-information
-set(EXTENSION_HOMEPAGE "https://github.com/gpernelle/NeedleFinder")
+set(EXTENSION_HOMEPAGE "https://github.com/needlefinder/NeedleFinder")
 set(EXTENSION_CATEGORY "IGT")
 
-set(EXTENSION_CONTRIBUTORS "Guillaume Pernelle, Nabgha Fahrat, Alireza Mehrtash, Lauren Barber, Jan Egger, Tobias Penzkofer, Sandy Wells, Sam Song, Xiaojun Chen, Yi Gao, Antonio Damato, Tina Kapur, Akila Viswanathan")
+set(EXTENSION_CONTRIBUTORS "Guillaume Pernelle, Andre Mastmeyer, Paolo Zaffino, Nabgha Fahrat, Alireza Mehrtash, Lauren Barber, Jan Egger, Tobias Penzkofer, Sandy Wells, Sam Song, Xiaojun Chen, Yi Gao, Antonio Damato, Tina Kapur, Akila Viswanathan")
 
 set(EXTENSION_DESCRIPTION "NeedleFinder: fast interactive needle detection. It provides interactive tools to segment needles in MR/CT images. It has been mostly tested on MRI from gynelogical brachytherapy cases. Cf <<Validation of Catheter Segmentation for MR-Guided Gynecologic Cancer Brachytherapy.>> MICCAI 2013")
 
-set(EXTENSION_ICONURL "https://raw.github.com/gpernelle/NeedleFinder/master/NeedleFinder.png")
-set(EXTENSION_SCREENSHOTURLS "https://raw.github.com/gpernelle/NeedleFinder/master/screenshot.png")
+set(EXTENSION_ICONURL "https://raw.github.com/needlefinder/NeedleFinder/master/NeedleFinder.png")
+set(EXTENSION_SCREENSHOTURLS "https://raw.github.com/needlefinder/NeedleFinder/master/screenshot.png")
 
 #-----------------------------------------------------------------------------
 # Extension dependencies
