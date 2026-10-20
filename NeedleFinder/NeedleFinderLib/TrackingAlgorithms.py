@@ -45,6 +45,16 @@ from .ProfilingUtils import (
 )
 
 
+
+def _get_scalar_safe(img, x, y, z, c=0):
+  """Safely read a voxel scalar from vtkImageData without triggering VTK out-of-extent errors."""
+  ext = img.GetExtent()
+  ix, iy, iz = int(x), int(y), int(z)
+  if ext[0] <= ix <= ext[1] and ext[2] <= iy <= ext[3] and ext[4] <= iz <= ext[5]:
+    return img.GetScalarComponentAsDouble(ix, iy, iz, c)
+  return 0.0
+
+
 class TrackingAlgorithmsMixin(object):
   """Mixin providing needle tracking, tip optimization, rationality checks, and 3D curve building."""
 
@@ -350,21 +360,21 @@ class TrackingAlgorithmsMixin(object):
     ijk[0] = int(round(ijk[0]))
     ijk[1] = int(round(ijk[1]))
     ijk[2] = int(round(ijk[2]))
-    center = imageData.GetScalarComponentAsDouble(ijk[0], ijk[1], ijk[2], 0)
-    center += imageData.GetScalarComponentAsDouble(ijk[0] + 1, ijk[1], ijk[2], 0)
-    center += imageData.GetScalarComponentAsDouble(ijk[0], ijk[1] + 1, ijk[2], 0)
-    center += imageData.GetScalarComponentAsDouble(ijk[0] - 1, ijk[1], ijk[2], 0)
-    center += imageData.GetScalarComponentAsDouble(ijk[0], ijk[1] - 1, ijk[2], 0)
+    center = _get_scalar_safe(imageData, ijk[0], ijk[1], ijk[2], 0)
+    center += _get_scalar_safe(imageData, ijk[0] + 1, ijk[1], ijk[2], 0)
+    center += _get_scalar_safe(imageData, ijk[0], ijk[1] + 1, ijk[2], 0)
+    center += _get_scalar_safe(imageData, ijk[0] - 1, ijk[1], ijk[2], 0)
+    center += _get_scalar_safe(imageData, ijk[0], ijk[1] - 1, ijk[2], 0)
 
     if gradientPonderation != 0:
-      g1 = imageData.GetScalarComponentAsDouble(ijk[0] + radiusNeedle, ijk[1], ijk[2], 0)
-      g2 = imageData.GetScalarComponentAsDouble(ijk[0] - radiusNeedle, ijk[1], ijk[2], 0)
-      g3 = imageData.GetScalarComponentAsDouble(ijk[0], ijk[1] + radiusNeedle, ijk[2], 0)
-      g4 = imageData.GetScalarComponentAsDouble(ijk[0], ijk[1] - radiusNeedle, ijk[2], 0)
-      g5 = imageData.GetScalarComponentAsDouble(ijk[0] + radiusNeedleCorner, ijk[1] + radiusNeedleCorner, ijk[2], 0)
-      g6 = imageData.GetScalarComponentAsDouble(ijk[0] - radiusNeedleCorner, ijk[1] - radiusNeedleCorner, ijk[2], 0)
-      g7 = imageData.GetScalarComponentAsDouble(ijk[0] - radiusNeedleCorner, ijk[1] + radiusNeedleCorner, ijk[2], 0)
-      g8 = imageData.GetScalarComponentAsDouble(ijk[0] + radiusNeedleCorner, ijk[1] - radiusNeedleCorner, ijk[2], 0)
+      g1 = _get_scalar_safe(imageData, ijk[0] + radiusNeedle, ijk[1], ijk[2], 0)
+      g2 = _get_scalar_safe(imageData, ijk[0] - radiusNeedle, ijk[1], ijk[2], 0)
+      g3 = _get_scalar_safe(imageData, ijk[0], ijk[1] + radiusNeedle, ijk[2], 0)
+      g4 = _get_scalar_safe(imageData, ijk[0], ijk[1] - radiusNeedle, ijk[2], 0)
+      g5 = _get_scalar_safe(imageData, ijk[0] + radiusNeedleCorner, ijk[1] + radiusNeedleCorner, ijk[2], 0)
+      g6 = _get_scalar_safe(imageData, ijk[0] - radiusNeedleCorner, ijk[1] - radiusNeedleCorner, ijk[2], 0)
+      g7 = _get_scalar_safe(imageData, ijk[0] - radiusNeedleCorner, ijk[1] + radiusNeedleCorner, ijk[2], 0)
+      g8 = _get_scalar_safe(imageData, ijk[0] + radiusNeedleCorner, ijk[1] - radiusNeedleCorner, ijk[2], 0)
 
       total = center / float(5) - ((g1 + g2 + g3 + g4 + g5 + g6 + g7 + g8) / float(8)) * gradientPonderation
     else:
@@ -386,21 +396,21 @@ class TrackingAlgorithmsMixin(object):
     radiusNeedle = int(round(radiusNeedleParameter / float(spacing[0])))
     radiusNeedleCorner = int(round((radiusNeedleParameter / float(spacing[0]) / 1.414)))
 
-    center = imageData.GetScalarComponentAsDouble(ijk[0], ijk[1], ijk[2], 0)
-    center += imageData.GetScalarComponentAsDouble(ijk[0] + 1, ijk[1], ijk[2], 0)
-    center += imageData.GetScalarComponentAsDouble(ijk[0], ijk[1] + 1, ijk[2], 0)
-    center += imageData.GetScalarComponentAsDouble(ijk[0] - 1, ijk[1], ijk[2], 0)
-    center += imageData.GetScalarComponentAsDouble(ijk[0], ijk[1] - 1, ijk[2], 0)
+    center = _get_scalar_safe(imageData, ijk[0], ijk[1], ijk[2], 0)
+    center += _get_scalar_safe(imageData, ijk[0] + 1, ijk[1], ijk[2], 0)
+    center += _get_scalar_safe(imageData, ijk[0], ijk[1] + 1, ijk[2], 0)
+    center += _get_scalar_safe(imageData, ijk[0] - 1, ijk[1], ijk[2], 0)
+    center += _get_scalar_safe(imageData, ijk[0], ijk[1] - 1, ijk[2], 0)
 
     if gradientPonderation != 0:
-      g1 = imageData.GetScalarComponentAsDouble(ijk[0] + radiusNeedle, ijk[1], ijk[2], 0)
-      g2 = imageData.GetScalarComponentAsDouble(ijk[0] - radiusNeedle, ijk[1], ijk[2], 0)
-      g3 = imageData.GetScalarComponentAsDouble(ijk[0], ijk[1] + radiusNeedle, ijk[2], 0)
-      g4 = imageData.GetScalarComponentAsDouble(ijk[0], ijk[1] - radiusNeedle, ijk[2], 0)
-      g5 = imageData.GetScalarComponentAsDouble(ijk[0] + radiusNeedleCorner, ijk[1] + radiusNeedleCorner, ijk[2], 0)
-      g6 = imageData.GetScalarComponentAsDouble(ijk[0] - radiusNeedleCorner, ijk[1] - radiusNeedleCorner, ijk[2], 0)
-      g7 = imageData.GetScalarComponentAsDouble(ijk[0] - radiusNeedleCorner, ijk[1] + radiusNeedleCorner, ijk[2], 0)
-      g8 = imageData.GetScalarComponentAsDouble(ijk[0] + radiusNeedleCorner, ijk[1] - radiusNeedleCorner, ijk[2], 0)
+      g1 = _get_scalar_safe(imageData, ijk[0] + radiusNeedle, ijk[1], ijk[2], 0)
+      g2 = _get_scalar_safe(imageData, ijk[0] - radiusNeedle, ijk[1], ijk[2], 0)
+      g3 = _get_scalar_safe(imageData, ijk[0], ijk[1] + radiusNeedle, ijk[2], 0)
+      g4 = _get_scalar_safe(imageData, ijk[0], ijk[1] - radiusNeedle, ijk[2], 0)
+      g5 = _get_scalar_safe(imageData, ijk[0] + radiusNeedleCorner, ijk[1] + radiusNeedleCorner, ijk[2], 0)
+      g6 = _get_scalar_safe(imageData, ijk[0] - radiusNeedleCorner, ijk[1] - radiusNeedleCorner, ijk[2], 0)
+      g7 = _get_scalar_safe(imageData, ijk[0] - radiusNeedleCorner, ijk[1] + radiusNeedleCorner, ijk[2], 0)
+      g8 = _get_scalar_safe(imageData, ijk[0] + radiusNeedleCorner, ijk[1] - radiusNeedleCorner, ijk[2], 0)
 
       total = center / float(5) - ((g1 + g2 + g3 + g4 + g5 + g6 + g7 + g8) / float(8))
     else:
@@ -438,12 +448,12 @@ class TrackingAlgorithmsMixin(object):
           v0 = 0
           totalTip = 0
           for l in range (-3, 1):
-            v0 = 8 * imageData.GetScalarComponentAsDouble(A[0] + i, A[1] + j, A[2] + k + l, 0)
+            v0 = 8 * _get_scalar_safe(imageData, A[0] + i, A[1] + j, A[2] + k + l, 0)
 
-            v1 = imageData.GetScalarComponentAsDouble(A[0] + radiusNeedle + i, A[1] + j, A[2] + k + l, 0)
-            v2 = imageData.GetScalarComponentAsDouble(A[0] - radiusNeedle + i, A[1] + j, A[2] + k + l, 0)
-            v3 = imageData.GetScalarComponentAsDouble(A[0] + i, A[1] + radiusNeedle + j, A[2] + k + l, 0)
-            v4 = imageData.GetScalarComponentAsDouble(A[0] + i, A[1] - radiusNeedle + j, A[2] + k + l, 0)
+            v1 = _get_scalar_safe(imageData, A[0] + radiusNeedle + i, A[1] + j, A[2] + k + l, 0)
+            v2 = _get_scalar_safe(imageData, A[0] - radiusNeedle + i, A[1] + j, A[2] + k + l, 0)
+            v3 = _get_scalar_safe(imageData, A[0] + i, A[1] + radiusNeedle + j, A[2] + k + l, 0)
+            v4 = _get_scalar_safe(imageData, A[0] + i, A[1] - radiusNeedle + j, A[2] + k + l, 0)
 
             totalTip += v0 - ((v1 + v2 + v3 + v4) / float(4)) * gradientPonderation
 
@@ -554,15 +564,15 @@ class TrackingAlgorithmsMixin(object):
         yd = y - yf
         zd = z - zf
         zdd= 1-zd
-        i1 = V.GetScalarComponentAsDouble(xf,yf,zf,0)*zdd + V.GetScalarComponentAsDouble(xf,yf,zc,0)*zd
-        i2 = V.GetScalarComponentAsDouble(xf,yc,zf,0)*zdd + V.GetScalarComponentAsDouble(xf,yc,zc,0)*zd
-        j1 = V.GetScalarComponentAsDouble(xc,yf,zf,0)*zdd + V.GetScalarComponentAsDouble(xc,yf,zc,0)*zd
-        j2 = V.GetScalarComponentAsDouble(xc,yc,zf,0)*zdd + V.GetScalarComponentAsDouble(xc,yc,zc,0)*zd
+        i1 = _get_scalar_safe(V, xf,yf,zf,0)*zdd + _get_scalar_safe(V, xf,yf,zc,0)*zd
+        i2 = _get_scalar_safe(V, xf,yc,zf,0)*zdd + _get_scalar_safe(V, xf,yc,zc,0)*zd
+        j1 = _get_scalar_safe(V, xc,yf,zf,0)*zdd + _get_scalar_safe(V, xc,yf,zc,0)*zd
+        j2 = _get_scalar_safe(V, xc,yc,zf,0)*zdd + _get_scalar_safe(V, xc,yc,zc,0)*zd
         w1 = i1*(1-yd) + i2*yd
         w2 = j1*(1-yd) + j2*yd
         value = w1*(1-xd) + w2*xd
     else:
-        value = V.GetScalarComponentAsDouble(int(round(x)),int(round(y)),int(round(z)),0)
+        value = _get_scalar_safe(V, int(round(x)),int(round(y)),int(round(z)),0)
     return value
       
   def needleDetectionThread(self, tips = [], imageData = None, spacing=[1,1,1], script=False, names=""):
@@ -1142,23 +1152,23 @@ class TrackingAlgorithmsMixin(object):
                         M = (1 - tt) * currentPoint[n] + tt * nextPoint[n]
                         ijk[n] = int(round(M))
                     if gradient == 1 :
-                        center = imageData.GetScalarComponentAsDouble(ijk[0], ijk[1], ijk[2], 0)
+                        center = _get_scalar_safe(imageData, ijk[0], ijk[1], ijk[2], 0)
     
                         radiusNeedle = int(round(radiusNeedleParameter / float(spacing[0])))
                         radiusNeedleCorner = int(round((radiusNeedleParameter / float(spacing[0]) / 1.414)))
     
-                        g1 = imageData.GetScalarComponentAsDouble(ijk[0] + radiusNeedle, ijk[1], ijk[2], 0)
-                        g2 = imageData.GetScalarComponentAsDouble(ijk[0] - radiusNeedle, ijk[1], ijk[2], 0)
-                        g3 = imageData.GetScalarComponentAsDouble(ijk[0], ijk[1] + radiusNeedle, ijk[2], 0)
-                        g4 = imageData.GetScalarComponentAsDouble(ijk[0], ijk[1] - radiusNeedle, ijk[2], 0)
-                        g5 = imageData.GetScalarComponentAsDouble(ijk[0] + radiusNeedleCorner, ijk[1] + radiusNeedleCorner, ijk[2], 0)
-                        g6 = imageData.GetScalarComponentAsDouble(ijk[0] - radiusNeedleCorner, ijk[1] - radiusNeedleCorner, ijk[2], 0)
-                        g7 = imageData.GetScalarComponentAsDouble(ijk[0] - radiusNeedleCorner, ijk[1] + radiusNeedleCorner, ijk[2], 0)
-                        g8 = imageData.GetScalarComponentAsDouble(ijk[0] + radiusNeedleCorner, ijk[1] - radiusNeedleCorner, ijk[2], 0)
+                        g1 = _get_scalar_safe(imageData, ijk[0] + radiusNeedle, ijk[1], ijk[2], 0)
+                        g2 = _get_scalar_safe(imageData, ijk[0] - radiusNeedle, ijk[1], ijk[2], 0)
+                        g3 = _get_scalar_safe(imageData, ijk[0], ijk[1] + radiusNeedle, ijk[2], 0)
+                        g4 = _get_scalar_safe(imageData, ijk[0], ijk[1] - radiusNeedle, ijk[2], 0)
+                        g5 = _get_scalar_safe(imageData, ijk[0] + radiusNeedleCorner, ijk[1] + radiusNeedleCorner, ijk[2], 0)
+                        g6 = _get_scalar_safe(imageData, ijk[0] - radiusNeedleCorner, ijk[1] - radiusNeedleCorner, ijk[2], 0)
+                        g7 = _get_scalar_safe(imageData, ijk[0] - radiusNeedleCorner, ijk[1] + radiusNeedleCorner, ijk[2], 0)
+                        g8 = _get_scalar_safe(imageData, ijk[0] + radiusNeedleCorner, ijk[1] - radiusNeedleCorner, ijk[2], 0)
         
                         value = 8 * center - ((g1 + g2 + g3 + g4 + g5 + g6 + g7 + g8) / 8) * gradientPonderation
                     else:
-                        value = imageData.GetScalarComponentAsDouble(ijk[0], ijk[1], ijk[2], 0)
+                        value = _get_scalar_safe(imageData, ijk[0], ijk[1], ijk[2], 0)
                     RecordOfThisNeedle.append(value)
         LengthOfThisRecord = len(RecordOfThisNeedle)
         average = 0
@@ -1618,27 +1628,27 @@ class TrackingAlgorithmsMixin(object):
             # first, test if points are in the image space
             if ijk[0] < dims[0] and ijk[0] > 0 and  ijk[1] < dims[1] and ijk[1] > 0 and ijk[2] < dims[2] and ijk[2] > 0:
 
-              center = imageData.GetScalarComponentAsDouble(ijk[0], ijk[1], ijk[2], 0)
-              center += imageData.GetScalarComponentAsDouble(ijk[0] + 1, ijk[1], ijk[2], 0)
-              center += imageData.GetScalarComponentAsDouble(ijk[0] - 1, ijk[1], ijk[2], 0)
-              center += imageData.GetScalarComponentAsDouble(ijk[0], ijk[1] + 1, ijk[2], 0)
-              center += imageData.GetScalarComponentAsDouble(ijk[0], ijk[1] - 1, ijk[2], 0)
-              center += imageData.GetScalarComponentAsDouble(ijk[0] + 1, ijk[1] + 1, ijk[2], 0)
-              center += imageData.GetScalarComponentAsDouble(ijk[0] + 1, ijk[1] - 1, ijk[2], 0)
-              center += imageData.GetScalarComponentAsDouble(ijk[0] - 1, ijk[1] + 1, ijk[2], 0)
-              center += imageData.GetScalarComponentAsDouble(ijk[0] - 1, ijk[1] - 1, ijk[2], 0)
+              center = _get_scalar_safe(imageData, ijk[0], ijk[1], ijk[2], 0)
+              center += _get_scalar_safe(imageData, ijk[0] + 1, ijk[1], ijk[2], 0)
+              center += _get_scalar_safe(imageData, ijk[0] - 1, ijk[1], ijk[2], 0)
+              center += _get_scalar_safe(imageData, ijk[0], ijk[1] + 1, ijk[2], 0)
+              center += _get_scalar_safe(imageData, ijk[0], ijk[1] - 1, ijk[2], 0)
+              center += _get_scalar_safe(imageData, ijk[0] + 1, ijk[1] + 1, ijk[2], 0)
+              center += _get_scalar_safe(imageData, ijk[0] + 1, ijk[1] - 1, ijk[2], 0)
+              center += _get_scalar_safe(imageData, ijk[0] - 1, ijk[1] + 1, ijk[2], 0)
+              center += _get_scalar_safe(imageData, ijk[0] - 1, ijk[1] - 1, ijk[2], 0)
 
               total += center ** exponent
               if gradient == 1 and mode == "circle" :
 
-                g1 = imageData.GetScalarComponentAsDouble(ijk[0] + radiusNeedle, ijk[1], ijk[2], 0)
-                g2 = imageData.GetScalarComponentAsDouble(ijk[0] - radiusNeedle, ijk[1], ijk[2], 0)
-                g3 = imageData.GetScalarComponentAsDouble(ijk[0], ijk[1] + radiusNeedle, ijk[2], 0)
-                g4 = imageData.GetScalarComponentAsDouble(ijk[0], ijk[1] - radiusNeedle, ijk[2], 0)
-                g5 = imageData.GetScalarComponentAsDouble(ijk[0] + radiusNeedleCorner, ijk[1] + radiusNeedleCorner, ijk[2], 0)
-                g6 = imageData.GetScalarComponentAsDouble(ijk[0] - radiusNeedleCorner, ijk[1] - radiusNeedleCorner, ijk[2], 0)
-                g7 = imageData.GetScalarComponentAsDouble(ijk[0] - radiusNeedleCorner, ijk[1] + radiusNeedleCorner, ijk[2], 0)
-                g8 = imageData.GetScalarComponentAsDouble(ijk[0] + radiusNeedleCorner, ijk[1] - radiusNeedleCorner, ijk[2], 0)
+                g1 = _get_scalar_safe(imageData, ijk[0] + radiusNeedle, ijk[1], ijk[2], 0)
+                g2 = _get_scalar_safe(imageData, ijk[0] - radiusNeedle, ijk[1], ijk[2], 0)
+                g3 = _get_scalar_safe(imageData, ijk[0], ijk[1] + radiusNeedle, ijk[2], 0)
+                g4 = _get_scalar_safe(imageData, ijk[0], ijk[1] - radiusNeedle, ijk[2], 0)
+                g5 = _get_scalar_safe(imageData, ijk[0] + radiusNeedleCorner, ijk[1] + radiusNeedleCorner, ijk[2], 0)
+                g6 = _get_scalar_safe(imageData, ijk[0] - radiusNeedleCorner, ijk[1] - radiusNeedleCorner, ijk[2], 0)
+                g7 = _get_scalar_safe(imageData, ijk[0] - radiusNeedleCorner, ijk[1] + radiusNeedleCorner, ijk[2], 0)
+                g8 = _get_scalar_safe(imageData, ijk[0] + radiusNeedleCorner, ijk[1] - radiusNeedleCorner, ijk[2], 0)
 
                 # total += (center - ((g1+g2+g3+g4+g5+g6+g7+g8)/float(8))*gradientPonderation)/float(tIter)
                 total += ((center - g1) ** gradientPonderation) / float(tIter)
@@ -1654,10 +1664,10 @@ class TrackingAlgorithmsMixin(object):
 
               if gradient == 1 and mode == "square" :
 
-                g1 = imageData.GetScalarComponentAsDouble(ijk[0] + radiusNeedle, ijk[1], ijk[2], 0)
-                g2 = imageData.GetScalarComponentAsDouble(ijk[0] - radiusNeedle, ijk[1], ijk[2], 0)
-                g3 = imageData.GetScalarComponentAsDouble(ijk[0], ijk[1] + radiusNeedle, ijk[2], 0)
-                g4 = imageData.GetScalarComponentAsDouble(ijk[0], ijk[1] - radiusNeedle, ijk[2], 0)
+                g1 = _get_scalar_safe(imageData, ijk[0] + radiusNeedle, ijk[1], ijk[2], 0)
+                g2 = _get_scalar_safe(imageData, ijk[0] - radiusNeedle, ijk[1], ijk[2], 0)
+                g3 = _get_scalar_safe(imageData, ijk[0], ijk[1] + radiusNeedle, ijk[2], 0)
+                g4 = _get_scalar_safe(imageData, ijk[0], ijk[1] - radiusNeedle, ijk[2], 0)
 
                 total += (8 * center - ((g1 + g2 + g3 + g4) / float(4)) * gradientPonderation) / float(tIter)
 
@@ -1897,7 +1907,7 @@ class TrackingAlgorithmsMixin(object):
             # first, test if points are in the image space
             if ijk[0] < dims[0] and ijk[0] > 0 and  ijk[1] < dims[1] and ijk[1] > 0 and ijk[2] < dims[2] and ijk[2] > 0:
 
-              center = imageData.GetScalarComponentAsDouble(ijk[0], ijk[1], ijk[2], 0)
+              center = _get_scalar_safe(imageData, ijk[0], ijk[1], ijk[2], 0)
               total += center
               
               #>>>>>>>>>>>>>>> Ruibins feedback >>>>>>>>>>>>>>>>>
@@ -1911,14 +1921,14 @@ class TrackingAlgorithmsMixin(object):
                 radiusNeedle = int(round(radiusNeedleParameter / float(spacing[0])))
                 radiusNeedleCorner = int(round((radiusNeedleParameter / float(spacing[0]) / 1.414)))
 
-                g1 = imageData.GetScalarComponentAsDouble(ijk[0] + radiusNeedle, ijk[1], ijk[2], 0)
-                g2 = imageData.GetScalarComponentAsDouble(ijk[0] - radiusNeedle, ijk[1], ijk[2], 0)
-                g3 = imageData.GetScalarComponentAsDouble(ijk[0], ijk[1] + radiusNeedle, ijk[2], 0)
-                g4 = imageData.GetScalarComponentAsDouble(ijk[0], ijk[1] - radiusNeedle, ijk[2], 0)
-                g5 = imageData.GetScalarComponentAsDouble(ijk[0] + radiusNeedleCorner, ijk[1] + radiusNeedleCorner, ijk[2], 0)
-                g6 = imageData.GetScalarComponentAsDouble(ijk[0] - radiusNeedleCorner, ijk[1] - radiusNeedleCorner, ijk[2], 0)
-                g7 = imageData.GetScalarComponentAsDouble(ijk[0] - radiusNeedleCorner, ijk[1] + radiusNeedleCorner, ijk[2], 0)
-                g8 = imageData.GetScalarComponentAsDouble(ijk[0] + radiusNeedleCorner, ijk[1] - radiusNeedleCorner, ijk[2], 0)
+                g1 = _get_scalar_safe(imageData, ijk[0] + radiusNeedle, ijk[1], ijk[2], 0)
+                g2 = _get_scalar_safe(imageData, ijk[0] - radiusNeedle, ijk[1], ijk[2], 0)
+                g3 = _get_scalar_safe(imageData, ijk[0], ijk[1] + radiusNeedle, ijk[2], 0)
+                g4 = _get_scalar_safe(imageData, ijk[0], ijk[1] - radiusNeedle, ijk[2], 0)
+                g5 = _get_scalar_safe(imageData, ijk[0] + radiusNeedleCorner, ijk[1] + radiusNeedleCorner, ijk[2], 0)
+                g6 = _get_scalar_safe(imageData, ijk[0] - radiusNeedleCorner, ijk[1] - radiusNeedleCorner, ijk[2], 0)
+                g7 = _get_scalar_safe(imageData, ijk[0] - radiusNeedleCorner, ijk[1] + radiusNeedleCorner, ijk[2], 0)
+                g8 = _get_scalar_safe(imageData, ijk[0] + radiusNeedleCorner, ijk[1] - radiusNeedleCorner, ijk[2], 0)
 
                 total += 8 * center - ((g1 + g2 + g3 + g4 + g5 + g6 + g7 + g8) / 8) * gradientPonderation
               # >>>>>>>>>>>>>>>>>>>>>> exp.02
@@ -2145,21 +2155,21 @@ class TrackingAlgorithmsMixin(object):
             # first, test if points are in the image space
             if ijk[0] < dims[0] and ijk[0] > 0 and  ijk[1] < dims[1] and ijk[1] > 0 and ijk[2] < dims[2] and ijk[2] > 0:
 
-              center = imageData.GetScalarComponentAsDouble(ijk[0], ijk[1], ijk[2], 0)
+              center = _get_scalar_safe(imageData, ijk[0], ijk[1], ijk[2], 0)
               total += center
               if gradient == 1 :
 
                 radiusNeedle = int(round(radiusNeedleParameter / float(spacing[0])))
                 radiusNeedleCorner = int(round((radiusNeedleParameter / float(spacing[0]) / 1.414)))
 
-                g1 = imageData.GetScalarComponentAsDouble(ijk[0] + radiusNeedle, ijk[1], ijk[2], 0)
-                g2 = imageData.GetScalarComponentAsDouble(ijk[0] - radiusNeedle, ijk[1], ijk[2], 0)
-                g3 = imageData.GetScalarComponentAsDouble(ijk[0], ijk[1] + radiusNeedle, ijk[2], 0)
-                g4 = imageData.GetScalarComponentAsDouble(ijk[0], ijk[1] - radiusNeedle, ijk[2], 0)
-                g5 = imageData.GetScalarComponentAsDouble(ijk[0] + radiusNeedleCorner, ijk[1] + radiusNeedleCorner, ijk[2], 0)
-                g6 = imageData.GetScalarComponentAsDouble(ijk[0] - radiusNeedleCorner, ijk[1] - radiusNeedleCorner, ijk[2], 0)
-                g7 = imageData.GetScalarComponentAsDouble(ijk[0] - radiusNeedleCorner, ijk[1] + radiusNeedleCorner, ijk[2], 0)
-                g8 = imageData.GetScalarComponentAsDouble(ijk[0] + radiusNeedleCorner, ijk[1] - radiusNeedleCorner, ijk[2], 0)
+                g1 = _get_scalar_safe(imageData, ijk[0] + radiusNeedle, ijk[1], ijk[2], 0)
+                g2 = _get_scalar_safe(imageData, ijk[0] - radiusNeedle, ijk[1], ijk[2], 0)
+                g3 = _get_scalar_safe(imageData, ijk[0], ijk[1] + radiusNeedle, ijk[2], 0)
+                g4 = _get_scalar_safe(imageData, ijk[0], ijk[1] - radiusNeedle, ijk[2], 0)
+                g5 = _get_scalar_safe(imageData, ijk[0] + radiusNeedleCorner, ijk[1] + radiusNeedleCorner, ijk[2], 0)
+                g6 = _get_scalar_safe(imageData, ijk[0] - radiusNeedleCorner, ijk[1] - radiusNeedleCorner, ijk[2], 0)
+                g7 = _get_scalar_safe(imageData, ijk[0] - radiusNeedleCorner, ijk[1] + radiusNeedleCorner, ijk[2], 0)
+                g8 = _get_scalar_safe(imageData, ijk[0] + radiusNeedleCorner, ijk[1] - radiusNeedleCorner, ijk[2], 0)
 
                 total += 8 * center - ((g1 + g2 + g3 + g4 + g5 + g6 + g7 + g8) / 8) * gradientPonderation
               # >>>>>>>>>>>>>>>>>>>>>> exp.02
@@ -2588,7 +2598,7 @@ class TrackingAlgorithmsMixin(object):
             # first, test if points are in the image space
             if ijk[0] < ivDims[0] and ijk[0] > 0 and  ijk[1] < ivDims[1] and ijk[1] > 0 and ijk[2] < ivDims[2] and ijk[2] > 0:
 
-              dCenter = imgData.GetScalarComponentAsDouble(ijk[0], ijk[1], ijk[2], 0)
+              dCenter = _get_scalar_safe(imgData, ijk[0], ijk[1], ijk[2], 0)
               fTotal += dCenter
               
               # >>>>>>>>>>>>>>> Ruibins feedback >>>>>>>>>>>>>>
@@ -2602,14 +2612,14 @@ class TrackingAlgorithmsMixin(object):
                 iRadiusNeedle = int(round(iRadiusNeedle_mm / float(fvSpacing[0])))
                 iRadiusNeedleCorner = int(round((iRadiusNeedle_mm / float(fvSpacing[0]) / 1.414)))
 
-                g1 = imgData.GetScalarComponentAsDouble(ijk[0] + iRadiusNeedle, ijk[1], ijk[2], 0)
-                g2 = imgData.GetScalarComponentAsDouble(ijk[0] - iRadiusNeedle, ijk[1], ijk[2], 0)
-                g3 = imgData.GetScalarComponentAsDouble(ijk[0], ijk[1] + iRadiusNeedle, ijk[2], 0)
-                g4 = imgData.GetScalarComponentAsDouble(ijk[0], ijk[1] - iRadiusNeedle, ijk[2], 0)
-                g5 = imgData.GetScalarComponentAsDouble(ijk[0] + iRadiusNeedleCorner, ijk[1] + iRadiusNeedleCorner, ijk[2], 0)
-                g6 = imgData.GetScalarComponentAsDouble(ijk[0] - iRadiusNeedleCorner, ijk[1] - iRadiusNeedleCorner, ijk[2], 0)
-                g7 = imgData.GetScalarComponentAsDouble(ijk[0] - iRadiusNeedleCorner, ijk[1] + iRadiusNeedleCorner, ijk[2], 0)
-                g8 = imgData.GetScalarComponentAsDouble(ijk[0] + iRadiusNeedleCorner, ijk[1] - iRadiusNeedleCorner, ijk[2], 0)
+                g1 = _get_scalar_safe(imgData, ijk[0] + iRadiusNeedle, ijk[1], ijk[2], 0)
+                g2 = _get_scalar_safe(imgData, ijk[0] - iRadiusNeedle, ijk[1], ijk[2], 0)
+                g3 = _get_scalar_safe(imgData, ijk[0], ijk[1] + iRadiusNeedle, ijk[2], 0)
+                g4 = _get_scalar_safe(imgData, ijk[0], ijk[1] - iRadiusNeedle, ijk[2], 0)
+                g5 = _get_scalar_safe(imgData, ijk[0] + iRadiusNeedleCorner, ijk[1] + iRadiusNeedleCorner, ijk[2], 0)
+                g6 = _get_scalar_safe(imgData, ijk[0] - iRadiusNeedleCorner, ijk[1] - iRadiusNeedleCorner, ijk[2], 0)
+                g7 = _get_scalar_safe(imgData, ijk[0] - iRadiusNeedleCorner, ijk[1] + iRadiusNeedleCorner, ijk[2], 0)
+                g8 = _get_scalar_safe(imgData, ijk[0] + iRadiusNeedleCorner, ijk[1] - iRadiusNeedleCorner, ijk[2], 0)
 
                 fTotal += 8 * dCenter - ((g1 + g2 + g3 + g4 + g5 + g6 + g7 + g8) / 8) * iGradientPonderation
               #fi gradient
@@ -2894,15 +2904,15 @@ class TrackingAlgorithmsMixin(object):
       for j in range(-3,3):
           for k in range(-3,3):
             for l in range (-3,1):
-                v0 = 8 * imageData.GetScalarComponentAsDouble(ijk[0]+i, ijk[1]+j, ijk[2]+k+l, 0)
-                v1 = imageData.GetScalarComponentAsDouble(ijk[0]+radiusNeedle+i, ijk[1]+j, ijk[2]+k+l, 0)
-                v2 = imageData.GetScalarComponentAsDouble(ijk[0]-radiusNeedle+i, ijk[1]+j, ijk[2]+k+l, 0)
-                v3 = imageData.GetScalarComponentAsDouble(ijk[0]+i, ijk[1]+radiusNeedle+j, ijk[2]+k+l, 0)
-                v4 = imageData.GetScalarComponentAsDouble(ijk[0]+i, ijk[1]-radiusNeedle+j, ijk[2]+k+l, 0)
-                v5 = imageData.GetScalarComponentAsDouble(ijk[0]+radiusNeedleCorner+i, ijk[1]+radiusNeedleCorner+j, ijk[2]+k+l, 0)
-                v6 = imageData.GetScalarComponentAsDouble(ijk[0]-radiusNeedleCorner+i, ijk[1]-radiusNeedleCorner+j, ijk[2]+k+l, 0)
-                v7 = imageData.GetScalarComponentAsDouble(ijk[0]-radiusNeedleCorner+i, ijk[1]+radiusNeedleCorner+j, ijk[2]+k+l, 0)
-                v8 = imageData.GetScalarComponentAsDouble(ijk[0]+radiusNeedleCorner+i, ijk[1]-radiusNeedleCorner+j, ijk[2]+k+l, 0)
+                v0 = 8 * _get_scalar_safe(imageData, ijk[0]+i, ijk[1]+j, ijk[2]+k+l, 0)
+                v1 = _get_scalar_safe(imageData, ijk[0]+radiusNeedle+i, ijk[1]+j, ijk[2]+k+l, 0)
+                v2 = _get_scalar_safe(imageData, ijk[0]-radiusNeedle+i, ijk[1]+j, ijk[2]+k+l, 0)
+                v3 = _get_scalar_safe(imageData, ijk[0]+i, ijk[1]+radiusNeedle+j, ijk[2]+k+l, 0)
+                v4 = _get_scalar_safe(imageData, ijk[0]+i, ijk[1]-radiusNeedle+j, ijk[2]+k+l, 0)
+                v5 = _get_scalar_safe(imageData, ijk[0]+radiusNeedleCorner+i, ijk[1]+radiusNeedleCorner+j, ijk[2]+k+l, 0)
+                v6 = _get_scalar_safe(imageData, ijk[0]-radiusNeedleCorner+i, ijk[1]-radiusNeedleCorner+j, ijk[2]+k+l, 0)
+                v7 = _get_scalar_safe(imageData, ijk[0]-radiusNeedleCorner+i, ijk[1]+radiusNeedleCorner+j, ijk[2]+k+l, 0)
+                v8 = _get_scalar_safe(imageData, ijk[0]+radiusNeedleCorner+i, ijk[1]-radiusNeedleCorner+j, ijk[2]+k+l, 0)
             totalTip = v0-(v1+v2+v3+v4+v5+v6+v7+v8/float(8))*gradientPonderation
             if totalTip<minTotalTip or minTotalTip==0:
               minTotalTip = totalTip
@@ -3046,18 +3056,18 @@ class TrackingAlgorithmsMixin(object):
               # first, test if points are in the image space
               if ijk[0] < dims[0] and ijk[0] > 0 and  ijk[1] < dims[1] and ijk[1] > 0 and ijk[2] < dims[2] and ijk[2] > 0:
 
-                center = imageData.GetScalarComponentAsDouble(ijk[0], ijk[1], ijk[2], 0)
+                center = _get_scalar_safe(imageData, ijk[0], ijk[1], ijk[2], 0)
                 total += center / float(tIter)
                 if lookNeighborhood == 1 :
 
-                  g1 = imageData.GetScalarComponentAsDouble(ijk[0] + radiusNeedle, ijk[1], ijk[2], 0)
-                  g2 = imageData.GetScalarComponentAsDouble(ijk[0] - radiusNeedle, ijk[1], ijk[2], 0)
-                  g3 = imageData.GetScalarComponentAsDouble(ijk[0], ijk[1] + radiusNeedle, ijk[2], 0)
-                  g4 = imageData.GetScalarComponentAsDouble(ijk[0], ijk[1] - radiusNeedle, ijk[2], 0)
-                  g5 = imageData.GetScalarComponentAsDouble(ijk[0] + radiusNeedleCorner, ijk[1] + radiusNeedleCorner, ijk[2], 0)
-                  g6 = imageData.GetScalarComponentAsDouble(ijk[0] - radiusNeedleCorner, ijk[1] - radiusNeedleCorner, ijk[2], 0)
-                  g7 = imageData.GetScalarComponentAsDouble(ijk[0] - radiusNeedleCorner, ijk[1] + radiusNeedleCorner, ijk[2], 0)
-                  g8 = imageData.GetScalarComponentAsDouble(ijk[0] + radiusNeedleCorner, ijk[1] - radiusNeedleCorner, ijk[2], 0)
+                  g1 = _get_scalar_safe(imageData, ijk[0] + radiusNeedle, ijk[1], ijk[2], 0)
+                  g2 = _get_scalar_safe(imageData, ijk[0] - radiusNeedle, ijk[1], ijk[2], 0)
+                  g3 = _get_scalar_safe(imageData, ijk[0], ijk[1] + radiusNeedle, ijk[2], 0)
+                  g4 = _get_scalar_safe(imageData, ijk[0], ijk[1] - radiusNeedle, ijk[2], 0)
+                  g5 = _get_scalar_safe(imageData, ijk[0] + radiusNeedleCorner, ijk[1] + radiusNeedleCorner, ijk[2], 0)
+                  g6 = _get_scalar_safe(imageData, ijk[0] - radiusNeedleCorner, ijk[1] - radiusNeedleCorner, ijk[2], 0)
+                  g7 = _get_scalar_safe(imageData, ijk[0] - radiusNeedleCorner, ijk[1] + radiusNeedleCorner, ijk[2], 0)
+                  g8 = _get_scalar_safe(imageData, ijk[0] + radiusNeedleCorner, ijk[1] - radiusNeedleCorner, ijk[2], 0)
 
                   total += (8 * center - ((g1 + g2 + g3 + g4 + g5 + g6 + g7 + g8) / float(8)) * gradientPonderation) / float(tIter)
 
