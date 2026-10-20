@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.8.9)
+cmake_minimum_required(VERSION 3.16.3...3.19.7 FATAL_ERROR)
 
 project(NeedleFinder)
 
@@ -11,8 +11,8 @@ set(EXTENSION_CONTRIBUTORS "Guillaume Pernelle, Andre Mastmeyer, Paolo Zaffino, 
 
 set(EXTENSION_DESCRIPTION "NeedleFinder: fast interactive needle detection. It provides interactive tools to segment needles in MR/CT images. It has been mostly tested on MRI from gynelogical brachytherapy cases. Cf <<Validation of Catheter Segmentation for MR-Guided Gynecologic Cancer Brachytherapy.>> MICCAI 2013")
 
-set(EXTENSION_ICONURL "https://raw.github.com/needlefinder/NeedleFinder/master/NeedleFinder.png")
-set(EXTENSION_SCREENSHOTURLS "https://raw.github.com/needlefinder/NeedleFinder/master/screenshot.png")
+set(EXTENSION_ICONURL "https://raw.githubusercontent.com/needlefinder/NeedleFinder/master/NeedleFinder.png")
+set(EXTENSION_SCREENSHOTURLS "https://raw.githubusercontent.com/needlefinder/NeedleFinder/master/screenshot.png")
 
 #-----------------------------------------------------------------------------
 # Extension dependencies
