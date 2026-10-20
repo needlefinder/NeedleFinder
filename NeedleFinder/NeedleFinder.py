@@ -1127,6 +1127,10 @@ class NeedleFinderWidget(ScriptedLoadableModuleWidget):
     """
     if profiling : profbox()
     # framework
+    import importlib, sys
+    for mod_name in sorted(list(sys.modules.keys())):
+      if mod_name == "NeedleFinderLib" or mod_name.startswith("NeedleFinderLib."):
+        importlib.reload(sys.modules[mod_name])
     globals()[moduleName] = slicer.util.reloadScriptedModule(moduleName)
 
   def onReloadAndTest(self, moduleName="NeedleFinder"):
