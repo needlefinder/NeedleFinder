@@ -41,6 +41,7 @@ from .LegacyEditorCompat import (
     get_fiducial_coords,
     set_fiducial_coords,
 )
+from .HybridNeedleNetWeights import score_trajectory_hybrid_nn
 from .ProfilingUtils import (
     MAXCOL,
     MAXNEEDLES,
@@ -3203,8 +3204,8 @@ class TrackingAlgorithmsMixin:
           pass
 
     k0 = max(0, k_lim - 1)
-    i0, i1 = int(0.18 * I), int(0.82 * I)
-    j0, j1 = int(0.18 * J), int(0.82 * J)
+    i0, i1 = int(0.16 * I), int(0.84 * I)
+    j0, j1 = int(0.16 * J), int(0.84 * J)
     if i1 - i0 < 26 or j1 - j0 < 26:
       i0, i1 = 0, I
       j0, j1 = 0, J
@@ -3220,14 +3221,182 @@ class TrackingAlgorithmsMixin:
       vol_work = vol_raw.copy()
       body_thresh = float(np.percentile(pos_raw, 30)) if len(pos_raw) else 25.0
 
-    nms_px = max(2, int(round(1.30 / sp_i)))
-    visit_r_px = max(1, int(round(1.15 / sp_i)))
+    nms_px = max(2, int(round(1.25 / sp_i)))
+    visit_r_px = max(1, int(round(1.10 / sp_i)))
     search_r_px = max(2, int(round(2.05 / sp_i)))
     yy_grid, xx_grid = np.mgrid[-search_r_px:search_r_px + 1, -search_r_px:search_r_px + 1]
     wy, wx = np.mgrid[-1:2, -1:2]
 
     max_gap_slices = 3 if sp_k < 2.2 else 2
     min_pts_slices = 5 if (sp_k < 2.6 and (K - k0) > 28) else 4
+
+    def fast_line_fit(z, x, y):
+      zm = float(np.mean(z))
+      xm = float(np.mean(x))
+      ym = float(np.mean(y))
+      dz = z - zm
+      denom = float(np.dot(dz, dz))
+      if denom < 1e-6:
+        return 0.0, xm, 0.0, ym
+      sx = float(np.dot(dz, x - xm)) / denom
+      sy = float(np.dot(dz, y - ym)) / denom
+      return sx, xm - sx * zm, sy, ym - sy * zm
+
+    def trim_trajectory_inside_out(ras_pts, arr_pts, ks, shaft_p75):
+      n = len(ks)
+      if n < 6:
+        return ras_pts, arr_pts, ks
+      z_all = ras_pts[:, 2]
+      x_all = ras_pts[:, 0]
+      y_all = ras_pts[:, 1]
+      if sp_k >= 2.8:
+        deg0 = 2 if n >= 7 else 1
+        px0 = np.polyfit(z_all, x_all, deg0)
+        py0 = np.polyfit(z_all, y_all, deg0)
+        res0 = np.hypot(x_all - np.polyval(px0, z_all), y_all - np.polyval(py0, z_all))
+        if float(np.sqrt(np.mean(res0 ** 2))) <= 1.30:
+          return ras_pts, arr_pts, ks
+
+      win_n = min(n, max(5, min(16, int(round(0.55 * n)))))
+      best_rmse = 1e9
+      best_i0 = 0
+      best_fit = None
+      max_start = max(1, int(round(0.50 * (n - win_n))) + 1)
+      for s_i in range(max_start):
+        e_i = s_i + win_n
+        sub_z = z_all[s_i:e_i]
+        if abs(float(sub_z[-1] - sub_z[0])) < 3.5:
+          continue
+        sx, bx, sy, by = fast_line_fit(sub_z, x_all[s_i:e_i], y_all[s_i:e_i])
+        dx = x_all[s_i:e_i] - (sx * sub_z + bx)
+        dy = y_all[s_i:e_i] - (sy * sub_z + by)
+        err = float(np.sqrt(np.mean(dx * dx + dy * dy)))
+        if err < best_rmse:
+          best_rmse = err
+          best_i0 = s_i
+          best_fit = (sx, bx, sy, by)
+      if best_fit is None:
+        return ras_pts, arr_pts, ks
+
+      gsx, gbx, gsy, gby = best_fit
+      end_idx = n
+      bad_streak = 0
+      for idx in range(best_i0 + win_n, n):
+        r0 = max(best_i0, idx - 14)
+        lsx, lbx, lsy, lby = fast_line_fit(z_all[r0:idx], x_all[r0:idx], y_all[r0:idx])
+        zi, xi, yi = float(z_all[idx]), float(x_all[idx]), float(y_all[idx])
+        dev_loc = math.hypot(xi - (lsx * zi + lbx), yi - (lsy * zi + lby))
+        dev_glob = math.hypot(xi - (gsx * zi + gbx), yi - (gsy * zi + gby))
+        if dev_loc > 1.85 or dev_glob > 3.25 or (dev_loc > 1.35 and arr_pts[idx, 3] < 0.35 * shaft_p75):
+          bad_streak += 1
+          if bad_streak >= 2 or dev_loc > 2.35 or idx == n - 1:
+            end_idx = idx - bad_streak + 1
+            break
+        else:
+          bad_streak = 0
+
+      start_idx = 0
+      bad_streak = 0
+      for idx in range(best_i0 - 1, -1, -1):
+        r1 = min(end_idx, idx + 15)
+        lsx, lbx, lsy, lby = fast_line_fit(z_all[idx + 1:r1], x_all[idx + 1:r1], y_all[idx + 1:r1])
+        zi, xi, yi = float(z_all[idx]), float(x_all[idx]), float(y_all[idx])
+        dev_loc = math.hypot(xi - (lsx * zi + lbx), yi - (lsy * zi + lby))
+        dev_glob = math.hypot(xi - (gsx * zi + gbx), yi - (gsy * zi + gby))
+        if dev_loc > 1.95 or dev_glob > 3.25 or (dev_loc > 1.45 and arr_pts[idx, 3] < 0.30 * shaft_p75):
+          bad_streak += 1
+          if bad_streak >= 2 or dev_loc > 2.45 or idx == 0:
+            start_idx = idx + bad_streak
+            break
+        else:
+          bad_streak = 0
+
+      return ras_pts[start_idx:end_idx], arr_pts[start_idx:end_idx], ks[start_idx:end_idx]
+
+    def fit_and_package_traj(ras_pts, arr_pts, ks, pass_idx, cand_thresh):
+      z_vals = ras_pts[:, 2]
+      z_span_mm = float(z_vals[-1] - z_vals[0])
+      deg = 2 if len(z_vals) >= 7 else 1
+      sx1, bx1, sy1, by1 = fast_line_fit(z_vals, ras_pts[:, 0], ras_pts[:, 1])
+      res_l = np.hypot(ras_pts[:, 0] - (sx1 * z_vals + bx1), ras_pts[:, 1] - (sy1 * z_vals + by1))
+      inliers = res_l <= max(1.65, float(np.percentile(res_l, 85)))
+      if np.sum(inliers) >= (deg + 2):
+        px = np.polyfit(z_vals[inliers], ras_pts[inliers, 0], deg)
+        py = np.polyfit(z_vals[inliers], ras_pts[inliers, 1], deg)
+      else:
+        px = np.array([sx1, bx1])
+        py = np.array([sy1, by1])
+      fit_x = np.polyval(px, z_vals)
+      fit_y = np.polyval(py, z_vals)
+      res_d = np.hypot(ras_pts[:, 0] - fit_x, ras_pts[:, 1] - fit_y)
+      rmse = float(np.percentile(res_d, 85))
+      if rmse > 1.45:
+        return None
+
+      dz = z_vals[-1] - z_vals[0]
+      if abs(dz) < 1e-3:
+        return None
+      slope_x = (fit_x[-1] - fit_x[0]) / dz
+      slope_y = (fit_y[-1] - fit_y[0]) / dz
+      if math.hypot(slope_x, slope_y) > 0.72:
+        return None
+
+      k_rels = arr_pts[:, 2] - k0
+      si_a, bi_a, sj_a, bj_a = fast_line_fit(k_rels, arr_pts[:, 0], arr_pts[:, 1])
+      pi_abs = np.array([si_a, bi_a])
+      pj_abs = np.array([sj_a, bj_a])
+
+      if sp_k >= 2.8 and z_vals[0] > z_base_ras + 2.0 * sp_k:
+        bx = float(fit_x[0] + slope_x * (z_base_ras - z_vals[0]))
+        by = float(fit_y[0] + slope_y * (z_base_ras - z_vals[0]))
+      else:
+        bx = float(np.polyval(px, z_base_ras))
+        by = float(np.polyval(py, z_base_ras))
+      base_xy = np.array([bx, by])
+      if z_vals[-1] >= z_vals[0]:
+        above_mask = z_vals > z_base_ras + 0.15 * sp_k
+      else:
+        above_mask = z_vals < z_base_ras - 0.15 * sp_k
+      if np.any(above_mask):
+        smooth_ras = np.vstack([
+            [bx, by, z_base_ras],
+            np.column_stack([fit_x[above_mask], fit_y[above_mask], z_vals[above_mask]]),
+        ])
+      else:
+        smooth_ras = np.vstack([
+            [bx, by, z_base_ras],
+            [fit_x[-1], fit_y[-1], z_vals[-1]],
+        ])
+
+      mean_r = float(np.mean(arr_pts[:, 3]))
+      p75_r = float(np.percentile(arr_pts[:, 3], 75))
+      max_r = float(np.max(arr_pts[:, 3]))
+      high_frac = float(np.mean(arr_pts[:, 3] >= cand_thresh * 0.38))
+      raw_score = mean_r * (high_frac ** 1.5) * math.sqrt(max(1.0, z_span_mm)) / (1.0 + 0.5 * rmse)
+      curv = math.hypot(float(px[0]), float(py[0])) if len(px) == 3 else 0.0
+      return {
+          "ras": smooth_ras,
+          "ks": np.array(ks) + k0,
+          "n_slices": len(ks),
+          "k_min_rel": int(min(ks)),
+          "k_max_rel": int(max(ks)),
+          "pi_abs": pi_abs,
+          "pj_abs": pj_abs,
+          "slope_ij": np.array([si_a, sj_a]),
+          "base_xy": base_xy,
+          "tip_ras": smooth_ras[-1].copy(),
+          "slope": np.array([slope_x, slope_y]),
+          "mean_r": mean_r,
+          "p75_r": p75_r,
+          "max_r": max_r,
+          "high_frac": high_frac,
+          "rmse": rmse,
+          "curv": curv,
+          "length_mm": float(smooth_ras[-1, 2] - smooth_ras[0, 2]),
+          "z_span_tracked": z_span_mm,
+          "raw_score": raw_score,
+          "pass": pass_idx,
+      }
 
     def track_pass(resp_sub, c_smooth, ring_sym, sub_i0, sub_j0, cand_thresh, prior_slope_ij=None, pass_idx=1):
       K_sub, J_sub, I_sub = resp_sub.shape
@@ -3237,8 +3406,8 @@ class TrackingAlgorithmsMixin:
         np.minimum(resp_sub, cap_val, out=resp_sub)
 
       loc_max = resp_sub == maximum_filter(resp_sub, size=(1, 2 * nms_px + 1, 2 * nms_px + 1))
-      max_seed_k = min(K_sub - 2, max(18, min(34, int(round(48.0 / sp_k)))))
-      seed_cut = cand_thresh * ((0.85 if K_sub <= 28 else 0.95) if pass_idx == 1 else 0.70)
+      max_seed_k = min(K_sub - 2, max(18, min(42, int(round(62.0 / sp_k)))))
+      seed_cut = cand_thresh * ((0.82 if K_sub <= 28 else 0.88) if pass_idx == 1 else 0.62)
       seeds = []
       for k_rel in range(0, max_seed_k):
         jj, ii = np.where(loc_max[k_rel] & (resp_sub[k_rel] >= seed_cut))
@@ -3247,16 +3416,19 @@ class TrackingAlgorithmsMixin:
             for j_s, i_s in zip(jj, ii)
         ]
         sl_seeds.sort(key=lambda x: -x[0])
-        seeds.extend(sl_seeds[:85])
+        seeds.extend(sl_seeds[:110])
       seeds.sort(key=lambda x: -x[0])
 
       visited = np.zeros((K_sub, J_sub, I_sub), dtype=bool)
       trajs_out = []
-      max_step_px = (0.65 if pass_idx == 1 else 0.55) * (sp_k / sp_i)
+      max_step_px = (0.65 if pass_idx == 1 else 0.52) * (sp_k / sp_i)
+      decay = -0.36 if pass_idx == 1 else -0.46
+      gauss_base = np.exp(decay * ((xx_grid * sp_i) ** 2 + (yy_grid * sp_j) ** 2))
 
       for s_val, k_start, i_start, j_start in seeds:
         if visited[k_start, int(j_start), int(i_start)]:
           continue
+        visited[k_start, int(j_start), int(i_start)] = True
         pts = {k_start: (i_start, j_start, s_val)}
         peak_r = min(s_val, cand_thresh * 40.0)
         for direction in (1, -1):
@@ -3278,14 +3450,11 @@ class TrackingAlgorithmsMixin:
             ):
               break
             patch_r = resp_sub[k_cur, jc - search_r_px:jc + search_r_px + 1, ic - search_r_px:ic + search_r_px + 1]
-            patch_c = c_smooth[k_cur, jc - search_r_px:jc + search_r_px + 1, ic - search_r_px:ic + search_r_px + 1]
-            patch_sym = ring_sym[k_cur, jc - search_r_px:jc + search_r_px + 1, ic - search_r_px:ic + search_r_px + 1]
-            dist_mm = np.hypot((ic + xx_grid - pred_i) * sp_i, (jc + yy_grid - pred_j) * sp_j)
-            eff_score = patch_r * np.exp((-0.36 if pass_idx == 1 else -0.45) * (dist_mm ** 2))
+            eff_score = patch_r * gauss_base
             best_idx = np.unravel_index(np.argmax(eff_score), eff_score.shape)
             best_r = float(patch_r[best_idx])
-            best_c = float(patch_c[best_idx])
-            best_sym = float(patch_sym[best_idx])
+            best_c = float(c_smooth[k_cur, jc - search_r_px + best_idx[0], ic - search_r_px + best_idx[1]])
+            best_sym = float(ring_sym[k_cur, jc - search_r_px + best_idx[0], ic - search_r_px + best_idx[1]])
             ni = float(ic - search_r_px + best_idx[1])
             nj = float(jc - search_r_px + best_idx[0])
             ii0, jj0 = int(ni), int(nj)
@@ -3296,13 +3465,13 @@ class TrackingAlgorithmsMixin:
                 ni = ii0 + float(np.sum(wx * w_patch)) / w_sum
                 nj = jj0 + float(np.sum(wy * w_patch)) / w_sum
 
-            min_step_r = max(cand_thresh * (0.28 if pass_idx == 1 else 0.22), 0.045 * peak_r)
-            is_dark = (best_r >= min_step_r) or (best_sym > 14.0 and best_c < 0.55 * best_sym and best_r >= 0.28 * min_step_r)
+            min_step_r = max(cand_thresh * (0.28 if pass_idx == 1 else 0.20), 0.045 * peak_r)
+            is_dark = (best_r >= min_step_r) or (best_sym > 14.0 and best_c < 0.56 * best_sym and best_r >= 0.25 * min_step_r)
             if is_dark:
               pts[k_cur] = (ni, nj, best_r)
               peak_r = max(peak_r, min(best_r, cand_thresh * 42.0))
-              step_i = float(np.clip(ni - curr_i, -max_step_px, max_step_px))
-              step_j = float(np.clip(nj - curr_j, -max_step_px, max_step_px))
+              step_i = max(-max_step_px, min(max_step_px, ni - curr_i))
+              step_j = max(-max_step_px, min(max_step_px, nj - curr_j))
               vel_i = 0.65 * vel_i + 0.35 * step_i
               vel_j = 0.65 * vel_j + 0.35 * step_j
               curr_i, curr_j = ni, nj
@@ -3319,8 +3488,8 @@ class TrackingAlgorithmsMixin:
           continue
         r_arr_ks = np.array([pts[k][2] for k in ks])
         shaft_p75 = float(np.percentile(r_arr_ks, 75))
-        tip_cut = max(cand_thresh * 0.38, 0.08 * shaft_p75)
-        base_cut = max(cand_thresh * 0.24, 0.05 * shaft_p75)
+        tip_cut = max(cand_thresh * 0.35, 0.08 * shaft_p75)
+        base_cut = max(cand_thresh * 0.22, 0.05 * shaft_p75)
         while len(ks) > 2 and pts[ks[-1]][2] < tip_cut:
           ks.pop()
         while len(ks) > 2 and pts[ks[0]][2] < base_cut:
@@ -3335,60 +3504,23 @@ class TrackingAlgorithmsMixin:
         arr_pts = arr_pts[order]
         ks = [ks[idx] for idx in order]
 
-        # Core-shaft residual tail trimming to remove post-tip background drift
-        if len(ks) >= 7:
-          core_mask = arr_pts[:, 3] >= 0.20 * shaft_p75
-          if np.sum(core_mask) >= 4:
-            c_z = ras_pts[core_mask, 2]
-            c_px = np.polyfit(c_z, ras_pts[core_mask, 0], 1)
-            c_py = np.polyfit(c_z, ras_pts[core_mask, 1], 1)
-            while len(ks) > 3:
-              dev_top = np.hypot(ras_pts[-1, 0] - np.polyval(c_px, ras_pts[-1, 2]), ras_pts[-1, 1] - np.polyval(c_py, ras_pts[-1, 2]))
-              if dev_top > 1.60 and arr_pts[-1, 3] < 0.35 * shaft_p75:
-                ras_pts = ras_pts[:-1]
-                arr_pts = arr_pts[:-1]
-                ks.pop()
-              else:
-                break
-            while len(ks) > 3:
-              dev_bot = np.hypot(ras_pts[0, 0] - np.polyval(c_px, ras_pts[0, 2]), ras_pts[0, 1] - np.polyval(c_py, ras_pts[0, 2]))
-              if dev_bot > 1.75 and arr_pts[0, 3] < 0.30 * shaft_p75:
-                ras_pts = ras_pts[1:]
-                arr_pts = arr_pts[1:]
-                ks.pop(0)
-              else:
-                break
+        ras_pts, arr_pts, ks = trim_trajectory_inside_out(ras_pts, arr_pts, ks, shaft_p75)
         if len(ks) < min_pts_slices:
           continue
 
-        k_min_rel, k_max_rel = min(ks), max(ks)
+        k_min_rel = min(ks)
         z_span_mm = float(ras_pts[-1, 2] - ras_pts[0, 2])
-        if z_span_mm < (8.8 if K_sub <= 28 else 12.0):
+        if z_span_mm < (8.5 if K_sub <= 28 else 11.5):
           continue
-        mean_r = float(np.mean(arr_pts[:, 3]))
-        if k_min_rel > 11:
-          continue
-
-        z_vals = ras_pts[:, 2]
-        deg = 2 if len(z_vals) >= 7 else 1
-        px = np.polyfit(z_vals, ras_pts[:, 0], deg)
-        py = np.polyfit(z_vals, ras_pts[:, 1], deg)
-        fit_x = np.polyval(px, z_vals)
-        fit_y = np.polyval(py, z_vals)
-        rmse = float(np.sqrt(np.mean((ras_pts[:, 0] - fit_x) ** 2 + (ras_pts[:, 1] - fit_y) ** 2)))
-        if rmse > 1.35:
+        if k_min_rel > 12 and z_span_mm < (18.0 if K_sub <= 36 else 26.0):
           continue
 
-        dz = z_vals[-1] - z_vals[0]
-        if abs(dz) < 1e-3:
-          continue
-        slope_x = (fit_x[-1] - fit_x[0]) / dz
-        slope_y = (fit_y[-1] - fit_y[0]) / dz
-        if np.hypot(slope_x, slope_y) > 0.72:
+        high_frac = float(np.mean(arr_pts[:, 3] >= cand_thresh * ((0.36 if K_sub <= 28 else 0.40) if pass_idx == 1 else 0.28)))
+        if high_frac < ((0.46 if K_sub <= 28 else 0.50) if pass_idx == 1 else 0.40):
           continue
 
-        high_frac = float(np.mean(arr_pts[:, 3] >= cand_thresh * ((0.38 if K_sub <= 28 else 0.42) if pass_idx == 1 else 0.32)))
-        if high_frac < ((0.48 if K_sub <= 28 else 0.52) if pass_idx == 1 else 0.45):
+        pkg = fit_and_package_traj(ras_pts, arr_pts, ks, pass_idx, cand_thresh)
+        if pkg is None:
           continue
 
         # Mark visited and attenuate resp_sub along the accepted tract so adjacent seeds do not jump onto it
@@ -3399,48 +3531,7 @@ class TrackingAlgorithmsMixin:
           visited[k_v, j_lo:j_hi, i_lo:i_hi] = True
           resp_sub[k_v, j_lo:j_hi, i_lo:i_hi] *= 0.08
 
-        k_rels = arr_pts[:, 2] - k0
-        pi_abs = np.polyfit(k_rels, arr_pts[:, 0], 1)
-        pj_abs = np.polyfit(k_rels, arr_pts[:, 1], 1)
-
-        bx = float(np.polyval(px, z_base_ras))
-        by = float(np.polyval(py, z_base_ras))
-        base_xy = np.array([bx, by])
-        if z_vals[-1] >= z_vals[0]:
-          above_mask = z_vals > z_base_ras + 0.15 * sp_k
-        else:
-          above_mask = z_vals < z_base_ras - 0.15 * sp_k
-        if np.any(above_mask):
-          smooth_ras = np.vstack([
-              [bx, by, z_base_ras],
-              np.column_stack([fit_x[above_mask], fit_y[above_mask], z_vals[above_mask]]),
-          ])
-        else:
-          smooth_ras = np.vstack([
-              [bx, by, z_base_ras],
-              [fit_x[-1], fit_y[-1], z_vals[-1]],
-          ])
-
-        raw_score = mean_r * (high_frac ** 1.5) * np.sqrt(z_span_mm) / (1.0 + 0.5 * rmse)
-        trajs_out.append({
-            "ras": smooth_ras,
-            "ks": np.array(ks) + k0,
-            "k_min_rel": int(k_min_rel),
-            "k_max_rel": int(k_max_rel),
-            "pi_abs": pi_abs,
-            "pj_abs": pj_abs,
-            "slope_ij": np.array([pi_abs[0], pj_abs[0]]),
-            "base_xy": base_xy,
-            "tip_ras": smooth_ras[-1].copy(),
-            "slope": np.array([slope_x, slope_y]),
-            "mean_r": mean_r,
-            "high_frac": high_frac,
-            "rmse": rmse,
-            "length_mm": float(smooth_ras[-1, 2] - smooth_ras[0, 2]),
-            "z_span_tracked": z_span_mm,
-            "raw_score": raw_score,
-            "pass": pass_idx,
-        })
+        trajs_out.append(pkg)
       return trajs_out
 
     def dedup_trajs(traj_list, existing_list=None):
@@ -3449,7 +3540,7 @@ class TrackingAlgorithmsMixin:
         dup = False
         for p in out:
           base_d = float(np.hypot(t["base_xy"][0] - p["base_xy"][0], t["base_xy"][1] - p["base_xy"][1]))
-          if base_d < 2.25:
+          if base_d < 2.15:
             dup = True
             break
           z_min = max(t["ras"][0, 2], p["ras"][0, 2])
@@ -3460,7 +3551,7 @@ class TrackingAlgorithmsMixin:
             ty = np.interp(zs, t["ras"][:, 2], t["ras"][:, 1])
             px_i = np.interp(zs, p["ras"][:, 2], p["ras"][:, 0])
             py_i = np.interp(zs, p["ras"][:, 2], p["ras"][:, 1])
-            if float(np.mean(np.hypot(tx - px_i, ty - py_i))) < 2.55:
+            if float(np.mean(np.hypot(tx - px_i, ty - py_i))) < 2.40:
               dup = True
               break
         if not dup:
@@ -3485,11 +3576,11 @@ class TrackingAlgorithmsMixin:
       return []
     prelim1 = dedup_trajs(trajs1)
 
-    k_tol = 4 if sp_k <= 2.1 else max(2, int(round(6.5 / sp_k)))
+    k_tol = 4 if sp_k <= 2.1 else max(3, int(round(7.5 / sp_k)))
     pelvic_cands = [
         t for t in prelim1
-        if abs(t["base_xy"][0] - fov_center_ras[0]) <= 45.0
-        and abs(t["base_xy"][1] - fov_center_ras[1]) <= 47.0
+        if abs(t["base_xy"][0] - fov_center_ras[0]) <= 48.0
+        and abs(t["base_xy"][1] - fov_center_ras[1]) <= 64.0
     ]
     base_pool = pelvic_cands if len(pelvic_cands) >= 3 else prelim1
     low_k_cands = [t for t in base_pool if t["k_min_rel"] <= k_tol]
@@ -3506,10 +3597,10 @@ class TrackingAlgorithmsMixin:
     for idx in range(len(vote_pool)):
       d_xy = np.hypot(bases[:, 0] - bases[idx, 0], bases[:, 1] - bases[idx, 1])
       d_sl = np.hypot(slopes[:, 0] - slopes[idx, 0], slopes[:, 1] - slopes[idx, 1])
-      inliers = (d_xy <= 36.0) & (d_sl <= 0.25)
+      inliers = (d_xy <= 42.0) & (d_sl <= 0.25)
       dx_fov = float(bases[idx, 0] - fov_center_ras[0])
       dy_fov = float(bases[idx, 1] - fov_center_ras[1])
-      fov_prior = np.exp(-0.5 * ((dx_fov / 32.0) ** 2 + (dy_fov / 38.0) ** 2))
+      fov_prior = np.exp(-0.5 * ((dx_fov / 35.0) ** 2 + (dy_fov / 48.0) ** 2))
       c_score = float(np.sum(clamped_w[inliers])) * (int(np.sum(inliers)) ** 0.80) * fov_prior
       if c_score > best_cluster_score:
         best_cluster_score = c_score
@@ -3517,9 +3608,10 @@ class TrackingAlgorithmsMixin:
 
     seed_center = bases[best_idx]
     seed_slope = slopes[best_idx]
-    inlier_mask = (
-        (np.hypot(bases[:, 0] - seed_center[0], bases[:, 1] - seed_center[1]) <= 42.0)
-        & (np.hypot(slopes[:, 0] - seed_slope[0], slopes[:, 1] - seed_slope[1]) <= 0.28)
+    d_seed_xy = np.hypot(bases[:, 0] - seed_center[0], bases[:, 1] - seed_center[1])
+    d_seed_sl = np.hypot(slopes[:, 0] - seed_slope[0], slopes[:, 1] - seed_slope[1])
+    inlier_mask = ((d_seed_xy <= 44.0) & (d_seed_sl <= 0.28)) | (
+        (d_seed_xy <= 56.0) & (d_seed_sl <= 0.18) & (raw_arr >= 0.25 * ref_raw)
     )
     if np.sum(inlier_mask) >= 3:
       inlier_bases = bases[inlier_mask]
@@ -3546,7 +3638,7 @@ class TrackingAlgorithmsMixin:
 
     valid_k_inliers = [
         t for t in spatial_inliers
-        if t["k_min_rel"] <= bundle_k_min + k_tol or (t["z_span_tracked"] >= 30.0 and t["mean_r"] >= cand_thresh * 2.0)
+        if t["k_min_rel"] <= bundle_k_min + k_tol or (t["z_span_tracked"] >= 28.0 and t["mean_r"] >= cand_thresh * 1.8)
     ]
     if len(valid_k_inliers) >= 2:
       sc_sorted = sorted([t["raw_score"] for t in valid_k_inliers], reverse=True)
@@ -3565,48 +3657,47 @@ class TrackingAlgorithmsMixin:
       med_slope = np.median(c_slopes, axis=0)
       med_slope_ij = np.median(np.array([t["slope_ij"] for t in core_inliers]), axis=0)
       r_max_core = float(np.max(np.hypot(c_bases[:, 0] - bbox_mid[0], c_bases[:, 1] - bbox_mid[1])))
-      adaptive_rad = float(np.clip(max(36.5, r_max_core + 8.0), 36.5, 47.5))
+      adaptive_rad = float(np.clip(max(37.5, r_max_core + 8.5), 37.5, 48.0))
       sdev_p75 = float(np.percentile(np.hypot(c_slopes[:, 0] - med_slope[0], c_slopes[:, 1] - med_slope[1]), 75))
       adaptive_sdev = float(np.clip(max(0.28, 2.4 * sdev_p75), 0.28, 0.38))
     else:
       adaptive_rad = 38.5
       adaptive_sdev = 0.34
 
-    def passes_bundle_filter(t, is_pass2=False):
-      if abs(t["base_xy"][0] - fov_center_ras[0]) > 47.5 or abs(t["base_xy"][1] - fov_center_ras[1]) > 49.5:
+    def passes_bundle_filter(t, pass_num=1):
+      if abs(t["base_xy"][0] - fov_center_ras[0]) > 49.5 or abs(t["base_xy"][1] - fov_center_ras[1]) > 66.0:
         return False
       dist_mid = float(np.hypot(t["base_xy"][0] - bbox_mid[0], t["base_xy"][1] - bbox_mid[1]))
       dist_med = float(np.hypot(t["base_xy"][0] - med_center[0], t["base_xy"][1] - med_center[1]))
       slope_dev = float(np.hypot(t["slope"][0] - med_slope[0], t["slope"][1] - med_slope[1]))
       k_ok = (
           t["k_min_rel"] <= bundle_k_min + k_tol
-          or (t["k_min_rel"] <= bundle_k_min + 2 * k_tol + 1 and t["z_span_tracked"] >= 32.0 and t["mean_r"] >= cand_thresh * 2.0 and t["raw_score"] >= 0.22 * bundle_max_raw)
-          or (sp_k >= 5.0 and t["k_min_rel"] <= 11 and t["z_span_tracked"] >= 26.0 and t["raw_score"] >= 0.28 * bundle_max_raw)
+          or (t["z_span_tracked"] >= 28.0 and t["mean_r"] >= cand_thresh * 1.6 and t["raw_score"] >= 0.16 * bundle_max_raw and slope_dev <= min(0.22, adaptive_sdev))
+          or (sp_k >= 4.5 and t["k_min_rel"] <= 11 and t["z_span_tracked"] >= 24.0 and t["raw_score"] >= 0.22 * bundle_max_raw)
       )
       if not k_ok:
         return False
-      if not is_pass2:
-        max_sdev = adaptive_sdev if (dist_mid <= 30.0 or len(core_inliers) >= 12) else min(adaptive_sdev, 0.22)
+      if pass_num == 1:
+        max_sdev = adaptive_sdev if (dist_mid <= 32.0 or len(core_inliers) >= 12) else min(adaptive_sdev, 0.23)
         return (
             dist_mid <= adaptive_rad
-            and dist_med <= adaptive_rad + 10.5
+            and dist_med <= adaptive_rad + 18.0
             and slope_dev <= max_sdev
-            and t["raw_score"] >= 0.11 * bundle_max_raw
+            and t["raw_score"] >= 0.10 * bundle_max_raw
         )
       else:
         return (
-            dist_mid <= adaptive_rad - 1.5
-            and dist_med <= adaptive_rad + 7.0
-            and slope_dev <= min(0.24, adaptive_sdev * 0.8)
-            and t["k_min_rel"] <= bundle_k_min + k_tol
-            and t["z_span_tracked"] >= (11.5 if K_sub <= 28 else 18.0)
-            and t["rmse"] <= 1.18
-            and t["raw_score"] >= 0.12 * bundle_max_raw
+            dist_mid <= adaptive_rad
+            and dist_med <= adaptive_rad + 15.0
+            and slope_dev <= min(0.25, adaptive_sdev * 0.85)
+            and t["z_span_tracked"] >= (11.0 if K_sub <= 28 else 16.5)
+            and t["rmse"] <= 1.25
+            and t["raw_score"] >= 0.10 * bundle_max_raw
         )
 
-    locked = [t for t in prelim1 if passes_bundle_filter(t, is_pass2=False)]
+    locked = [t for t in prelim1 if passes_bundle_filter(t, pass_num=1)]
 
-    # --- PASS 2: Tight-ROI Volume Tract Inpainting, Response Masking & Guided Re-Detection ---
+    # --- PASS 2 & PASS 3: Tight-ROI Volume Tract Inpainting, Guided Re-Detection & JEV Control-Point Association ---
     if len(locked) >= 2:
       corners_ras = np.array([
           [bbox_mid[0] - (adaptive_rad + 8.0), bbox_mid[1] - (adaptive_rad + 8.0), z_base_ras, 1.0],
@@ -3650,10 +3741,10 @@ class TrackingAlgorithmsMixin:
         rsym2 = rsym2_full[k0:K, p2_j0:p2_j1, p2_i0:p2_i1]
         J2, I2 = p2_j1 - p2_j0, p2_i1 - p2_i0
 
-        ri_m = max(1, int(round(1.65 / sp_i)))
-        rj_m = max(1, int(round(1.65 / sp_j)))
+        ri_m = max(1, int(round(1.60 / sp_i)))
+        rj_m = max(1, int(round(1.60 / sp_j)))
         yy_m, xx_m = np.mgrid[-rj_m:rj_m + 1, -ri_m:ri_m + 1]
-        disk_m = ((xx_m * sp_i) ** 2 + (yy_m * sp_j) ** 2) <= (1.65 ** 2)
+        disk_m = ((xx_m * sp_i) ** 2 + (yy_m * sp_j) ** 2) <= (1.60 ** 2)
         all_kr = np.arange(K_sub)
 
         for t in locked:
@@ -3667,17 +3758,154 @@ class TrackingAlgorithmsMixin:
               resp2[kr, j_lo:j_hi, i_lo:i_hi][d_sub] = 0.0
 
         trajs2 = track_pass(resp2, cs2, rsym2, p2_i0, p2_j0, cand_thresh, prior_slope_ij=med_slope_ij, pass_idx=2)
-        trajs2_valid = [t for t in trajs2 if passes_bundle_filter(t, is_pass2=True)]
+        trajs2_valid = [t for t in trajs2 if passes_bundle_filter(t, pass_num=2)]
         combined = dedup_trajs(trajs2_valid, existing_list=locked)
+
+        # --- PASS 3: JEV Auto-Manual Control-Point Association ---
+        for t in combined[len(locked):]:
+          ics = np.round(np.polyval(t["pi_abs"], all_kr)).astype(int) - p2_i0
+          jcs = np.round(np.polyval(t["pj_abs"], all_kr)).astype(int) - p2_j0
+          for kr, ic_s, jc_s in zip(all_kr, ics, jcs):
+            if 0 <= ic_s < I2 and 0 <= jc_s < J2:
+              j_lo, j_hi = max(0, jc_s - rj_m), min(J2, jc_s + rj_m + 1)
+              i_lo, i_hi = max(0, ic_s - ri_m), min(I2, ic_s + ri_m + 1)
+              d_sub = disk_m[(j_lo - (jc_s - rj_m)):(j_hi - (jc_s - rj_m)), (i_lo - (ic_s - ri_m)):(i_hi - (ic_s - ri_m))]
+              resp2[kr, j_lo:j_hi, i_lo:i_hi][d_sub] = 0.0
+
+        lm2 = resp2 == maximum_filter(resp2, size=(1, 2 * nms_px + 1, 2 * nms_px + 1))
+        ctl_cut = cand_thresh * 0.55
+        ctl_pts = []
+        ref_bases = np.array([t["base_xy"] for t in combined])
+        ref_slopes = np.array([t["slope"] for t in combined])
+        for kr in range(0, min(K_sub - 1, int(round(105.0 / sp_k)))):
+          jj, ii = np.where(lm2[kr] & (resp2[kr] >= ctl_cut))
+          if len(ii) == 0:
+            continue
+          order_r = np.argsort(-resp2[kr, jj, ii])[:45]
+          for idx_p in order_r:
+            i_a = float(ii[idx_p] + p2_i0)
+            j_a = float(jj[idx_p] + p2_j0)
+            r_v = float(resp2[kr, jj[idx_p], ii[idx_p]])
+            pt_ras = rot_mat @ np.array([i_a, j_a, float(kr + k0)]) + trans_vec
+            dz_b = float(pt_ras[2] - z_base_ras)
+            approx_b = pt_ras[:2] - med_slope * dz_b
+            d_ref = np.hypot(ref_bases[:, 0] - approx_b[0], ref_bases[:, 1] - approx_b[1])
+            w_ref = 1.0 / (d_ref + 4.0) ** 2
+            loc_slope = np.average(ref_slopes, axis=0, weights=w_ref)
+            x0_p = float(pt_ras[0] - loc_slope[0] * dz_b)
+            y0_p = float(pt_ras[1] - loc_slope[1] * dz_b)
+            if math.hypot(x0_p - bbox_mid[0], y0_p - bbox_mid[1]) <= adaptive_rad:
+              ctl_pts.append((i_a, j_a, kr, r_v, float(pt_ras[0]), float(pt_ras[1]), float(pt_ras[2]), x0_p, y0_p))
+
+        if len(ctl_pts) >= min_pts_slices:
+          ctl_arr = np.array(ctl_pts, dtype=np.float64)
+          used_ctl = np.zeros(len(ctl_pts), dtype=bool)
+          jev_trajs = []
+          for seed_i in np.argsort(-ctl_arr[:, 3]):
+            if used_ctl[seed_i]:
+              continue
+            sx0, sy0 = ctl_arr[seed_i, 7], ctl_arr[seed_i, 8]
+            dists_proj = np.hypot(ctl_arr[:, 7] - sx0, ctl_arr[:, 8] - sy0)
+            cand_idxs = np.where((~used_ctl) & (dists_proj <= 1.85))[0]
+            if len(cand_idxs) < min_pts_slices:
+              continue
+            by_k = {}
+            for ci in cand_idxs:
+              kr_c = int(ctl_arr[ci, 2])
+              if kr_c not in by_k or ctl_arr[ci, 3] > ctl_arr[by_k[kr_c], 3]:
+                by_k[kr_c] = ci
+            ks_j = sorted(by_k.keys())
+            if len(ks_j) < (min_pts_slices + 1):
+              continue
+            sel_idxs = [by_k[k] for k in ks_j]
+            arr_j = np.column_stack([ctl_arr[sel_idxs, 0], ctl_arr[sel_idxs, 1], ctl_arr[sel_idxs, 2] + k0, ctl_arr[sel_idxs, 3]])
+            ras_j = ctl_arr[sel_idxs, 4:7]
+            shaft_p75 = float(np.percentile(arr_j[:, 3], 75))
+            ras_j, arr_j, ks_j = trim_trajectory_inside_out(ras_j, arr_j, ks_j, shaft_p75)
+            if len(ks_j) < (min_pts_slices + 1):
+              continue
+            z_span_j = float(ras_j[-1, 2] - ras_j[0, 2])
+            if z_span_j < (13.0 if K_sub <= 28 else 20.0):
+              continue
+            if min(ks_j) > bundle_k_min + k_tol + 2 and z_span_j < 32.0:
+              continue
+            pkg_j = fit_and_package_traj(ras_j, arr_j, ks_j, pass_idx=3, cand_thresh=cand_thresh)
+            if pkg_j is not None and pkg_j["rmse"] <= 1.15 and passes_bundle_filter(pkg_j, pass_num=3):
+              jev_trajs.append(pkg_j)
+              for ci in cand_idxs:
+                used_ctl[ci] = True
+          combined = dedup_trajs(jev_trajs, existing_list=combined)
       else:
         combined = locked
     else:
       combined = locked
 
+    # --- HybridNeedleNet (14-Feature Residual SiLU MLP + JEV Orientation Field) Scoring ---
+    all_bases = np.array([t["base_xy"] for t in combined]) if combined else np.zeros((0, 2))
+    all_slopes = np.array([t["slope"] for t in combined]) if combined else np.zeros((0, 2))
+    all_scores = np.array([t["raw_score"] for t in combined]) if combined else np.zeros(0)
+
     filtered = []
-    for t in combined:
-      conf = min(99.9, 100.0 * ((t["raw_score"] / max(1e-6, bundle_max_raw)) ** 0.45))
+    for idx_t, t in enumerate(combined):
+      raw_rel = float(t["raw_score"] / max(1e-6, bundle_max_raw))
+      heur_conf = min(99.9, 100.0 * (raw_rel ** 0.45))
+      if heur_conf < 35.0:
+        continue
+
+      log_raw_rel = math.log1p(raw_rel * 5.0)
+      mean_r_rel = float(t["mean_r"] / max(1e-6, cand_thresh))
+      p75_r_rel = float(t["p75_r"] / max(1e-6, cand_thresh))
+      high_frac = float(t["high_frac"])
+      rmse_norm = float(t["rmse"] / 1.45)
+      z_span_norm = float(t["z_span_tracked"] / 60.0)
+      len_norm = float(t["length_mm"] / 80.0)
+      k_min_mm_norm = float(max(0, t["k_min_rel"] - bundle_k_min) * sp_k / 30.0)
+      k_span = max(1, t["k_max_rel"] - t["k_min_rel"] + 1)
+      continuity = float(t["n_slices"] / k_span)
+      dist_mid = float(np.hypot(t["base_xy"][0] - bbox_mid[0], t["base_xy"][1] - bbox_mid[1]))
+      dist_med = float(np.hypot(t["base_xy"][0] - med_center[0], t["base_xy"][1] - med_center[1]))
+      slope_dev = float(np.hypot(t["slope"][0] - med_slope[0], t["slope"][1] - med_slope[1]))
+      dist_mid_norm = dist_mid / max(1.0, adaptive_rad)
+      dist_med_norm = dist_med / max(1.0, adaptive_rad + 15.0)
+      slope_dev_norm = slope_dev / max(0.05, adaptive_sdev)
+
+      if len(combined) >= 2:
+        d_other = np.hypot(all_bases[:, 0] - t["base_xy"][0], all_bases[:, 1] - t["base_xy"][1])
+        d_other[idx_t] = 1e9
+        w_jev = np.minimum(all_scores, bundle_max_raw) / ((d_other + 5.0) ** 2)
+        w_jev[idx_t] = 0.0
+        if float(np.sum(w_jev)) > 1e-9:
+          loc_sl = np.average(all_slopes, axis=0, weights=w_jev)
+          jev_sdev = float(np.hypot(t["slope"][0] - loc_sl[0], t["slope"][1] - loc_sl[1]))
+        else:
+          jev_sdev = slope_dev
+      else:
+        jev_sdev = slope_dev
+
+      jev_sdev_norm = min(2.0, jev_sdev / 0.25)
+      if t["pass"] == 3:
+        if not (t["z_span_tracked"] >= 45.0 and t["rmse"] <= 0.75 and jev_sdev_norm <= 0.20 and heur_conf >= 47.0):
+          continue
+
+      feat_14 = np.array([
+          log_raw_rel,
+          min(3.0, raw_rel),
+          min(10.0, mean_r_rel) / 5.0,
+          min(12.0, p75_r_rel) / 5.0,
+          high_frac,
+          rmse_norm,
+          min(2.5, z_span_norm),
+          min(2.5, len_norm),
+          min(2.0, k_min_mm_norm),
+          continuity,
+          dist_mid_norm,
+          dist_med_norm,
+          slope_dev_norm,
+          jev_sdev_norm,
+      ], dtype=np.float64)
+      nn_prob, conf = score_trajectory_hybrid_nn(feat_14)
       if conf >= float(minConfidence):
+        t["nn_prob"] = nn_prob
         t["confidence"] = conf
         filtered.append(t)
 
@@ -3703,5 +3931,6 @@ class TrackingAlgorithmsMixin:
     elapsed = time.perf_counter() - t0
     p1_cnt = sum(1 for x in filtered if x.get("pass", 1) == 1)
     p2_cnt = sum(1 for x in filtered if x.get("pass", 1) == 2)
-    print(f"[NeedleFinder] Auto-detected {len(filtered)} needles (P1={p1_cnt}, P2={p2_cnt}) in {elapsed:.2f}s (k_lim={k_lim}, minConf={minConfidence:.1f}%)")
+    p3_cnt = sum(1 for x in filtered if x.get("pass", 1) == 3)
+    print(f"[NeedleFinder] Auto-detected {len(filtered)} needles (P1={p1_cnt}, P2={p2_cnt}, JEV={p3_cnt}) in {elapsed:.2f}s (k_lim={k_lim}, minConf={minConfidence:.1f}%)")
     return filtered
