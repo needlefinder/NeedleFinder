@@ -132,6 +132,12 @@ def _find_or_build_rust_lib():
     crate_dir = os.path.abspath(
         os.path.join(os.path.dirname(__file__), "..", "NeedleFinderRust")
     )
+    if not os.path.isdir(crate_dir):
+        alt_crate_dir = os.path.abspath(
+            os.path.join(os.path.dirname(__file__), "..", "Resources", "NeedleFinderRust")
+        )
+        if os.path.isdir(alt_crate_dir):
+            crate_dir = alt_crate_dir
     lib_name = _shared_lib_filename()
     release_dir = os.path.join(crate_dir, "target", "release")
     lib_path = os.path.join(release_dir, lib_name)
