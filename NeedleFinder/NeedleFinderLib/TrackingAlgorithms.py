@@ -411,6 +411,7 @@ class TrackingAlgorithmsMixin:
     if not found or bForceFallback:
       print("/!\\ z-limit marker in scene required! --> fallback")
       bases, names = self.returnBasesFromNeedleModels()
+      auto_attr = {}
       if len(bases) > 0:
         bases2 = np.array(bases)[:, 2]
         i = bases2.argmin()
@@ -418,18 +419,42 @@ class TrackingAlgorithmsMixin:
         asl = [coord[0], coord[1], asl[2]]
       else:
         asl = [0.0, 0.0, 0.0]
+        try:
+          vnode = (
+              slicer.app.layoutManager()
+              .sliceWidget("Red")
+              .sliceLogic()
+              .GetBackgroundLayer()
+              .GetVolumeNode()
+          )
+          if vnode is None:
+            vnode = slicer.mrmlScene.GetFirstNodeByClass("vtkMRMLScalarVolumeNode")
+          if vnode is not None and vnode.GetImageData() is not None:
+            vol_buf, _ = get_volume_f64_buffer(vnode.GetImageData())
+            sp_z = float(vnode.GetSpacing()[2])
+            k_est = self.estimateAxialLimitSlice(vol_buf, sp_z)
+            asl = list(self.ijk2ras([0.0, 0.0, float(k_est)], vnode))
+            auto_attr = {"AutoEstimated": "1"}
+        except Exception:
+          asl = [0.0, 0.0, 0.0]
       if not node:
         self.fiducialNode = create_fiducial_node(
             name='template slice position',
             ras=asl,
             color=(0.0, 1.0, 0.0),
             visibility=True,
+            attributes=auto_attr if auto_attr else None,
         )
       else:
         set_fiducial_coords(node, asl)
     if asl[2] == -float("inf"):
       asl = [0.0, 0.0, 0.0]
-    return int(round(self.ras2ijk(asl)[2])), asl[2]
+    k_out = int(round(self.ras2ijk(asl)[2]))
+    widget = getattr(slicer.modules, "NeedleFinderWidget", None)
+    if widget is not None:
+      widget.axialSegmentationLimit = k_out
+      widget.axialSegmentationLimitRAS = float(asl[2])
+    return k_out, asl[2]
 
   def interp3(self, V, x, y, z, interpswitch):
     """Trilinear or nearest-neighbor interpolation in 3D volume V."""
@@ -2932,18 +2957,27 @@ class TrackingAlgorithmsMixin:
     if K < 8:
       return 0
     c_roi = vol_arr[:, int(0.30 * J):int(0.70 * J), int(0.30 * I):int(0.70 * I)]
-    p50 = gaussian_filter1d(np.percentile(c_roi, 50, axis=(1, 2)), sigma=max(1.0, 2.5 / max(0.5, float(sp_k))))
-    k_lo, k_hi = int(0.32 * K), max(int(0.32 * K) + 2, int(0.85 * K))
-    k_peak = k_lo + int(np.argmax(p50[k_lo:k_hi]))
-    s_lo = max(int(0.25 * K), k_peak - int(round(45.0 / max(0.5, float(sp_k)))))
+    p50 = gaussian_filter1d(np.percentile(c_roi, 50, axis=(1, 2)).astype(np.float64), sigma=max(1.0, 2.5 / max(0.5, float(sp_k))))
+    if K <= 42:
+      min_bot = float(np.min(p50[:max(2, int(0.25 * K))]))
+      t_ref = float(np.percentile(p50[int(0.30 * K):max(int(0.30 * K) + 2, int(0.85 * K))], 65))
+      if min_bot > 0.38 * t_ref:
+        return max(0, int(round(3.0 / max(1.0, float(sp_k)))))
+      k_lo, k_hi = int(0.18 * K), max(int(0.18 * K) + 2, int(0.70 * K))
+      k_peak = k_lo + int(np.argmax(p50[k_lo:k_hi]))
+      s_lo = max(1, k_peak - int(round(45.0 / max(0.5, float(sp_k)))))
+    else:
+      k_lo, k_hi = int(0.25 * K), max(int(0.25 * K) + 2, int(0.62 * K))
+      k_peak = k_lo + int(np.argmax(p50[k_lo:k_hi]))
+      s_lo = max(int(0.10 * K), k_peak - int(round(52.0 / max(0.5, float(sp_k)))))
     grad = np.gradient(p50)
     if k_peak <= s_lo:
-      return max(1, int(0.35 * K))
+      return max(0, int(0.25 * K))
     k_steep = s_lo + int(np.argmax(grad[s_lo:k_peak]))
     k_est = k_steep
-    while k_est > s_lo and grad[k_est] > 0.20 * grad[k_steep]:
+    while k_est > s_lo and grad[k_est] > 0.22 * grad[k_steep]:
       k_est -= 1
-    return int(np.clip(k_est, 1, K - 5))
+    return int(np.clip(k_est, 0, K - 5))
 
   def _compute_3d_sym_response_numpy(
       self,
@@ -3065,25 +3099,109 @@ class TrackingAlgorithmsMixin:
     sp_i, sp_j, sp_k = [float(x) for x in volumeNode.GetSpacing()]
     K, J, I = vol_raw.shape
 
+    vtk_mat = vtk.vtkMatrix4x4()
+    volumeNode.GetIJKToRASMatrix(vtk_mat)
+    ijk_to_ras_mat = np.array(
+        [[vtk_mat.GetElement(r, c) for c in range(4)] for r in range(4)],
+        dtype=np.float64,
+    )
+    rot_mat = ijk_to_ras_mat[:3, :3]
+    trans_vec = ijk_to_ras_mat[:3, 3]
+    ras_to_ijk = np.linalg.inv(ijk_to_ras_mat)
+    vol_id = volumeNode.GetID() if hasattr(volumeNode, "GetID") else None
+
     # Determine axial base limit slice k_lim
+    k_lim = None
+    limit_source = "auto"
     if kLim is not None:
       k_lim = int(round(float(kLim)))
-    elif widget is not None and widget.axialSegmentationLimit is not None and widget.axialSegmentationLimit > 0:
-      k_lim = int(round(float(widget.axialSegmentationLimit)))
+      limit_source = "explicit"
     else:
-      found_marker = self.findAxialSegmentationLimitFromMarker(bForceFallback=False)
-      if found_marker and widget is not None and widget.axialSegmentationLimit is not None and widget.axialSegmentationLimit > 0:
-        k_lim = int(round(float(widget.axialSegmentationLimit)))
-      else:
+      # 1. Check if a 'template slice position*' marker exists in the MRML scene
+      try:
+        marker_nodes = slicer.util.getNodes('template slice position*') if hasattr(slicer, "util") else {}
+      except Exception:
+        marker_nodes = {}
+      best_marker_z = -float("inf")
+      marker_found = False
+      for m_node in list(marker_nodes.values()):
+        is_auto = (m_node.GetAttribute("AutoEstimated") == "1") if hasattr(m_node, "GetAttribute") else False
+        m_vol_id = m_node.GetAttribute("VolumeNodeID") if hasattr(m_node, "GetAttribute") else None
+        if is_auto and m_vol_id != vol_id:
+          continue
+        c_ras = [0.0, 0.0, 0.0]
+        get_fiducial_coords(m_node, c_ras)
+        if c_ras[2] > best_marker_z:
+          best_marker_z = float(c_ras[2])
+          marker_found = True
+          limit_source = "auto" if is_auto else "marker"
+      if marker_found:
+        k_cand = int(round(float((ras_to_ijk @ np.array([0.0, 0.0, best_marker_z, 1.0]))[2])))
+        if 0 <= k_cand < K:
+          k_lim = k_cand
+
+      # 2. Check widget.axialSegmentationLimit if explicitly set for this volume
+      if k_lim is None and widget is not None and widget.axialSegmentationLimit is not None:
+        auto_vid = getattr(widget, "_autoLimitVolumeID", None)
+        if auto_vid is None or auto_vid == vol_id:
+          k_cand = int(round(float(widget.axialSegmentationLimit)))
+          if 0 <= k_cand < K:
+            k_lim = k_cand
+            limit_source = "widget"
+
+      # 3. Check scene validation models via returnBasesFromNeedleModels if available
+      if k_lim is None and hasattr(self, "returnBasesFromNeedleModels"):
+        try:
+          bases, _ = self.returnBasesFromNeedleModels()
+          if len(bases) > 0:
+            k_cand = int(round(float(np.min(np.array(bases)[:, 2]))))
+            if 0 <= k_cand < K:
+              k_lim = k_cand
+              limit_source = "models"
+        except Exception:
+          pass
+
+      # 4. Fallback to automatic intensity-based template slice estimation
+      if k_lim is None:
         k_lim = self.estimateAxialLimitSlice(vol_raw, sp_k)
-        if widget is not None:
-          widget.axialSegmentationLimit = k_lim
-          if widget.templateSliceButton is not None:
-            widget.templateSliceButton.text = (
-                f"1. Select Current Axial Slice as Seg. Limit (auto: {k_lim})"
-            )
+        limit_source = "auto"
 
     k_lim = int(np.clip(k_lim, 0, max(0, K - 5)))
+    z_base_ras = float((rot_mat @ np.array([0.0, 0.0, float(k_lim)]) + trans_vec)[2])
+    fov_center_ras = (rot_mat @ np.array([0.5 * I, 0.5 * J, float(k_lim)]) + trans_vec)[:2]
+
+    if widget is not None:
+      widget.axialSegmentationLimit = k_lim
+      widget.axialSegmentationLimitRAS = z_base_ras
+      if limit_source == "auto":
+        widget._autoLimitVolumeID = vol_id
+      else:
+        widget._autoLimitVolumeID = None
+      if getattr(widget, "templateSliceButton", None) is not None:
+        tag = "auto" if limit_source == "auto" else "current"
+        widget.templateSliceButton.text = (
+            f"1. Select Current Axial Slice as Seg. Limit ({tag}: {z_base_ras:.1f} mm / slice {k_lim})"
+        )
+      if not script and hasattr(slicer, "mrmlScene") and slicer.mrmlScene is not None:
+        try:
+          existing_markers = slicer.util.getNodes('template slice position*') if hasattr(slicer, "util") else {}
+          if not existing_markers:
+            self.fiducialNode = create_fiducial_node(
+                name='template slice position',
+                ras=[float(fov_center_ras[0]), float(fov_center_ras[1]), float(z_base_ras)],
+                color=(0.0, 1.0, 0.0),
+                visibility=True,
+                attributes={"AutoEstimated": "1", "VolumeNodeID": str(vol_id or "")} if limit_source == "auto" else None,
+            )
+          elif limit_source == "auto":
+            for m_node in list(existing_markers.values()):
+              set_fiducial_coords(m_node, [float(fov_center_ras[0]), float(fov_center_ras[1]), float(z_base_ras)])
+              if hasattr(m_node, "SetAttribute"):
+                m_node.SetAttribute("AutoEstimated", "1")
+                m_node.SetAttribute("VolumeNodeID", str(vol_id or ""))
+        except Exception:
+          pass
+
     k0 = max(0, k_lim - 1)
     i0, i1 = int(0.18 * I), int(0.82 * I)
     j0, j1 = int(0.18 * J), int(0.82 * J)
@@ -3101,18 +3219,6 @@ class TrackingAlgorithmsMixin:
     else:
       vol_work = vol_raw.copy()
       body_thresh = float(np.percentile(pos_raw, 30)) if len(pos_raw) else 25.0
-
-    vtk_mat = vtk.vtkMatrix4x4()
-    volumeNode.GetIJKToRASMatrix(vtk_mat)
-    ijk_to_ras_mat = np.array(
-        [[vtk_mat.GetElement(r, c) for c in range(4)] for r in range(4)],
-        dtype=np.float64,
-    )
-    rot_mat = ijk_to_ras_mat[:3, :3]
-    trans_vec = ijk_to_ras_mat[:3, 3]
-    ras_to_ijk = np.linalg.inv(ijk_to_ras_mat)
-    z_base_ras = float((rot_mat @ np.array([0.0, 0.0, float(k_lim)]) + trans_vec)[2])
-    fov_center_ras = (rot_mat @ np.array([0.5 * I, 0.5 * J, float(k_lim)]) + trans_vec)[:2]
 
     nms_px = max(2, int(round(1.30 / sp_i)))
     visit_r_px = max(1, int(round(1.15 / sp_i)))
@@ -3297,14 +3403,23 @@ class TrackingAlgorithmsMixin:
         pi_abs = np.polyfit(k_rels, arr_pts[:, 0], 1)
         pj_abs = np.polyfit(k_rels, arr_pts[:, 1], 1)
 
-        if z_vals[0] > z_base_ras + sp_k:
-          bx = fit_x[0] + slope_x * (z_base_ras - z_vals[0])
-          by = fit_y[0] + slope_y * (z_base_ras - z_vals[0])
-          base_xy = np.array([bx, by])
-          smooth_ras = np.vstack([[bx, by, z_base_ras], np.column_stack([fit_x, fit_y, z_vals])])
+        bx = float(np.polyval(px, z_base_ras))
+        by = float(np.polyval(py, z_base_ras))
+        base_xy = np.array([bx, by])
+        if z_vals[-1] >= z_vals[0]:
+          above_mask = z_vals > z_base_ras + 0.15 * sp_k
         else:
-          base_xy = np.array([fit_x[0], fit_y[0]])
-          smooth_ras = np.column_stack([fit_x, fit_y, z_vals])
+          above_mask = z_vals < z_base_ras - 0.15 * sp_k
+        if np.any(above_mask):
+          smooth_ras = np.vstack([
+              [bx, by, z_base_ras],
+              np.column_stack([fit_x[above_mask], fit_y[above_mask], z_vals[above_mask]]),
+          ])
+        else:
+          smooth_ras = np.vstack([
+              [bx, by, z_base_ras],
+              [fit_x[-1], fit_y[-1], z_vals[-1]],
+          ])
 
         raw_score = mean_r * (high_frac ** 1.5) * np.sqrt(z_span_mm) / (1.0 + 0.5 * rmse)
         trajs_out.append({
