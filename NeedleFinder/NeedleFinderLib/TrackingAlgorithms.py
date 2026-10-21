@@ -3210,727 +3210,978 @@ class TrackingAlgorithmsMixin:
       i0, i1 = 0, I
       j0, j1 = 0, J
 
-    roi_raw = vol_raw[k0:K, j0:j1, i0:i1]
-    pos_raw = roi_raw[roi_raw > 5.0]
-    med_tissue = float(np.percentile(pos_raw, 55)) if len(pos_raw) else 85.0
-    if med_tissue > 450.0:
-      scale_factor = 160.0 / med_tissue
-      vol_work = np.ascontiguousarray(vol_raw * scale_factor, dtype=np.float64)
-      body_thresh = float(np.percentile(pos_raw * scale_factor, 30))
-    else:
-      vol_work = vol_raw.copy()
-      body_thresh = float(np.percentile(pos_raw, 30)) if len(pos_raw) else 25.0
+    # Modal progress dialog for interactive 3D Slicer sessions
+    prog_dialog = None
+    n_slices_est = max(1, K - k0)
+    vox_scale = float(n_slices_est * (i1 - i0) * (j1 - j0)) / float(max(1, 35 * 220 * 180))
+    est_total_sec = max(1.2, min(14.0, 0.8 + 1.35 * vox_scale))
+    if not script and hasattr(slicer, "app") and slicer.app is not None:
+      try:
+        parent_win = slicer.util.mainWindow() if hasattr(slicer, "util") else None
+        prog_dialog = qt.QProgressDialog(
+            f"Stage 1/6: Initializing volume & 3D symmetry filter (slices {k0}..{K - 1})...\nEstimated wait: ~{est_total_sec:.1f}s",
+            None,
+            0,
+            100,
+            parent_win,
+        )
+        prog_dialog.setWindowTitle("NeedleFinder — Auto-Detecting Needles")
+        prog_dialog.setWindowModality(qt.Qt.WindowModal)
+        prog_dialog.setMinimumDuration(0)
+        prog_dialog.setMinimumWidth(440)
+        prog_dialog.setAutoClose(False)
+        prog_dialog.setAutoReset(False)
+        prog_dialog.setValue(4)
+        prog_dialog.show()
+        slicer.app.processEvents()
+      except Exception:
+        prog_dialog = None
 
-    nms_px = max(2, int(round(1.25 / sp_i)))
-    visit_r_px = max(1, int(round(1.10 / sp_i)))
-    search_r_px = max(2, int(round(2.05 / sp_i)))
-    yy_grid, xx_grid = np.mgrid[-search_r_px:search_r_px + 1, -search_r_px:search_r_px + 1]
-    wy, wx = np.mgrid[-1:2, -1:2]
+    def update_progress(pct, stage_msg):
+      if prog_dialog is not None:
+        try:
+          elapsed_now = time.perf_counter() - t0
+          frac = max(0.06, min(0.99, float(pct) / 100.0))
+          rem_est = max(0.1, max(est_total_sec - elapsed_now, elapsed_now * (1.0 - frac) / frac))
+          prog_dialog.setLabelText(
+              f"{stage_msg}\nElapsed: {elapsed_now:.1f}s  |  Est. remaining: ~{rem_est:.1f}s"
+          )
+          prog_dialog.setValue(int(np.clip(pct, 0, 100)))
+          slicer.app.processEvents()
+        except Exception:
+          pass
 
-    max_gap_slices = 3 if sp_k < 2.2 else 2
-    min_pts_slices = 5 if (sp_k < 2.6 and (K - k0) > 28) else 4
+    def close_progress():
+      if prog_dialog is not None:
+        try:
+          prog_dialog.setValue(100)
+          prog_dialog.close()
+          prog_dialog.deleteLater()
+          slicer.app.processEvents()
+        except Exception:
+          pass
 
-    def fast_line_fit(z, x, y):
-      zm = float(np.mean(z))
-      xm = float(np.mean(x))
-      ym = float(np.mean(y))
-      dz = z - zm
-      denom = float(np.dot(dz, dz))
-      if denom < 1e-6:
-        return 0.0, xm, 0.0, ym
-      sx = float(np.dot(dz, x - xm)) / denom
-      sy = float(np.dot(dz, y - ym)) / denom
-      return sx, xm - sx * zm, sy, ym - sy * zm
+    try:
+      roi_raw = vol_raw[k0:K, j0:j1, i0:i1]
+      pos_raw = roi_raw[roi_raw > 5.0]
+      med_tissue = float(np.percentile(pos_raw, 55)) if len(pos_raw) else 85.0
+      if med_tissue > 450.0:
+        scale_factor = 160.0 / med_tissue
+        vol_work = np.ascontiguousarray(vol_raw * scale_factor, dtype=np.float64)
+        body_thresh = float(np.percentile(pos_raw * scale_factor, 30))
+      else:
+        vol_work = vol_raw.copy()
+        body_thresh = float(np.percentile(pos_raw, 30)) if len(pos_raw) else 25.0
 
-    def trim_trajectory_inside_out(ras_pts, arr_pts, ks, shaft_p75):
-      n = len(ks)
-      if n < 6:
-        return ras_pts, arr_pts, ks
-      z_all = ras_pts[:, 2]
-      x_all = ras_pts[:, 0]
-      y_all = ras_pts[:, 1]
-      if sp_k >= 2.8:
-        deg0 = 2 if n >= 7 else 1
-        px0 = np.polyfit(z_all, x_all, deg0)
-        py0 = np.polyfit(z_all, y_all, deg0)
-        res0 = np.hypot(x_all - np.polyval(px0, z_all), y_all - np.polyval(py0, z_all))
-        if float(np.sqrt(np.mean(res0 ** 2))) <= 1.30:
+      nms_px = max(2, int(round(1.25 / sp_i)))
+      visit_r_px = max(1, int(round(1.10 / sp_i)))
+      search_r_px = max(2, int(round(2.05 / sp_i)))
+      yy_grid, xx_grid = np.mgrid[-search_r_px:search_r_px + 1, -search_r_px:search_r_px + 1]
+      wy, wx = np.mgrid[-1:2, -1:2]
+
+      max_gap_slices = 3 if sp_k < 2.2 else 2
+      min_pts_slices = 5 if (sp_k < 2.6 and (K - k0) > 28) else 4
+
+      # Multi-radius 4-axis offsets for rejecting 1D planar trenches (e.g. intergluteal cleft)
+      r1_i = max(1, int(round(2.2 / sp_i)))
+      r1_j = max(1, int(round(2.2 / sp_j)))
+      r2_i = max(2, int(round(4.2 / sp_i)))
+      r2_j = max(2, int(round(4.2 / sp_j)))
+      d1_i = max(1, int(round(1.6 / sp_i)))
+      d1_j = max(1, int(round(1.6 / sp_j)))
+      d2_i = max(2, int(round(3.0 / sp_i)))
+      d2_j = max(2, int(round(3.0 / sp_j)))
+
+      def is_1d_trench_segment(sub_arr):
+        cx_l, cy_l = [], []
+        for row in sub_arr:
+          ia, ja, ka = int(round(row[0])), int(round(row[1])), int(round(row[2]))
+          if not (r2_i <= ia < I - r2_i and r2_j <= ja < J - r2_j and 0 <= ka < K):
+            continue
+          if ja < int(0.58 * J):
+            return False
+          c = float(vol_work[ka, ja, ia])
+          # In a vertical posterior cleft (intergluteal crease), X is bright on both sides while Y is dark on both sides
+          cx1 = 0.5 * (float(vol_work[ka, ja, ia - r1_i]) + float(vol_work[ka, ja, ia + r1_i])) - c
+          cx2 = 0.5 * (float(vol_work[ka, ja, ia - r2_i]) + float(vol_work[ka, ja, ia + r2_i])) - c
+          cy_max1 = max(float(vol_work[ka, ja - r1_j, ia]), float(vol_work[ka, ja + r1_j, ia])) - c
+          cy_max2 = max(float(vol_work[ka, ja - r2_j, ia]), float(vol_work[ka, ja + r2_j, ia])) - c
+          cx_l.append(max(cx1, cx2))
+          cy_l.append(0.5 * (cy_max1 + cy_max2))
+        if len(cx_l) < 3:
+          return False
+        med_x = float(np.median(cx_l))
+        med_y = float(np.median(cy_l))
+        return med_x > 8.0 and med_y < 0.18 * med_x
+
+      def is_1d_trench_artifact(arr_pts, k_min_rel):
+        if (K - k0) * sp_k <= 185.0 or k_min_rel * sp_k > 52.0:
+          return False
+        if is_1d_trench_segment(arr_pts):
+          return True
+        n_half = max(3, len(arr_pts) // 2)
+        if len(arr_pts) >= 6 and is_1d_trench_segment(arr_pts[:n_half]):
+          return True
+        return False
+
+      def fast_line_fit(z, x, y):
+        zm = float(np.mean(z))
+        xm = float(np.mean(x))
+        ym = float(np.mean(y))
+        dz = z - zm
+        denom = float(np.dot(dz, dz))
+        if denom < 1e-6:
+          return 0.0, xm, 0.0, ym
+        sx = float(np.dot(dz, x - xm)) / denom
+        sy = float(np.dot(dz, y - ym)) / denom
+        return sx, xm - sx * zm, sy, ym - sy * zm
+
+      def trim_trajectory_inside_out(ras_pts, arr_pts, ks, shaft_p75):
+        n = len(ks)
+        if n < 6:
+          return ras_pts, arr_pts, ks
+        z_all = ras_pts[:, 2]
+        x_all = ras_pts[:, 0]
+        y_all = ras_pts[:, 1]
+        if sp_k >= 2.8:
+          deg0 = 2 if n >= 7 else 1
+          px0 = np.polyfit(z_all, x_all, deg0)
+          py0 = np.polyfit(z_all, y_all, deg0)
+          res0 = np.hypot(x_all - np.polyval(px0, z_all), y_all - np.polyval(py0, z_all))
+          if float(np.sqrt(np.mean(res0 ** 2))) <= 1.30:
+            return ras_pts, arr_pts, ks
+
+        win_n = min(n, max(5, min(16, int(round(0.55 * n)))))
+        best_rmse = 1e9
+        best_i0 = 0
+        best_fit = None
+        max_start = max(1, int(round(0.50 * (n - win_n))) + 1)
+        for s_i in range(max_start):
+          e_i = s_i + win_n
+          sub_z = z_all[s_i:e_i]
+          if abs(float(sub_z[-1] - sub_z[0])) < 3.5:
+            continue
+          sx, bx, sy, by = fast_line_fit(sub_z, x_all[s_i:e_i], y_all[s_i:e_i])
+          dx = x_all[s_i:e_i] - (sx * sub_z + bx)
+          dy = y_all[s_i:e_i] - (sy * sub_z + by)
+          err = float(np.sqrt(np.mean(dx * dx + dy * dy)))
+          if err < best_rmse:
+            best_rmse = err
+            best_i0 = s_i
+            best_fit = (sx, bx, sy, by)
+        if best_fit is None:
           return ras_pts, arr_pts, ks
 
-      win_n = min(n, max(5, min(16, int(round(0.55 * n)))))
-      best_rmse = 1e9
-      best_i0 = 0
-      best_fit = None
-      max_start = max(1, int(round(0.50 * (n - win_n))) + 1)
-      for s_i in range(max_start):
-        e_i = s_i + win_n
-        sub_z = z_all[s_i:e_i]
-        if abs(float(sub_z[-1] - sub_z[0])) < 3.5:
-          continue
-        sx, bx, sy, by = fast_line_fit(sub_z, x_all[s_i:e_i], y_all[s_i:e_i])
-        dx = x_all[s_i:e_i] - (sx * sub_z + bx)
-        dy = y_all[s_i:e_i] - (sy * sub_z + by)
-        err = float(np.sqrt(np.mean(dx * dx + dy * dy)))
-        if err < best_rmse:
-          best_rmse = err
-          best_i0 = s_i
-          best_fit = (sx, bx, sy, by)
-      if best_fit is None:
-        return ras_pts, arr_pts, ks
-
-      gsx, gbx, gsy, gby = best_fit
-      end_idx = n
-      bad_streak = 0
-      for idx in range(best_i0 + win_n, n):
-        r0 = max(best_i0, idx - 14)
-        lsx, lbx, lsy, lby = fast_line_fit(z_all[r0:idx], x_all[r0:idx], y_all[r0:idx])
-        zi, xi, yi = float(z_all[idx]), float(x_all[idx]), float(y_all[idx])
-        dev_loc = math.hypot(xi - (lsx * zi + lbx), yi - (lsy * zi + lby))
-        dev_glob = math.hypot(xi - (gsx * zi + gbx), yi - (gsy * zi + gby))
-        if dev_loc > 1.85 or dev_glob > 3.25 or (dev_loc > 1.35 and arr_pts[idx, 3] < 0.35 * shaft_p75):
-          bad_streak += 1
-          if bad_streak >= 2 or dev_loc > 2.35 or idx == n - 1:
-            end_idx = idx - bad_streak + 1
-            break
-        else:
-          bad_streak = 0
-
-      start_idx = 0
-      bad_streak = 0
-      for idx in range(best_i0 - 1, -1, -1):
-        r1 = min(end_idx, idx + 15)
-        lsx, lbx, lsy, lby = fast_line_fit(z_all[idx + 1:r1], x_all[idx + 1:r1], y_all[idx + 1:r1])
-        zi, xi, yi = float(z_all[idx]), float(x_all[idx]), float(y_all[idx])
-        dev_loc = math.hypot(xi - (lsx * zi + lbx), yi - (lsy * zi + lby))
-        dev_glob = math.hypot(xi - (gsx * zi + gbx), yi - (gsy * zi + gby))
-        if dev_loc > 1.95 or dev_glob > 3.25 or (dev_loc > 1.45 and arr_pts[idx, 3] < 0.30 * shaft_p75):
-          bad_streak += 1
-          if bad_streak >= 2 or dev_loc > 2.45 or idx == 0:
-            start_idx = idx + bad_streak
-            break
-        else:
-          bad_streak = 0
-
-      return ras_pts[start_idx:end_idx], arr_pts[start_idx:end_idx], ks[start_idx:end_idx]
-
-    def fit_and_package_traj(ras_pts, arr_pts, ks, pass_idx, cand_thresh):
-      z_vals = ras_pts[:, 2]
-      z_span_mm = float(z_vals[-1] - z_vals[0])
-      deg = 2 if len(z_vals) >= 7 else 1
-      sx1, bx1, sy1, by1 = fast_line_fit(z_vals, ras_pts[:, 0], ras_pts[:, 1])
-      res_l = np.hypot(ras_pts[:, 0] - (sx1 * z_vals + bx1), ras_pts[:, 1] - (sy1 * z_vals + by1))
-      inliers = res_l <= max(1.65, float(np.percentile(res_l, 85)))
-      if np.sum(inliers) >= (deg + 2):
-        px = np.polyfit(z_vals[inliers], ras_pts[inliers, 0], deg)
-        py = np.polyfit(z_vals[inliers], ras_pts[inliers, 1], deg)
-      else:
-        px = np.array([sx1, bx1])
-        py = np.array([sy1, by1])
-      fit_x = np.polyval(px, z_vals)
-      fit_y = np.polyval(py, z_vals)
-      res_d = np.hypot(ras_pts[:, 0] - fit_x, ras_pts[:, 1] - fit_y)
-      rmse = float(np.percentile(res_d, 85))
-      if rmse > 1.45:
-        return None
-
-      dz = z_vals[-1] - z_vals[0]
-      if abs(dz) < 1e-3:
-        return None
-      slope_x = (fit_x[-1] - fit_x[0]) / dz
-      slope_y = (fit_y[-1] - fit_y[0]) / dz
-      if math.hypot(slope_x, slope_y) > 0.72:
-        return None
-
-      k_rels = arr_pts[:, 2] - k0
-      si_a, bi_a, sj_a, bj_a = fast_line_fit(k_rels, arr_pts[:, 0], arr_pts[:, 1])
-      pi_abs = np.array([si_a, bi_a])
-      pj_abs = np.array([sj_a, bj_a])
-
-      if sp_k >= 2.8 and z_vals[0] > z_base_ras + 2.0 * sp_k:
-        bx = float(fit_x[0] + slope_x * (z_base_ras - z_vals[0]))
-        by = float(fit_y[0] + slope_y * (z_base_ras - z_vals[0]))
-      else:
-        bx = float(np.polyval(px, z_base_ras))
-        by = float(np.polyval(py, z_base_ras))
-      base_xy = np.array([bx, by])
-      if z_vals[-1] >= z_vals[0]:
-        above_mask = z_vals > z_base_ras + 0.15 * sp_k
-      else:
-        above_mask = z_vals < z_base_ras - 0.15 * sp_k
-      if np.any(above_mask):
-        smooth_ras = np.vstack([
-            [bx, by, z_base_ras],
-            np.column_stack([fit_x[above_mask], fit_y[above_mask], z_vals[above_mask]]),
-        ])
-      else:
-        smooth_ras = np.vstack([
-            [bx, by, z_base_ras],
-            [fit_x[-1], fit_y[-1], z_vals[-1]],
-        ])
-
-      mean_r = float(np.mean(arr_pts[:, 3]))
-      p75_r = float(np.percentile(arr_pts[:, 3], 75))
-      max_r = float(np.max(arr_pts[:, 3]))
-      high_frac = float(np.mean(arr_pts[:, 3] >= cand_thresh * 0.38))
-      raw_score = mean_r * (high_frac ** 1.5) * math.sqrt(max(1.0, z_span_mm)) / (1.0 + 0.5 * rmse)
-      curv = math.hypot(float(px[0]), float(py[0])) if len(px) == 3 else 0.0
-      return {
-          "ras": smooth_ras,
-          "ks": np.array(ks) + k0,
-          "n_slices": len(ks),
-          "k_min_rel": int(min(ks)),
-          "k_max_rel": int(max(ks)),
-          "pi_abs": pi_abs,
-          "pj_abs": pj_abs,
-          "slope_ij": np.array([si_a, sj_a]),
-          "base_xy": base_xy,
-          "tip_ras": smooth_ras[-1].copy(),
-          "slope": np.array([slope_x, slope_y]),
-          "mean_r": mean_r,
-          "p75_r": p75_r,
-          "max_r": max_r,
-          "high_frac": high_frac,
-          "rmse": rmse,
-          "curv": curv,
-          "length_mm": float(smooth_ras[-1, 2] - smooth_ras[0, 2]),
-          "z_span_tracked": z_span_mm,
-          "raw_score": raw_score,
-          "pass": pass_idx,
-      }
-
-    def track_pass(resp_sub, c_smooth, ring_sym, sub_i0, sub_j0, cand_thresh, prior_slope_ij=None, pass_idx=1):
-      K_sub, J_sub, I_sub = resp_sub.shape
-      pos_v = resp_sub[resp_sub > 0.5]
-      if len(pos_v) > 20:
-        cap_val = float(np.percentile(pos_v, 99.0))
-        np.minimum(resp_sub, cap_val, out=resp_sub)
-
-      loc_max = resp_sub == maximum_filter(resp_sub, size=(1, 2 * nms_px + 1, 2 * nms_px + 1))
-      max_seed_k = min(K_sub - 2, max(18, min(42, int(round(62.0 / sp_k)))))
-      seed_cut = cand_thresh * ((0.82 if K_sub <= 28 else 0.88) if pass_idx == 1 else 0.62)
-      seeds = []
-      for k_rel in range(0, max_seed_k):
-        jj, ii = np.where(loc_max[k_rel] & (resp_sub[k_rel] >= seed_cut))
-        sl_seeds = [
-            (float(resp_sub[k_rel, j_s, i_s]), k_rel, float(i_s), float(j_s))
-            for j_s, i_s in zip(jj, ii)
-        ]
-        sl_seeds.sort(key=lambda x: -x[0])
-        seeds.extend(sl_seeds[:110])
-      seeds.sort(key=lambda x: -x[0])
-
-      visited = np.zeros((K_sub, J_sub, I_sub), dtype=bool)
-      trajs_out = []
-      max_step_px = (0.65 if pass_idx == 1 else 0.52) * (sp_k / sp_i)
-      decay = -0.36 if pass_idx == 1 else -0.46
-      gauss_base = np.exp(decay * ((xx_grid * sp_i) ** 2 + (yy_grid * sp_j) ** 2))
-
-      for s_val, k_start, i_start, j_start in seeds:
-        if visited[k_start, int(j_start), int(i_start)]:
-          continue
-        visited[k_start, int(j_start), int(i_start)] = True
-        pts = {k_start: (i_start, j_start, s_val)}
-        peak_r = min(s_val, cand_thresh * 40.0)
-        for direction in (1, -1):
-          curr_i, curr_j = i_start, j_start
-          if prior_slope_ij is not None:
-            vel_i = float(prior_slope_ij[0]) * direction
-            vel_j = float(prior_slope_ij[1]) * direction
-          else:
-            vel_i, vel_j = 0.0, 0.0
-          gap = 0
-          k_cur = k_start + direction
-          while 0 <= k_cur < K_sub:
-            pred_i = curr_i + vel_i
-            pred_j = curr_j + vel_j
-            ic, jc = int(round(pred_i)), int(round(pred_j))
-            if not (
-                search_r_px <= ic < I_sub - search_r_px
-                and search_r_px <= jc < J_sub - search_r_px
-            ):
+        gsx, gbx, gsy, gby = best_fit
+        end_idx = n
+        bad_streak = 0
+        for idx in range(best_i0 + win_n, n):
+          r0 = max(best_i0, idx - 14)
+          lsx, lbx, lsy, lby = fast_line_fit(z_all[r0:idx], x_all[r0:idx], y_all[r0:idx])
+          zi, xi, yi = float(z_all[idx]), float(x_all[idx]), float(y_all[idx])
+          dev_loc = math.hypot(xi - (lsx * zi + lbx), yi - (lsy * zi + lby))
+          dev_glob = math.hypot(xi - (gsx * zi + gbx), yi - (gsy * zi + gby))
+          max_glob = max(3.25, 0.048 * abs(zi - float(z_all[best_i0])))
+          if dev_loc > 1.85 or dev_glob > max_glob or (dev_loc > 1.35 and arr_pts[idx, 3] < 0.35 * shaft_p75):
+            bad_streak += 1
+            if bad_streak >= 2 or dev_loc > 2.35 or idx == n - 1:
+              end_idx = idx - bad_streak + 1
               break
-            patch_r = resp_sub[k_cur, jc - search_r_px:jc + search_r_px + 1, ic - search_r_px:ic + search_r_px + 1]
-            eff_score = patch_r * gauss_base
-            best_idx = np.unravel_index(np.argmax(eff_score), eff_score.shape)
-            best_r = float(patch_r[best_idx])
-            best_c = float(c_smooth[k_cur, jc - search_r_px + best_idx[0], ic - search_r_px + best_idx[1]])
-            best_sym = float(ring_sym[k_cur, jc - search_r_px + best_idx[0], ic - search_r_px + best_idx[1]])
-            ni = float(ic - search_r_px + best_idx[1])
-            nj = float(jc - search_r_px + best_idx[0])
-            ii0, jj0 = int(ni), int(nj)
-            if 1 <= ii0 < I_sub - 1 and 1 <= jj0 < J_sub - 1 and best_r > 0.5:
-              w_patch = np.maximum(resp_sub[k_cur, jj0 - 1:jj0 + 2, ii0 - 1:ii0 + 2], 0.0)
-              w_sum = float(np.sum(w_patch))
-              if w_sum > 0:
-                ni = ii0 + float(np.sum(wx * w_patch)) / w_sum
-                nj = jj0 + float(np.sum(wy * w_patch)) / w_sum
+          else:
+            bad_streak = 0
 
-            min_step_r = max(cand_thresh * (0.28 if pass_idx == 1 else 0.20), 0.045 * peak_r)
-            is_dark = (best_r >= min_step_r) or (best_sym > 14.0 and best_c < 0.56 * best_sym and best_r >= 0.25 * min_step_r)
-            if is_dark:
-              pts[k_cur] = (ni, nj, best_r)
-              peak_r = max(peak_r, min(best_r, cand_thresh * 42.0))
-              step_i = max(-max_step_px, min(max_step_px, ni - curr_i))
-              step_j = max(-max_step_px, min(max_step_px, nj - curr_j))
-              vel_i = 0.65 * vel_i + 0.35 * step_i
-              vel_j = 0.65 * vel_j + 0.35 * step_j
-              curr_i, curr_j = ni, nj
-              gap = 0
+        start_idx = 0
+        bad_streak = 0
+        for idx in range(best_i0 - 1, -1, -1):
+          r1 = min(end_idx, idx + 15)
+          lsx, lbx, lsy, lby = fast_line_fit(z_all[idx + 1:r1], x_all[idx + 1:r1], y_all[idx + 1:r1])
+          zi, xi, yi = float(z_all[idx]), float(x_all[idx]), float(y_all[idx])
+          dev_loc = math.hypot(xi - (lsx * zi + lbx), yi - (lsy * zi + lby))
+          dev_glob = math.hypot(xi - (gsx * zi + gbx), yi - (gsy * zi + gby))
+          max_glob = max(3.25, 0.048 * abs(float(z_all[best_i0 + win_n - 1]) - zi))
+          if dev_loc > 1.95 or dev_glob > max_glob or (dev_loc > 1.45 and arr_pts[idx, 3] < 0.30 * shaft_p75):
+            bad_streak += 1
+            if bad_streak >= 2 or dev_loc > 2.45 or idx == 0:
+              start_idx = idx + bad_streak
+              break
+          else:
+            bad_streak = 0
+
+        return ras_pts[start_idx:end_idx], arr_pts[start_idx:end_idx], ks[start_idx:end_idx]
+
+      def fit_and_package_traj(ras_pts, arr_pts, ks, pass_idx, cand_thresh):
+        z_vals = ras_pts[:, 2]
+        z_span_mm = float(z_vals[-1] - z_vals[0])
+        deg = 2 if len(z_vals) >= 7 else 1
+        sx1, bx1, sy1, by1 = fast_line_fit(z_vals, ras_pts[:, 0], ras_pts[:, 1])
+        res_l = np.hypot(ras_pts[:, 0] - (sx1 * z_vals + bx1), ras_pts[:, 1] - (sy1 * z_vals + by1))
+        inliers = res_l <= max(1.65, float(np.percentile(res_l, 85)))
+        if np.sum(inliers) >= (deg + 2):
+          px = np.polyfit(z_vals[inliers], ras_pts[inliers, 0], deg)
+          py = np.polyfit(z_vals[inliers], ras_pts[inliers, 1], deg)
+        else:
+          px = np.array([sx1, bx1])
+          py = np.array([sy1, by1])
+        fit_x = np.polyval(px, z_vals)
+        fit_y = np.polyval(py, z_vals)
+        res_d = np.hypot(ras_pts[:, 0] - fit_x, ras_pts[:, 1] - fit_y)
+        rmse = float(np.percentile(res_d, 85))
+        if rmse > 1.45:
+          return None
+
+        dz = z_vals[-1] - z_vals[0]
+        if abs(dz) < 1e-3:
+          return None
+        slope_x = (fit_x[-1] - fit_x[0]) / dz
+        slope_y = (fit_y[-1] - fit_y[0]) / dz
+        if math.hypot(slope_x, slope_y) > 0.72:
+          return None
+
+        k_rels = arr_pts[:, 2] - k0
+        si_a, bi_a, sj_a, bj_a = fast_line_fit(k_rels, arr_pts[:, 0], arr_pts[:, 1])
+        pi_abs = np.array([si_a, bi_a])
+        pj_abs = np.array([sj_a, bj_a])
+
+        bx_lin = float(fit_x[0] + slope_x * (z_base_ras - z_vals[0]))
+        by_lin = float(fit_y[0] + slope_y * (z_base_ras - z_vals[0]))
+        bx_poly = float(np.polyval(px, z_base_ras))
+        by_poly = float(np.polyval(py, z_base_ras))
+        use_linear_ext = (
+            (sp_k >= 2.8 and z_vals[0] > z_base_ras + 2.0 * sp_k)
+            or abs(float(z_vals[0] - z_base_ras)) > 22.0
+            or math.hypot(bx_poly - bx_lin, by_poly - by_lin) > 3.5
+        )
+        if use_linear_ext:
+          bx, by = bx_lin, by_lin
+        else:
+          bx, by = bx_poly, by_poly
+        base_xy = np.array([bx, by])
+        if z_vals[-1] >= z_vals[0]:
+          above_mask = z_vals > z_base_ras + 0.15 * sp_k
+        else:
+          above_mask = z_vals < z_base_ras - 0.15 * sp_k
+        if np.any(above_mask):
+          fx_ab = fit_x[above_mask]
+          fy_ab = fit_y[above_mask]
+          fz_ab = z_vals[above_mask]
+          z_first = float(fz_ab[0])
+          if use_linear_ext and abs(z_first - z_base_ras) > 6.0 * sp_k:
+            n_ext = max(2, int(round(abs(z_first - z_base_ras) / sp_k)))
+            z_ext = np.linspace(z_base_ras, z_first, n_ext, endpoint=False)
+            x_ext = float(fx_ab[0]) + slope_x * (z_ext - z_first)
+            y_ext = float(fy_ab[0]) + slope_y * (z_ext - z_first)
+            smooth_ras = np.vstack([
+                np.column_stack([x_ext, y_ext, z_ext]),
+                np.column_stack([fx_ab, fy_ab, fz_ab]),
+            ])
+          else:
+            smooth_ras = np.vstack([
+                [bx, by, z_base_ras],
+                np.column_stack([fx_ab, fy_ab, fz_ab]),
+            ])
+        else:
+          smooth_ras = np.vstack([
+              [bx, by, z_base_ras],
+              [fit_x[-1], fit_y[-1], z_vals[-1]],
+          ])
+
+        mean_r = float(np.mean(arr_pts[:, 3]))
+        p75_r = float(np.percentile(arr_pts[:, 3], 75))
+        max_r = float(np.max(arr_pts[:, 3]))
+        high_frac = float(np.mean(arr_pts[:, 3] >= cand_thresh * 0.38))
+        raw_score = mean_r * (high_frac ** 1.5) * math.sqrt(max(1.0, z_span_mm)) / (1.0 + 0.5 * rmse)
+        curv = math.hypot(float(px[0]), float(py[0])) if len(px) == 3 else 0.0
+        return {
+            "ras": smooth_ras,
+            "raw_ras_pts": ras_pts,
+            "raw_arr_pts": arr_pts,
+            "raw_ks": list(ks),
+            "ks": np.array(ks) + k0,
+            "n_slices": len(ks),
+            "k_min_rel": int(min(ks)),
+            "k_max_rel": int(max(ks)),
+            "z_start_ras": float(z_vals[0]),
+            "z_end_ras": float(z_vals[-1]),
+            "track_start_xy": np.array([float(fit_x[0]), float(fit_y[0])]),
+            "track_end_xy": np.array([float(fit_x[-1]), float(fit_y[-1])]),
+            "pi_abs": pi_abs,
+            "pj_abs": pj_abs,
+            "slope_ij": np.array([si_a, sj_a]),
+            "base_xy": base_xy,
+            "tip_ras": smooth_ras[-1].copy(),
+            "slope": np.array([slope_x, slope_y]),
+            "mean_r": mean_r,
+            "p75_r": p75_r,
+            "max_r": max_r,
+            "high_frac": high_frac,
+            "rmse": rmse,
+            "curv": curv,
+            "length_mm": float(smooth_ras[-1, 2] - smooth_ras[0, 2]),
+            "z_span_tracked": z_span_mm,
+            "raw_score": raw_score,
+            "pass": pass_idx,
+        }
+
+      def merge_two_trajs(t_low, t_high, cand_thresh):
+        by_k = {}
+        for idx_pt, k_rel in enumerate(t_low["raw_ks"]):
+          by_k[int(k_rel)] = (t_low["raw_ras_pts"][idx_pt], t_low["raw_arr_pts"][idx_pt])
+        for idx_pt, k_rel in enumerate(t_high["raw_ks"]):
+          kr = int(k_rel)
+          if kr not in by_k or float(t_high["raw_arr_pts"][idx_pt, 3]) > float(by_k[kr][1][3]):
+            by_k[kr] = (t_high["raw_ras_pts"][idx_pt], t_high["raw_arr_pts"][idx_pt])
+        ks_m = sorted(by_k.keys())
+        ras_m = np.array([by_k[kr][0] for kr in ks_m], dtype=np.float64)
+        arr_m = np.array([by_k[kr][1] for kr in ks_m], dtype=np.float64)
+        order = np.argsort(ras_m[:, 2])
+        ras_m = ras_m[order]
+        arr_m = arr_m[order]
+        ks_m = [ks_m[i] for i in order]
+        return fit_and_package_traj(ras_m, arr_m, ks_m, min(t_low["pass"], t_high["pass"]), cand_thresh)
+
+      def stitch_trajs(traj_list, cand_thresh):
+        if len(traj_list) < 2:
+          return traj_list
+        ordered = sorted(traj_list, key=lambda x: (x["k_min_rel"], -x["raw_score"]))
+        used = [False] * len(ordered)
+        out = []
+        max_k_gap = max(6, int(round(28.0 / sp_k)))
+        for i in range(len(ordered)):
+          if used[i]:
+            continue
+          cur = ordered[i]
+          used[i] = True
+          merged_any = True
+          while merged_any:
+            merged_any = False
+            best_j = -1
+            best_pkg = None
+            best_d = 1.85
+            for j in range(len(ordered)):
+              if used[j]:
+                continue
+              cand = ordered[j]
+              if cand["k_min_rel"] < cur["k_max_rel"] - 6 or cand["k_min_rel"] > cur["k_max_rel"] + max_k_gap:
+                continue
+              if cand["k_max_rel"] <= cur["k_max_rel"] + 3:
+                continue
+              if float(np.hypot(cur["slope"][0] - cand["slope"][0], cur["slope"][1] - cand["slope"][1])) > 0.09:
+                continue
+              z_mid = 0.5 * (cur["z_end_ras"] + cand["z_start_ras"])
+              p_cur = cur["track_end_xy"] + cur["slope"] * (z_mid - cur["z_end_ras"])
+              p_cnd = cand["track_start_xy"] + cand["slope"] * (z_mid - cand["z_start_ras"])
+              d_mid = float(np.hypot(p_cur[0] - p_cnd[0], p_cur[1] - p_cnd[1]))
+              if d_mid <= best_d:
+                pkg_m = merge_two_trajs(cur, cand, cand_thresh)
+                if pkg_m is not None:
+                  best_d = d_mid
+                  best_j = j
+                  best_pkg = pkg_m
+            if best_j >= 0 and best_pkg is not None:
+              cur = best_pkg
+              used[best_j] = True
+              merged_any = True
+          if not cur.get("_upper_only", False):
+            out.append(cur)
+        return out
+
+      def track_pass(resp_sub, c_smooth, ring_sym, sub_i0, sub_j0, cand_thresh, prior_slope_ij=None, pass_idx=1):
+        K_sub, J_sub, I_sub = resp_sub.shape
+        pos_v = resp_sub[resp_sub > 0.5]
+        if len(pos_v) > 20:
+          cap_val = float(np.percentile(pos_v, 99.0))
+          np.minimum(resp_sub, cap_val, out=resp_sub)
+
+        loc_max = resp_sub == maximum_filter(resp_sub, size=(1, 2 * nms_px + 1, 2 * nms_px + 1))
+        max_seed_k = min(K_sub - 2, max(18, min(42, int(round(62.0 / sp_k)))))
+        seed_cut = cand_thresh * ((0.82 if K_sub <= 28 else 0.88) if pass_idx == 1 else 0.62)
+        seeds = []
+        for k_rel in range(0, max_seed_k):
+          jj, ii = np.where(loc_max[k_rel] & (resp_sub[k_rel] >= seed_cut))
+          sl_seeds = [
+              (float(resp_sub[k_rel, j_s, i_s]), k_rel, float(i_s), float(j_s), False)
+              for j_s, i_s in zip(jj, ii)
+          ]
+          sl_seeds.sort(key=lambda x: -x[0])
+          seeds.extend(sl_seeds[:110])
+        seeds.sort(key=lambda x: -x[0])
+
+        visited = np.zeros((K_sub, J_sub, I_sub), dtype=bool)
+        trajs_out = []
+        max_step_px = (0.65 if pass_idx == 1 else 0.52) * (sp_k / sp_i)
+        decay = -0.36 if pass_idx == 1 else -0.46
+        gauss_base = np.exp(decay * ((xx_grid * sp_i) ** 2 + (yy_grid * sp_j) ** 2))
+
+        for s_val, k_start, i_start, j_start, is_up_seed in seeds:
+          if visited[k_start, int(j_start), int(i_start)]:
+            continue
+          visited[k_start, int(j_start), int(i_start)] = True
+          pts = {k_start: (i_start, j_start, s_val)}
+          peak_r = min(s_val, cand_thresh * 40.0)
+          for direction in (1, -1):
+            curr_i, curr_j = i_start, j_start
+            if prior_slope_ij is not None:
+              vel_i = float(prior_slope_ij[0]) * direction
+              vel_j = float(prior_slope_ij[1]) * direction
             else:
-              gap += 1
-              if gap > max_gap_slices:
+              vel_i, vel_j = 0.0, 0.0
+            gap = 0
+            k_cur = k_start + direction
+            while 0 <= k_cur < K_sub:
+              pred_i = curr_i + vel_i
+              pred_j = curr_j + vel_j
+              ic, jc = int(round(pred_i)), int(round(pred_j))
+              if not (
+                  search_r_px <= ic < I_sub - search_r_px
+                  and search_r_px <= jc < J_sub - search_r_px
+              ):
                 break
-              curr_i, curr_j = pred_i, pred_j
-            k_cur += direction
+              patch_r = resp_sub[k_cur, jc - search_r_px:jc + search_r_px + 1, ic - search_r_px:ic + search_r_px + 1]
+              eff_score = patch_r * gauss_base
+              best_idx = np.unravel_index(np.argmax(eff_score), eff_score.shape)
+              best_r = float(patch_r[best_idx])
+              best_c = float(c_smooth[k_cur, jc - search_r_px + best_idx[0], ic - search_r_px + best_idx[1]])
+              best_sym = float(ring_sym[k_cur, jc - search_r_px + best_idx[0], ic - search_r_px + best_idx[1]])
+              ni = float(ic - search_r_px + best_idx[1])
+              nj = float(jc - search_r_px + best_idx[0])
+              ii0, jj0 = int(ni), int(nj)
+              if 1 <= ii0 < I_sub - 1 and 1 <= jj0 < J_sub - 1 and best_r > 0.5:
+                w_patch = np.maximum(resp_sub[k_cur, jj0 - 1:jj0 + 2, ii0 - 1:ii0 + 2], 0.0)
+                w_sum = float(np.sum(w_patch))
+                if w_sum > 0:
+                  ni = ii0 + float(np.sum(wx * w_patch)) / w_sum
+                  nj = jj0 + float(np.sum(wy * w_patch)) / w_sum
 
-        ks = sorted(pts.keys())
-        if len(ks) < min_pts_slices:
-          continue
-        r_arr_ks = np.array([pts[k][2] for k in ks])
-        shaft_p75 = float(np.percentile(r_arr_ks, 75))
-        tip_cut = max(cand_thresh * 0.35, 0.08 * shaft_p75)
-        base_cut = max(cand_thresh * 0.22, 0.05 * shaft_p75)
-        while len(ks) > 2 and pts[ks[-1]][2] < tip_cut:
-          ks.pop()
-        while len(ks) > 2 and pts[ks[0]][2] < base_cut:
-          ks.pop(0)
-        if len(ks) < min_pts_slices:
-          continue
+              min_step_r = max(cand_thresh * (0.28 if pass_idx == 1 else 0.20), 0.045 * peak_r)
+              is_dark = (best_r >= min_step_r) or (best_sym > 14.0 and best_c < 0.56 * best_sym and best_r >= 0.25 * min_step_r)
+              if is_dark:
+                pts[k_cur] = (ni, nj, best_r)
+                peak_r = max(peak_r, min(best_r, cand_thresh * 42.0))
+                step_i = max(-max_step_px, min(max_step_px, ni - curr_i))
+                step_j = max(-max_step_px, min(max_step_px, nj - curr_j))
+                vel_i = 0.65 * vel_i + 0.35 * step_i
+                vel_j = 0.65 * vel_j + 0.35 * step_j
+                curr_i, curr_j = ni, nj
+                gap = 0
+              else:
+                gap += 1
+                if gap > max_gap_slices:
+                  break
+                curr_i, curr_j = pred_i, pred_j
+              k_cur += direction
 
-        arr_pts = np.array([[pts[k][0] + sub_i0, pts[k][1] + sub_j0, k + k0, pts[k][2]] for k in ks], dtype=np.float64)
-        ras_pts = arr_pts[:, :3] @ rot_mat.T + trans_vec
-        order = np.argsort(ras_pts[:, 2])
-        ras_pts = ras_pts[order]
-        arr_pts = arr_pts[order]
-        ks = [ks[idx] for idx in order]
+          ks = sorted(pts.keys())
+          if len(ks) < min_pts_slices:
+            continue
+          r_arr_ks = np.array([pts[k][2] for k in ks])
+          shaft_p75 = float(np.percentile(r_arr_ks, 75))
+          tip_cut = max(cand_thresh * 0.35, 0.08 * shaft_p75)
+          base_cut = max(cand_thresh * 0.22, 0.05 * shaft_p75)
+          while len(ks) > 2 and pts[ks[-1]][2] < tip_cut:
+            ks.pop()
+          while len(ks) > 2 and pts[ks[0]][2] < base_cut:
+            ks.pop(0)
+          if len(ks) < min_pts_slices:
+            continue
 
-        ras_pts, arr_pts, ks = trim_trajectory_inside_out(ras_pts, arr_pts, ks, shaft_p75)
-        if len(ks) < min_pts_slices:
-          continue
+          arr_pts = np.array([[pts[k][0] + sub_i0, pts[k][1] + sub_j0, k + k0, pts[k][2]] for k in ks], dtype=np.float64)
+          ras_pts = arr_pts[:, :3] @ rot_mat.T + trans_vec
+          order = np.argsort(ras_pts[:, 2])
+          ras_pts = ras_pts[order]
+          arr_pts = arr_pts[order]
+          ks = [ks[idx] for idx in order]
 
-        k_min_rel = min(ks)
-        z_span_mm = float(ras_pts[-1, 2] - ras_pts[0, 2])
-        if z_span_mm < (8.5 if K_sub <= 28 else 11.5):
-          continue
-        if k_min_rel > 12 and z_span_mm < (18.0 if K_sub <= 36 else 26.0):
-          continue
+          ras_pts, arr_pts, ks = trim_trajectory_inside_out(ras_pts, arr_pts, ks, shaft_p75)
+          if len(ks) < min_pts_slices:
+            continue
 
-        high_frac = float(np.mean(arr_pts[:, 3] >= cand_thresh * ((0.36 if K_sub <= 28 else 0.40) if pass_idx == 1 else 0.28)))
-        if high_frac < ((0.46 if K_sub <= 28 else 0.50) if pass_idx == 1 else 0.40):
-          continue
+          k_min_rel = min(ks)
+          z_span_mm = float(ras_pts[-1, 2] - ras_pts[0, 2])
+          if z_span_mm < (8.5 if K_sub <= 28 else 11.5):
+            continue
+          if k_min_rel > 12 and z_span_mm < (18.0 if K_sub <= 36 else 26.0):
+            continue
 
-        pkg = fit_and_package_traj(ras_pts, arr_pts, ks, pass_idx, cand_thresh)
-        if pkg is None:
-          continue
+          if is_1d_trench_artifact(arr_pts, k_min_rel):
+            continue
 
-        # Mark visited and attenuate resp_sub along the accepted tract so adjacent seeds do not jump onto it
-        for k_v in ks:
-          iv, jv = int(round(pts[k_v][0])), int(round(pts[k_v][1]))
-          j_lo, j_hi = max(0, jv - visit_r_px), min(J_sub, jv + visit_r_px + 1)
-          i_lo, i_hi = max(0, iv - visit_r_px), min(I_sub, iv + visit_r_px + 1)
-          visited[k_v, j_lo:j_hi, i_lo:i_hi] = True
-          resp_sub[k_v, j_lo:j_hi, i_lo:i_hi] *= 0.08
+          high_frac = float(np.mean(arr_pts[:, 3] >= cand_thresh * ((0.36 if K_sub <= 28 else 0.40) if pass_idx == 1 else 0.28)))
+          if high_frac < ((0.46 if K_sub <= 28 else 0.50) if pass_idx == 1 else 0.40):
+            continue
 
-        trajs_out.append(pkg)
-      return trajs_out
+          pkg = fit_and_package_traj(ras_pts, arr_pts, ks, pass_idx, cand_thresh)
+          if pkg is None:
+            continue
+          pkg["_upper_only"] = bool(is_up_seed)
 
-    def dedup_trajs(traj_list, existing_list=None):
-      out = list(existing_list) if existing_list else []
-      for t in sorted(traj_list, key=lambda x: -x["raw_score"]):
-        dup = False
-        for p in out:
-          base_d = float(np.hypot(t["base_xy"][0] - p["base_xy"][0], t["base_xy"][1] - p["base_xy"][1]))
-          if base_d < 2.15:
-            dup = True
-            break
-          z_min = max(t["ras"][0, 2], p["ras"][0, 2])
-          z_max = min(t["ras"][-1, 2], p["ras"][-1, 2])
-          if z_max >= z_min:
-            zs = np.linspace(z_min, z_max, 12)
-            tx = np.interp(zs, t["ras"][:, 2], t["ras"][:, 0])
-            ty = np.interp(zs, t["ras"][:, 2], t["ras"][:, 1])
-            px_i = np.interp(zs, p["ras"][:, 2], p["ras"][:, 0])
-            py_i = np.interp(zs, p["ras"][:, 2], p["ras"][:, 1])
-            if float(np.mean(np.hypot(tx - px_i, ty - py_i))) < 2.40:
+          # Mark visited and attenuate resp_sub along the accepted tract so adjacent seeds do not jump onto it
+          if not is_up_seed:
+            for k_v in ks:
+              iv, jv = int(round(pts[k_v][0])), int(round(pts[k_v][1]))
+              j_lo, j_hi = max(0, jv - visit_r_px), min(J_sub, jv + visit_r_px + 1)
+              i_lo, i_hi = max(0, iv - visit_r_px), min(I_sub, iv + visit_r_px + 1)
+              visited[k_v, j_lo:j_hi, i_lo:i_hi] = True
+              resp_sub[k_v, j_lo:j_hi, i_lo:i_hi] *= 0.08
+
+          trajs_out.append(pkg)
+        if K_sub * sp_k > 185.0:
+          trajs_out = stitch_trajs(trajs_out, cand_thresh)
+        return trajs_out
+
+      def dedup_trajs(traj_list, existing_list=None):
+        out = list(existing_list) if existing_list else []
+        for t in sorted(traj_list, key=lambda x: -x["raw_score"]):
+          dup = False
+          for idx_p, p in enumerate(out):
+            base_d = float(np.hypot(t["base_xy"][0] - p["base_xy"][0], t["base_xy"][1] - p["base_xy"][1]))
+            if base_d < 2.15:
               dup = True
               break
-        if not dup:
-          out.append(t)
-      return out
+            z_min = max(t["ras"][0, 2], p["ras"][0, 2])
+            z_max = min(t["ras"][-1, 2], p["ras"][-1, 2])
+            if z_max >= z_min:
+              zs = np.linspace(z_min, z_max, 12)
+              tx = np.interp(zs, t["ras"][:, 2], t["ras"][:, 0])
+              ty = np.interp(zs, t["ras"][:, 2], t["ras"][:, 1])
+              px_i = np.interp(zs, p["ras"][:, 2], p["ras"][:, 0])
+              py_i = np.interp(zs, p["ras"][:, 2], p["ras"][:, 1])
+              if float(np.mean(np.hypot(tx - px_i, ty - py_i))) < 2.40:
+                dup = True
+                break
+            # Also check actual tracked Z-overlap and collinear continuation on deep scans
+            if (K - k0) * sp_k > 185.0:
+              z_ov0 = max(t["z_start_ras"], p["z_start_ras"])
+              z_ov1 = min(t["z_end_ras"], p["z_end_ras"])
+              if z_ov1 >= z_ov0 + 4.0:
+                zs_ov = np.linspace(z_ov0, z_ov1, 8)
+                tx_o = np.interp(zs_ov, t["ras"][:, 2], t["ras"][:, 0])
+                ty_o = np.interp(zs_ov, t["ras"][:, 2], t["ras"][:, 1])
+                px_o = np.interp(zs_ov, p["ras"][:, 2], p["ras"][:, 0])
+                py_o = np.interp(zs_ov, p["ras"][:, 2], p["ras"][:, 1])
+                if float(np.mean(np.hypot(tx_o - px_o, ty_o - py_o))) < 3.10:
+                  if t["z_end_ras"] > p["z_end_ras"] + 8.0 and p["k_min_rel"] < t["k_min_rel"]:
+                    pkg_m = merge_two_trajs(p, t, cand_thresh)
+                    if pkg_m is not None:
+                      out[idx_p] = pkg_m
+                  dup = True
+                  break
+              elif abs(t["z_start_ras"] - p["z_end_ras"]) <= 20.0 or abs(p["z_start_ras"] - t["z_end_ras"]) <= 20.0:
+                t_lo, t_hi = (p, t) if p["z_start_ras"] <= t["z_start_ras"] else (t, p)
+                if float(np.hypot(t_lo["slope"][0] - t_hi["slope"][0], t_lo["slope"][1] - t_hi["slope"][1])) <= 0.09:
+                  z_m = 0.5 * (t_lo["z_end_ras"] + t_hi["z_start_ras"])
+                  xy_lo = t_lo["track_end_xy"] + t_lo["slope"] * (z_m - t_lo["z_end_ras"])
+                  xy_hi = t_hi["track_start_xy"] + t_hi["slope"] * (z_m - t_hi["z_start_ras"])
+                  if float(np.hypot(xy_lo[0] - xy_hi[0], xy_lo[1] - xy_hi[1])) <= 1.85:
+                    pkg_m = merge_two_trajs(t_lo, t_hi, cand_thresh)
+                    if pkg_m is not None:
+                      out[idx_p] = pkg_m
+                    dup = True
+                    break
+          if not dup:
+            out.append(t)
+        return out
 
-    # --- PASS 1: Full-ROI Detection ---
-    res1 = rust_compute_3d_sym_response(vol_work, sp_i, sp_j, i0, i1, j0, j1, k0, K, body_thresh)
-    if res1 is None:
-      res1 = self._compute_3d_sym_response_numpy(vol_work, sp_i, sp_j, i0, i1, j0, j1, k0, K, body_thresh)
-    resp_full, cs_full, rsym_full = res1
-    resp1 = resp_full[k0:K, j0:j1, i0:i1].copy()
-    cs1 = cs_full[k0:K, j0:j1, i0:i1]
-    rsym1 = rsym_full[k0:K, j0:j1, i0:i1]
-    K_sub = K - k0
+      # --- PASS 1: Full-ROI Detection ---
+      update_progress(12, "Stage 1/6: Computing 3D radial symmetry response (Pass 1)...")
+      res1 = rust_compute_3d_sym_response(vol_work, sp_i, sp_j, i0, i1, j0, j1, k0, K, body_thresh)
+      if res1 is None:
+        res1 = self._compute_3d_sym_response_numpy(vol_work, sp_i, sp_j, i0, i1, j0, j1, k0, K, body_thresh)
+      resp_full, cs_full, rsym_full = res1
+      resp1 = resp_full[k0:K, j0:j1, i0:i1].copy()
+      cs1 = cs_full[k0:K, j0:j1, i0:i1]
+      rsym1 = rsym_full[k0:K, j0:j1, i0:i1]
+      K_sub = K - k0
 
-    pos_vals = resp1[resp1 > 0.5]
-    cand_thresh = max(1.2, float(np.percentile(pos_vals, 50))) if len(pos_vals) else 1.2
+      pos_vals = resp1[resp1 > 0.5]
+      cand_thresh = max(1.2, float(np.percentile(pos_vals, 50))) if len(pos_vals) else 1.2
 
-    trajs1 = track_pass(resp1, cs1, rsym1, i0, j0, cand_thresh, pass_idx=1)
-    if not trajs1:
-      return []
-    prelim1 = dedup_trajs(trajs1)
+      update_progress(34, "Stage 2/6: Seeding & tracking candidate 3D trajectories (Pass 1)...")
+      trajs1 = track_pass(resp1, cs1, rsym1, i0, j0, cand_thresh, pass_idx=1)
+      if not trajs1:
+        return []
+      prelim1 = dedup_trajs(trajs1)
 
-    k_tol = 4 if sp_k <= 2.1 else max(3, int(round(7.5 / sp_k)))
-    pelvic_cands = [
-        t for t in prelim1
-        if abs(t["base_xy"][0] - fov_center_ras[0]) <= 48.0
-        and abs(t["base_xy"][1] - fov_center_ras[1]) <= 64.0
-    ]
-    base_pool = pelvic_cands if len(pelvic_cands) >= 3 else prelim1
-    low_k_cands = [t for t in base_pool if t["k_min_rel"] <= k_tol]
-    vote_pool = low_k_cands[:min(30, len(low_k_cands))] if len(low_k_cands) >= 3 else base_pool[:min(30, len(base_pool))]
+      update_progress(48, "Stage 3/6: Estimating needle bundle consensus & inpainting locked tracts...")
+      k_tol = 4 if sp_k <= 2.1 else max(3, int(round(7.5 / sp_k)))
+      pelvic_cands = [
+          t for t in prelim1
+          if abs(t["base_xy"][0] - fov_center_ras[0]) <= 48.0
+          and abs(t["base_xy"][1] - fov_center_ras[1]) <= 64.0
+      ]
+      base_pool = pelvic_cands if len(pelvic_cands) >= 3 else prelim1
+      low_k_cands = [t for t in base_pool if t["k_min_rel"] <= k_tol]
+      vote_pool = low_k_cands[:min(30, len(low_k_cands))] if len(low_k_cands) >= 3 else base_pool[:min(30, len(base_pool))]
 
-    raw_arr = np.array([t["raw_score"] for t in vote_pool])
-    ref_raw = float(np.percentile(raw_arr[:min(10, len(raw_arr))], 65)) if len(raw_arr) >= 3 else float(raw_arr[0])
-    clamped_w = np.sqrt(np.minimum(raw_arr, 1.5 * ref_raw))
-    bases = np.array([t["base_xy"] for t in vote_pool])
-    slopes = np.array([t["slope"] for t in vote_pool])
+      raw_arr = np.array([t["raw_score"] for t in vote_pool])
+      ref_raw = float(np.percentile(raw_arr[:min(10, len(raw_arr))], 65)) if len(raw_arr) >= 3 else float(raw_arr[0])
+      clamped_w = np.sqrt(np.minimum(raw_arr, 1.5 * ref_raw))
+      bases = np.array([t["base_xy"] for t in vote_pool])
+      slopes = np.array([t["slope"] for t in vote_pool])
 
-    best_cluster_score = -1e18
-    best_idx = 0
-    for idx in range(len(vote_pool)):
-      d_xy = np.hypot(bases[:, 0] - bases[idx, 0], bases[:, 1] - bases[idx, 1])
-      d_sl = np.hypot(slopes[:, 0] - slopes[idx, 0], slopes[:, 1] - slopes[idx, 1])
-      inliers = (d_xy <= 42.0) & (d_sl <= 0.25)
-      dx_fov = float(bases[idx, 0] - fov_center_ras[0])
-      dy_fov = float(bases[idx, 1] - fov_center_ras[1])
-      fov_prior = np.exp(-0.5 * ((dx_fov / 35.0) ** 2 + (dy_fov / 48.0) ** 2))
-      c_score = float(np.sum(clamped_w[inliers])) * (int(np.sum(inliers)) ** 0.80) * fov_prior
-      if c_score > best_cluster_score:
-        best_cluster_score = c_score
-        best_idx = idx
+      best_cluster_score = -1e18
+      best_idx = 0
+      for idx in range(len(vote_pool)):
+        d_xy = np.hypot(bases[:, 0] - bases[idx, 0], bases[:, 1] - bases[idx, 1])
+        d_sl = np.hypot(slopes[:, 0] - slopes[idx, 0], slopes[:, 1] - slopes[idx, 1])
+        inliers = (d_xy <= 42.0) & (d_sl <= 0.25)
+        dx_fov = float(bases[idx, 0] - fov_center_ras[0])
+        dy_fov = float(bases[idx, 1] - fov_center_ras[1])
+        fov_prior = np.exp(-0.5 * ((dx_fov / 35.0) ** 2 + (dy_fov / 48.0) ** 2))
+        c_score = float(np.sum(clamped_w[inliers])) * (int(np.sum(inliers)) ** 0.80) * fov_prior
+        if c_score > best_cluster_score:
+          best_cluster_score = c_score
+          best_idx = idx
 
-    seed_center = bases[best_idx]
-    seed_slope = slopes[best_idx]
-    d_seed_xy = np.hypot(bases[:, 0] - seed_center[0], bases[:, 1] - seed_center[1])
-    d_seed_sl = np.hypot(slopes[:, 0] - seed_slope[0], slopes[:, 1] - seed_slope[1])
-    inlier_mask = ((d_seed_xy <= 44.0) & (d_seed_sl <= 0.28)) | (
-        (d_seed_xy <= 56.0) & (d_seed_sl <= 0.18) & (raw_arr >= 0.25 * ref_raw)
-    )
-    if np.sum(inlier_mask) >= 3:
-      inlier_bases = bases[inlier_mask]
-      inlier_w = clamped_w[inlier_mask]
-      med_center = np.average(inlier_bases, axis=0, weights=inlier_w)
-      med_slope = np.median(slopes[inlier_mask], axis=0)
-      med_slope_ij = np.median(np.array([vote_pool[i]["slope_ij"] for i in np.where(inlier_mask)[0]]), axis=0)
-      bbox_mid = 0.5 * (np.min(inlier_bases, axis=0) + np.max(inlier_bases, axis=0))
-    else:
-      med_center = seed_center
-      med_slope = seed_slope
-      med_slope_ij = vote_pool[best_idx]["slope_ij"]
-      bbox_mid = seed_center
-
-    spatial_inliers = [
-        t for t in base_pool
-        if np.hypot(t["base_xy"][0] - bbox_mid[0], t["base_xy"][1] - bbox_mid[1]) <= 44.0
-        and np.hypot(t["slope"][0] - med_slope[0], t["slope"][1] - med_slope[1]) <= 0.30
-    ]
-    if spatial_inliers:
-      bundle_k_min = int(np.percentile([t["k_min_rel"] for t in spatial_inliers[:min(12, len(spatial_inliers))]], 25))
-    else:
-      bundle_k_min = 0
-
-    valid_k_inliers = [
-        t for t in spatial_inliers
-        if t["k_min_rel"] <= bundle_k_min + k_tol or (t["z_span_tracked"] >= 28.0 and t["mean_r"] >= cand_thresh * 1.8)
-    ]
-    if len(valid_k_inliers) >= 2:
-      sc_sorted = sorted([t["raw_score"] for t in valid_k_inliers], reverse=True)
-      bundle_max_raw = float(min(sc_sorted[0], 1.40 * sc_sorted[min(2, len(sc_sorted) - 1)]))
-    elif len(valid_k_inliers) == 1:
-      bundle_max_raw = float(valid_k_inliers[0]["raw_score"])
-    else:
-      bundle_max_raw = ref_raw
-
-    core_inliers = [t for t in valid_k_inliers if t["raw_score"] >= 0.14 * bundle_max_raw]
-    if len(core_inliers) >= 3:
-      c_bases = np.array([t["base_xy"] for t in core_inliers])
-      bbox_mid = 0.5 * (np.min(c_bases, axis=0) + np.max(c_bases, axis=0))
-      med_center = np.median(c_bases, axis=0)
-      c_slopes = np.array([t["slope"] for t in core_inliers])
-      med_slope = np.median(c_slopes, axis=0)
-      med_slope_ij = np.median(np.array([t["slope_ij"] for t in core_inliers]), axis=0)
-      r_max_core = float(np.max(np.hypot(c_bases[:, 0] - bbox_mid[0], c_bases[:, 1] - bbox_mid[1])))
-      adaptive_rad = float(np.clip(max(37.5, r_max_core + 8.5), 37.5, 48.0))
-      sdev_p75 = float(np.percentile(np.hypot(c_slopes[:, 0] - med_slope[0], c_slopes[:, 1] - med_slope[1]), 75))
-      adaptive_sdev = float(np.clip(max(0.28, 2.4 * sdev_p75), 0.28, 0.38))
-    else:
-      adaptive_rad = 38.5
-      adaptive_sdev = 0.34
-
-    def passes_bundle_filter(t, pass_num=1):
-      if abs(t["base_xy"][0] - fov_center_ras[0]) > 49.5 or abs(t["base_xy"][1] - fov_center_ras[1]) > 66.0:
-        return False
-      dist_mid = float(np.hypot(t["base_xy"][0] - bbox_mid[0], t["base_xy"][1] - bbox_mid[1]))
-      dist_med = float(np.hypot(t["base_xy"][0] - med_center[0], t["base_xy"][1] - med_center[1]))
-      slope_dev = float(np.hypot(t["slope"][0] - med_slope[0], t["slope"][1] - med_slope[1]))
-      k_ok = (
-          t["k_min_rel"] <= bundle_k_min + k_tol
-          or (t["z_span_tracked"] >= 28.0 and t["mean_r"] >= cand_thresh * 1.6 and t["raw_score"] >= 0.16 * bundle_max_raw and slope_dev <= min(0.22, adaptive_sdev))
-          or (sp_k >= 4.5 and t["k_min_rel"] <= 11 and t["z_span_tracked"] >= 24.0 and t["raw_score"] >= 0.22 * bundle_max_raw)
+      seed_center = bases[best_idx]
+      seed_slope = slopes[best_idx]
+      d_seed_xy = np.hypot(bases[:, 0] - seed_center[0], bases[:, 1] - seed_center[1])
+      d_seed_sl = np.hypot(slopes[:, 0] - seed_slope[0], slopes[:, 1] - seed_slope[1])
+      inlier_mask = ((d_seed_xy <= 44.0) & (d_seed_sl <= 0.28)) | (
+          (d_seed_xy <= 56.0) & (d_seed_sl <= 0.18) & (raw_arr >= 0.25 * ref_raw)
       )
-      if not k_ok:
-        return False
-      if pass_num == 1:
-        max_sdev = adaptive_sdev if (dist_mid <= 32.0 or len(core_inliers) >= 12) else min(adaptive_sdev, 0.23)
-        return (
-            dist_mid <= adaptive_rad
-            and dist_med <= adaptive_rad + 18.0
-            and slope_dev <= max_sdev
-            and t["raw_score"] >= 0.10 * bundle_max_raw
-        )
+      if np.sum(inlier_mask) >= 3:
+        inlier_bases = bases[inlier_mask]
+        inlier_w = clamped_w[inlier_mask]
+        med_center = np.average(inlier_bases, axis=0, weights=inlier_w)
+        med_slope = np.median(slopes[inlier_mask], axis=0)
+        med_slope_ij = np.median(np.array([vote_pool[i]["slope_ij"] for i in np.where(inlier_mask)[0]]), axis=0)
+        bbox_mid = 0.5 * (np.min(inlier_bases, axis=0) + np.max(inlier_bases, axis=0))
       else:
-        return (
-            dist_mid <= adaptive_rad
-            and dist_med <= adaptive_rad + 15.0
-            and slope_dev <= min(0.25, adaptive_sdev * 0.85)
-            and t["z_span_tracked"] >= (11.0 if K_sub <= 28 else 16.5)
-            and t["rmse"] <= 1.25
-            and t["raw_score"] >= 0.10 * bundle_max_raw
+        med_center = seed_center
+        med_slope = seed_slope
+        med_slope_ij = vote_pool[best_idx]["slope_ij"]
+        bbox_mid = seed_center
+
+      spatial_inliers = [
+          t for t in base_pool
+          if np.hypot(t["base_xy"][0] - bbox_mid[0], t["base_xy"][1] - bbox_mid[1]) <= 44.0
+          and np.hypot(t["slope"][0] - med_slope[0], t["slope"][1] - med_slope[1]) <= 0.30
+      ]
+      if spatial_inliers:
+        bundle_k_min = int(np.percentile([t["k_min_rel"] for t in spatial_inliers[:min(12, len(spatial_inliers))]], 25))
+      else:
+        bundle_k_min = 0
+
+      is_deep_scan = ((K - k0) * sp_k > 185.0)
+      valid_k_inliers = [
+          t for t in spatial_inliers
+          if t["k_min_rel"] <= bundle_k_min + k_tol
+          or (t["z_span_tracked"] >= 28.0 and t["mean_r"] >= cand_thresh * 1.8)
+      ]
+      if len(valid_k_inliers) >= 2:
+        sc_sorted = sorted([t["raw_score"] for t in valid_k_inliers], reverse=True)
+        bundle_max_raw = float(min(sc_sorted[0], 1.40 * sc_sorted[min(2, len(sc_sorted) - 1)]))
+      elif len(valid_k_inliers) == 1:
+        bundle_max_raw = float(valid_k_inliers[0]["raw_score"])
+      else:
+        bundle_max_raw = ref_raw
+
+      core_inliers = [t for t in valid_k_inliers if t["raw_score"] >= 0.14 * bundle_max_raw]
+      if len(core_inliers) >= 3:
+        c_bases = np.array([t["base_xy"] for t in core_inliers])
+        bbox_mid = 0.5 * (np.min(c_bases, axis=0) + np.max(c_bases, axis=0))
+        med_center = np.median(c_bases, axis=0)
+        c_slopes = np.array([t["slope"] for t in core_inliers])
+        med_slope = np.median(c_slopes, axis=0)
+        med_slope_ij = np.median(np.array([t["slope_ij"] for t in core_inliers]), axis=0)
+        r_max_core = float(np.max(np.hypot(c_bases[:, 0] - bbox_mid[0], c_bases[:, 1] - bbox_mid[1])))
+        adaptive_rad = float(np.clip(max(37.5, r_max_core + 8.5), 37.5, 48.0))
+        sdev_p75 = float(np.percentile(np.hypot(c_slopes[:, 0] - med_slope[0], c_slopes[:, 1] - med_slope[1]), 75))
+        adaptive_sdev = float(np.clip(max(0.28, 2.4 * sdev_p75), 0.28, 0.38))
+      else:
+        adaptive_rad = 38.5
+        adaptive_sdev = 0.34
+
+      def passes_bundle_filter(t, pass_num=1):
+        if abs(t["base_xy"][0] - fov_center_ras[0]) > 49.5 or abs(t["base_xy"][1] - fov_center_ras[1]) > 66.0:
+          return False
+        dist_start = float(np.hypot(t["track_start_xy"][0] - bbox_mid[0], t["track_start_xy"][1] - bbox_mid[1]))
+        dist_end = float(np.hypot(t["track_end_xy"][0] - bbox_mid[0], t["track_end_xy"][1] - bbox_mid[1]))
+        if is_deep_scan and (dist_start > adaptive_rad + 6.5 or dist_end > adaptive_rad + 20.0):
+          return False
+        if is_deep_scan and t["k_min_rel"] > bundle_k_min + int(round(36.0 / sp_k)) and t["z_span_tracked"] < 42.0:
+          return False
+        if is_deep_scan and t["base_xy"][1] < med_center[1] - 15.0 and t["k_max_rel"] * sp_k < 58.0 and t["z_span_tracked"] < 45.0:
+          return False
+        dist_mid = float(np.hypot(t["base_xy"][0] - bbox_mid[0], t["base_xy"][1] - bbox_mid[1]))
+        dist_med = float(np.hypot(t["base_xy"][0] - med_center[0], t["base_xy"][1] - med_center[1]))
+        slope_dev = float(np.hypot(t["slope"][0] - med_slope[0], t["slope"][1] - med_slope[1]))
+        k_ok = (
+            t["k_min_rel"] <= bundle_k_min + k_tol
+            or (
+                t["z_span_tracked"] >= 28.0
+                and t["mean_r"] >= cand_thresh * 1.6
+                and t["raw_score"] >= 0.16 * bundle_max_raw
+                and slope_dev <= min(0.22, adaptive_sdev)
+            )
+            or (sp_k >= 4.5 and t["k_min_rel"] <= 11 and t["z_span_tracked"] >= 24.0 and t["raw_score"] >= 0.22 * bundle_max_raw)
         )
+        if not k_ok:
+          return False
+        if pass_num == 1:
+          max_sdev = adaptive_sdev if (dist_mid <= 32.0 or len(core_inliers) >= 12) else min(adaptive_sdev, 0.23)
+          return (
+              dist_mid <= adaptive_rad
+              and dist_med <= adaptive_rad + 18.0
+              and slope_dev <= max_sdev
+              and t["raw_score"] >= 0.10 * bundle_max_raw
+          )
+        else:
+          return (
+              dist_mid <= adaptive_rad
+              and dist_med <= adaptive_rad + 15.0
+              and slope_dev <= min(0.25, adaptive_sdev * 0.85)
+              and t["z_span_tracked"] >= (11.0 if K_sub <= 28 else 16.5)
+              and t["rmse"] <= 1.25
+              and t["raw_score"] >= 0.10 * bundle_max_raw
+          )
 
-    locked = [t for t in prelim1 if passes_bundle_filter(t, pass_num=1)]
+      locked = [t for t in prelim1 if passes_bundle_filter(t, pass_num=1)]
 
-    # --- PASS 2 & PASS 3: Tight-ROI Volume Tract Inpainting, Guided Re-Detection & JEV Control-Point Association ---
-    if len(locked) >= 2:
-      corners_ras = np.array([
-          [bbox_mid[0] - (adaptive_rad + 8.0), bbox_mid[1] - (adaptive_rad + 8.0), z_base_ras, 1.0],
-          [bbox_mid[0] + (adaptive_rad + 8.0), bbox_mid[1] + (adaptive_rad + 8.0), z_base_ras, 1.0],
-          [bbox_mid[0] - (adaptive_rad + 8.0), bbox_mid[1] + (adaptive_rad + 8.0), z_base_ras + 90.0, 1.0],
-          [bbox_mid[0] + (adaptive_rad + 8.0), bbox_mid[1] - (adaptive_rad + 8.0), z_base_ras + 90.0, 1.0],
-      ])
-      corners_ijk = (ras_to_ijk @ corners_ras.T).T
-      p2_i0 = max(i0, int(np.floor(np.min(corners_ijk[:, 0]))) - 6)
-      p2_i1 = min(i1, int(np.ceil(np.max(corners_ijk[:, 0]))) + 6)
-      p2_j0 = max(j0, int(np.floor(np.min(corners_ijk[:, 1]))) - 6)
-      p2_j1 = min(j1, int(np.ceil(np.max(corners_ijk[:, 1]))) + 6)
+      # --- PASS 2 & PASS 3: Tight-ROI Volume Tract Inpainting, Guided Re-Detection & JEV Control-Point Association ---
+      if len(locked) >= 2:
+        corners_ras = np.array([
+            [bbox_mid[0] - (adaptive_rad + 8.0), bbox_mid[1] - (adaptive_rad + 8.0), z_base_ras, 1.0],
+            [bbox_mid[0] + (adaptive_rad + 8.0), bbox_mid[1] + (adaptive_rad + 8.0), z_base_ras, 1.0],
+            [bbox_mid[0] - (adaptive_rad + 8.0), bbox_mid[1] + (adaptive_rad + 8.0), z_base_ras + 90.0, 1.0],
+            [bbox_mid[0] + (adaptive_rad + 8.0), bbox_mid[1] - (adaptive_rad + 8.0), z_base_ras + 90.0, 1.0],
+        ])
+        corners_ijk = (ras_to_ijk @ corners_ras.T).T
+        p2_i0 = max(i0, int(np.floor(np.min(corners_ijk[:, 0]))) - 6)
+        p2_i1 = min(i1, int(np.ceil(np.max(corners_ijk[:, 0]))) + 6)
+        p2_j0 = max(j0, int(np.floor(np.min(corners_ijk[:, 1]))) - 6)
+        p2_j1 = min(j1, int(np.ceil(np.max(corners_ijk[:, 1]))) + 6)
 
-      if p2_i1 - p2_i0 >= 24 and p2_j1 - p2_j0 >= 24:
-        ri_in = max(1, int(round(1.35 / sp_i)))
-        rj_in = max(1, int(round(1.35 / sp_j)))
-        yy_in, xx_in = np.mgrid[-rj_in:rj_in + 1, -ri_in:ri_in + 1]
-        disk_in = ((xx_in * sp_i) ** 2 + (yy_in * sp_j) ** 2) <= (1.35 ** 2)
+        if p2_i1 - p2_i0 >= 24 and p2_j1 - p2_j0 >= 24:
+          ri_in = max(1, int(round(1.35 / sp_i)))
+          rj_in = max(1, int(round(1.35 / sp_j)))
+          yy_in, xx_in = np.mgrid[-rj_in:rj_in + 1, -ri_in:ri_in + 1]
+          disk_in = ((xx_in * sp_i) ** 2 + (yy_in * sp_j) ** 2) <= (1.35 ** 2)
 
-        for t in locked:
-          ks_r = np.arange(max(0, t["k_min_rel"] - 1), min(K_sub, t["k_max_rel"] + 2))
-          ics = np.round(np.polyval(t["pi_abs"], ks_r)).astype(int)
-          jcs = np.round(np.polyval(t["pj_abs"], ks_r)).astype(int)
-          for kr, ic_a, jc_a in zip(ks_r, ics, jcs):
-            if p2_i0 <= ic_a < p2_i1 and p2_j0 <= jc_a < p2_j1:
-              k_a = kr + k0
-              bg_v = float(rsym_full[k_a, jc_a, ic_a])
-              if bg_v > 5.0:
-                j_lo, j_hi = max(0, jc_a - rj_in), min(J, jc_a + rj_in + 1)
-                i_lo, i_hi = max(0, ic_a - ri_in), min(I, ic_a + ri_in + 1)
-                d_sub = disk_in[(j_lo - (jc_a - rj_in)):(j_hi - (jc_a - rj_in)), (i_lo - (ic_a - ri_in)):(i_hi - (ic_a - ri_in))]
-                patch = vol_work[k_a, j_lo:j_hi, i_lo:i_hi]
-                patch[d_sub] = np.maximum(patch[d_sub], bg_v * 0.92)
+          for t in locked:
+            ks_r = np.arange(max(0, t["k_min_rel"] - 1), min(K_sub, t["k_max_rel"] + 2))
+            ics = np.round(np.polyval(t["pi_abs"], ks_r)).astype(int)
+            jcs = np.round(np.polyval(t["pj_abs"], ks_r)).astype(int)
+            for kr, ic_a, jc_a in zip(ks_r, ics, jcs):
+              if p2_i0 <= ic_a < p2_i1 and p2_j0 <= jc_a < p2_j1:
+                k_a = kr + k0
+                bg_v = float(rsym_full[k_a, jc_a, ic_a])
+                if bg_v > 5.0:
+                  j_lo, j_hi = max(0, jc_a - rj_in), min(J, jc_a + rj_in + 1)
+                  i_lo, i_hi = max(0, ic_a - ri_in), min(I, ic_a + ri_in + 1)
+                  d_sub = disk_in[(j_lo - (jc_a - rj_in)):(j_hi - (jc_a - rj_in)), (i_lo - (ic_a - ri_in)):(i_hi - (ic_a - ri_in))]
+                  patch = vol_work[k_a, j_lo:j_hi, i_lo:i_hi]
+                  patch[d_sub] = np.maximum(patch[d_sub], bg_v * 0.92)
 
-        res2 = rust_compute_3d_sym_response(vol_work, sp_i, sp_j, p2_i0, p2_i1, p2_j0, p2_j1, k0, K, body_thresh)
-        if res2 is None:
-          res2 = self._compute_3d_sym_response_numpy(vol_work, sp_i, sp_j, p2_i0, p2_i1, p2_j0, p2_j1, k0, K, body_thresh)
-        resp2_full, cs2_full, rsym2_full = res2
-        resp2 = resp2_full[k0:K, p2_j0:p2_j1, p2_i0:p2_i1].copy()
-        cs2 = cs2_full[k0:K, p2_j0:p2_j1, p2_i0:p2_i1]
-        rsym2 = rsym2_full[k0:K, p2_j0:p2_j1, p2_i0:p2_i1]
-        J2, I2 = p2_j1 - p2_j0, p2_i1 - p2_i0
+          update_progress(60, "Stage 4/6: Re-computing symmetry & guided tracking (Pass 2 & JEV Pass 3)...")
+          res2 = rust_compute_3d_sym_response(vol_work, sp_i, sp_j, p2_i0, p2_i1, p2_j0, p2_j1, k0, K, body_thresh)
+          if res2 is None:
+            res2 = self._compute_3d_sym_response_numpy(vol_work, sp_i, sp_j, p2_i0, p2_i1, p2_j0, p2_j1, k0, K, body_thresh)
+          resp2_full, cs2_full, rsym2_full = res2
+          resp2 = resp2_full[k0:K, p2_j0:p2_j1, p2_i0:p2_i1].copy()
+          cs2 = cs2_full[k0:K, p2_j0:p2_j1, p2_i0:p2_i1]
+          rsym2 = rsym2_full[k0:K, p2_j0:p2_j1, p2_i0:p2_i1]
+          J2, I2 = p2_j1 - p2_j0, p2_i1 - p2_i0
 
-        ri_m = max(1, int(round(1.60 / sp_i)))
-        rj_m = max(1, int(round(1.60 / sp_j)))
-        yy_m, xx_m = np.mgrid[-rj_m:rj_m + 1, -ri_m:ri_m + 1]
-        disk_m = ((xx_m * sp_i) ** 2 + (yy_m * sp_j) ** 2) <= (1.60 ** 2)
-        all_kr = np.arange(K_sub)
+          ri_m = max(1, int(round(1.60 / sp_i)))
+          rj_m = max(1, int(round(1.60 / sp_j)))
+          yy_m, xx_m = np.mgrid[-rj_m:rj_m + 1, -ri_m:ri_m + 1]
+          disk_m = ((xx_m * sp_i) ** 2 + (yy_m * sp_j) ** 2) <= (1.60 ** 2)
+          all_kr = np.arange(K_sub)
 
-        for t in locked:
-          ics = np.round(np.polyval(t["pi_abs"], all_kr)).astype(int) - p2_i0
-          jcs = np.round(np.polyval(t["pj_abs"], all_kr)).astype(int) - p2_j0
-          for kr, ic_s, jc_s in zip(all_kr, ics, jcs):
-            if 0 <= ic_s < I2 and 0 <= jc_s < J2:
-              j_lo, j_hi = max(0, jc_s - rj_m), min(J2, jc_s + rj_m + 1)
-              i_lo, i_hi = max(0, ic_s - ri_m), min(I2, ic_s + ri_m + 1)
-              d_sub = disk_m[(j_lo - (jc_s - rj_m)):(j_hi - (jc_s - rj_m)), (i_lo - (ic_s - ri_m)):(i_hi - (ic_s - ri_m))]
-              resp2[kr, j_lo:j_hi, i_lo:i_hi][d_sub] = 0.0
+          for t in locked:
+            ics = np.round(np.polyval(t["pi_abs"], all_kr)).astype(int) - p2_i0
+            jcs = np.round(np.polyval(t["pj_abs"], all_kr)).astype(int) - p2_j0
+            for kr, ic_s, jc_s in zip(all_kr, ics, jcs):
+              if 0 <= ic_s < I2 and 0 <= jc_s < J2:
+                j_lo, j_hi = max(0, jc_s - rj_m), min(J2, jc_s + rj_m + 1)
+                i_lo, i_hi = max(0, ic_s - ri_m), min(I2, ic_s + ri_m + 1)
+                d_sub = disk_m[(j_lo - (jc_s - rj_m)):(j_hi - (jc_s - rj_m)), (i_lo - (ic_s - ri_m)):(i_hi - (ic_s - ri_m))]
+                resp2[kr, j_lo:j_hi, i_lo:i_hi][d_sub] = 0.0
 
-        trajs2 = track_pass(resp2, cs2, rsym2, p2_i0, p2_j0, cand_thresh, prior_slope_ij=med_slope_ij, pass_idx=2)
-        trajs2_valid = [t for t in trajs2 if passes_bundle_filter(t, pass_num=2)]
-        combined = dedup_trajs(trajs2_valid, existing_list=locked)
+          trajs2 = track_pass(resp2, cs2, rsym2, p2_i0, p2_j0, cand_thresh, prior_slope_ij=med_slope_ij, pass_idx=2)
+          trajs2_valid = [t for t in trajs2 if passes_bundle_filter(t, pass_num=2)]
+          combined = dedup_trajs(trajs2_valid, existing_list=locked)
 
-        # --- PASS 3: JEV Auto-Manual Control-Point Association ---
-        for t in combined[len(locked):]:
-          ics = np.round(np.polyval(t["pi_abs"], all_kr)).astype(int) - p2_i0
-          jcs = np.round(np.polyval(t["pj_abs"], all_kr)).astype(int) - p2_j0
-          for kr, ic_s, jc_s in zip(all_kr, ics, jcs):
-            if 0 <= ic_s < I2 and 0 <= jc_s < J2:
-              j_lo, j_hi = max(0, jc_s - rj_m), min(J2, jc_s + rj_m + 1)
-              i_lo, i_hi = max(0, ic_s - ri_m), min(I2, ic_s + ri_m + 1)
-              d_sub = disk_m[(j_lo - (jc_s - rj_m)):(j_hi - (jc_s - rj_m)), (i_lo - (ic_s - ri_m)):(i_hi - (ic_s - ri_m))]
-              resp2[kr, j_lo:j_hi, i_lo:i_hi][d_sub] = 0.0
+          # --- PASS 3: JEV Auto-Manual Control-Point Association ---
+          for t in combined[len(locked):]:
+            ics = np.round(np.polyval(t["pi_abs"], all_kr)).astype(int) - p2_i0
+            jcs = np.round(np.polyval(t["pj_abs"], all_kr)).astype(int) - p2_j0
+            for kr, ic_s, jc_s in zip(all_kr, ics, jcs):
+              if 0 <= ic_s < I2 and 0 <= jc_s < J2:
+                j_lo, j_hi = max(0, jc_s - rj_m), min(J2, jc_s + rj_m + 1)
+                i_lo, i_hi = max(0, ic_s - ri_m), min(I2, ic_s + ri_m + 1)
+                d_sub = disk_m[(j_lo - (jc_s - rj_m)):(j_hi - (jc_s - rj_m)), (i_lo - (ic_s - ri_m)):(i_hi - (ic_s - ri_m))]
+                resp2[kr, j_lo:j_hi, i_lo:i_hi][d_sub] = 0.0
 
-        lm2 = resp2 == maximum_filter(resp2, size=(1, 2 * nms_px + 1, 2 * nms_px + 1))
-        ctl_cut = cand_thresh * 0.55
-        ctl_pts = []
-        ref_bases = np.array([t["base_xy"] for t in combined])
-        ref_slopes = np.array([t["slope"] for t in combined])
-        for kr in range(0, min(K_sub - 1, int(round(105.0 / sp_k)))):
-          jj, ii = np.where(lm2[kr] & (resp2[kr] >= ctl_cut))
-          if len(ii) == 0:
-            continue
-          order_r = np.argsort(-resp2[kr, jj, ii])[:45]
-          for idx_p in order_r:
-            i_a = float(ii[idx_p] + p2_i0)
-            j_a = float(jj[idx_p] + p2_j0)
-            r_v = float(resp2[kr, jj[idx_p], ii[idx_p]])
-            pt_ras = rot_mat @ np.array([i_a, j_a, float(kr + k0)]) + trans_vec
-            dz_b = float(pt_ras[2] - z_base_ras)
-            approx_b = pt_ras[:2] - med_slope * dz_b
-            d_ref = np.hypot(ref_bases[:, 0] - approx_b[0], ref_bases[:, 1] - approx_b[1])
-            w_ref = 1.0 / (d_ref + 4.0) ** 2
-            loc_slope = np.average(ref_slopes, axis=0, weights=w_ref)
-            x0_p = float(pt_ras[0] - loc_slope[0] * dz_b)
-            y0_p = float(pt_ras[1] - loc_slope[1] * dz_b)
-            if math.hypot(x0_p - bbox_mid[0], y0_p - bbox_mid[1]) <= adaptive_rad:
-              ctl_pts.append((i_a, j_a, kr, r_v, float(pt_ras[0]), float(pt_ras[1]), float(pt_ras[2]), x0_p, y0_p))
-
-        if len(ctl_pts) >= min_pts_slices:
-          ctl_arr = np.array(ctl_pts, dtype=np.float64)
-          used_ctl = np.zeros(len(ctl_pts), dtype=bool)
-          jev_trajs = []
-          for seed_i in np.argsort(-ctl_arr[:, 3]):
-            if used_ctl[seed_i]:
+          lm2 = resp2 == maximum_filter(resp2, size=(1, 2 * nms_px + 1, 2 * nms_px + 1))
+          ctl_cut = cand_thresh * 0.55
+          ctl_pts = []
+          ref_bases = np.array([t["base_xy"] for t in combined])
+          ref_slopes = np.array([t["slope"] for t in combined])
+          for kr in range(0, min(K_sub - 1, int(round(105.0 / sp_k)))):
+            jj, ii = np.where(lm2[kr] & (resp2[kr] >= ctl_cut))
+            if len(ii) == 0:
               continue
-            sx0, sy0 = ctl_arr[seed_i, 7], ctl_arr[seed_i, 8]
-            dists_proj = np.hypot(ctl_arr[:, 7] - sx0, ctl_arr[:, 8] - sy0)
-            cand_idxs = np.where((~used_ctl) & (dists_proj <= 1.85))[0]
-            if len(cand_idxs) < min_pts_slices:
-              continue
-            by_k = {}
-            for ci in cand_idxs:
-              kr_c = int(ctl_arr[ci, 2])
-              if kr_c not in by_k or ctl_arr[ci, 3] > ctl_arr[by_k[kr_c], 3]:
-                by_k[kr_c] = ci
-            ks_j = sorted(by_k.keys())
-            if len(ks_j) < (min_pts_slices + 1):
-              continue
-            sel_idxs = [by_k[k] for k in ks_j]
-            arr_j = np.column_stack([ctl_arr[sel_idxs, 0], ctl_arr[sel_idxs, 1], ctl_arr[sel_idxs, 2] + k0, ctl_arr[sel_idxs, 3]])
-            ras_j = ctl_arr[sel_idxs, 4:7]
-            shaft_p75 = float(np.percentile(arr_j[:, 3], 75))
-            ras_j, arr_j, ks_j = trim_trajectory_inside_out(ras_j, arr_j, ks_j, shaft_p75)
-            if len(ks_j) < (min_pts_slices + 1):
-              continue
-            z_span_j = float(ras_j[-1, 2] - ras_j[0, 2])
-            if z_span_j < (13.0 if K_sub <= 28 else 20.0):
-              continue
-            if min(ks_j) > bundle_k_min + k_tol + 2 and z_span_j < 32.0:
-              continue
-            pkg_j = fit_and_package_traj(ras_j, arr_j, ks_j, pass_idx=3, cand_thresh=cand_thresh)
-            if pkg_j is not None and pkg_j["rmse"] <= 1.15 and passes_bundle_filter(pkg_j, pass_num=3):
-              jev_trajs.append(pkg_j)
+            order_r = np.argsort(-resp2[kr, jj, ii])[:45]
+            for idx_p in order_r:
+              i_a = float(ii[idx_p] + p2_i0)
+              j_a = float(jj[idx_p] + p2_j0)
+              r_v = float(resp2[kr, jj[idx_p], ii[idx_p]])
+              pt_ras = rot_mat @ np.array([i_a, j_a, float(kr + k0)]) + trans_vec
+              dz_b = float(pt_ras[2] - z_base_ras)
+              approx_b = pt_ras[:2] - med_slope * dz_b
+              d_ref = np.hypot(ref_bases[:, 0] - approx_b[0], ref_bases[:, 1] - approx_b[1])
+              w_ref = 1.0 / (d_ref + 4.0) ** 2
+              loc_slope = np.average(ref_slopes, axis=0, weights=w_ref)
+              x0_p = float(pt_ras[0] - loc_slope[0] * dz_b)
+              y0_p = float(pt_ras[1] - loc_slope[1] * dz_b)
+              if math.hypot(x0_p - bbox_mid[0], y0_p - bbox_mid[1]) <= adaptive_rad:
+                ctl_pts.append((i_a, j_a, kr, r_v, float(pt_ras[0]), float(pt_ras[1]), float(pt_ras[2]), x0_p, y0_p))
+
+          if len(ctl_pts) >= min_pts_slices:
+            ctl_arr = np.array(ctl_pts, dtype=np.float64)
+            used_ctl = np.zeros(len(ctl_pts), dtype=bool)
+            jev_trajs = []
+            for seed_i in np.argsort(-ctl_arr[:, 3]):
+              if used_ctl[seed_i]:
+                continue
+              sx0, sy0 = ctl_arr[seed_i, 7], ctl_arr[seed_i, 8]
+              dists_proj = np.hypot(ctl_arr[:, 7] - sx0, ctl_arr[:, 8] - sy0)
+              cand_idxs = np.where((~used_ctl) & (dists_proj <= 1.85))[0]
+              if len(cand_idxs) < min_pts_slices:
+                continue
+              by_k = {}
               for ci in cand_idxs:
-                used_ctl[ci] = True
-          combined = dedup_trajs(jev_trajs, existing_list=combined)
+                kr_c = int(ctl_arr[ci, 2])
+                if kr_c not in by_k or ctl_arr[ci, 3] > ctl_arr[by_k[kr_c], 3]:
+                  by_k[kr_c] = ci
+              ks_j = sorted(by_k.keys())
+              if len(ks_j) < (min_pts_slices + 1):
+                continue
+              sel_idxs = [by_k[k] for k in ks_j]
+              arr_j = np.column_stack([ctl_arr[sel_idxs, 0], ctl_arr[sel_idxs, 1], ctl_arr[sel_idxs, 2] + k0, ctl_arr[sel_idxs, 3]])
+              ras_j = ctl_arr[sel_idxs, 4:7]
+              shaft_p75 = float(np.percentile(arr_j[:, 3], 75))
+              ras_j, arr_j, ks_j = trim_trajectory_inside_out(ras_j, arr_j, ks_j, shaft_p75)
+              if len(ks_j) < (min_pts_slices + 1):
+                continue
+              z_span_j = float(ras_j[-1, 2] - ras_j[0, 2])
+              if z_span_j < (13.0 if K_sub <= 28 else 20.0):
+                continue
+              if min(ks_j) > bundle_k_min + k_tol + 2 and z_span_j < 32.0:
+                continue
+              if is_1d_trench_artifact(arr_j, min(ks_j)):
+                continue
+              pkg_j = fit_and_package_traj(ras_j, arr_j, ks_j, pass_idx=3, cand_thresh=cand_thresh)
+              if pkg_j is not None and pkg_j["rmse"] <= 1.15 and passes_bundle_filter(pkg_j, pass_num=3):
+                jev_trajs.append(pkg_j)
+                for ci in cand_idxs:
+                  used_ctl[ci] = True
+            combined = dedup_trajs(jev_trajs, existing_list=combined)
+        else:
+          combined = locked
       else:
         combined = locked
-    else:
-      combined = locked
 
-    # --- HybridNeedleNet (14-Feature Residual SiLU MLP + JEV Orientation Field) Scoring ---
-    all_bases = np.array([t["base_xy"] for t in combined]) if combined else np.zeros((0, 2))
-    all_slopes = np.array([t["slope"] for t in combined]) if combined else np.zeros((0, 2))
-    all_scores = np.array([t["raw_score"] for t in combined]) if combined else np.zeros(0)
+      # --- HybridNeedleNet (14-Feature Residual SiLU MLP + JEV Orientation Field) Scoring ---
+      update_progress(82, "Stage 5/6: Scoring trajectories with HybridNeedleNet & JEV field...")
+      all_bases = np.array([t["base_xy"] for t in combined]) if combined else np.zeros((0, 2))
+      all_slopes = np.array([t["slope"] for t in combined]) if combined else np.zeros((0, 2))
+      all_scores = np.array([t["raw_score"] for t in combined]) if combined else np.zeros(0)
 
-    filtered = []
-    for idx_t, t in enumerate(combined):
-      raw_rel = float(t["raw_score"] / max(1e-6, bundle_max_raw))
-      heur_conf = min(99.9, 100.0 * (raw_rel ** 0.45))
-      if heur_conf < 35.0:
-        continue
-
-      log_raw_rel = math.log1p(raw_rel * 5.0)
-      mean_r_rel = float(t["mean_r"] / max(1e-6, cand_thresh))
-      p75_r_rel = float(t["p75_r"] / max(1e-6, cand_thresh))
-      high_frac = float(t["high_frac"])
-      rmse_norm = float(t["rmse"] / 1.45)
-      z_span_norm = float(t["z_span_tracked"] / 60.0)
-      len_norm = float(t["length_mm"] / 80.0)
-      k_min_mm_norm = float(max(0, t["k_min_rel"] - bundle_k_min) * sp_k / 30.0)
-      k_span = max(1, t["k_max_rel"] - t["k_min_rel"] + 1)
-      continuity = float(t["n_slices"] / k_span)
-      dist_mid = float(np.hypot(t["base_xy"][0] - bbox_mid[0], t["base_xy"][1] - bbox_mid[1]))
-      dist_med = float(np.hypot(t["base_xy"][0] - med_center[0], t["base_xy"][1] - med_center[1]))
-      slope_dev = float(np.hypot(t["slope"][0] - med_slope[0], t["slope"][1] - med_slope[1]))
-      dist_mid_norm = dist_mid / max(1.0, adaptive_rad)
-      dist_med_norm = dist_med / max(1.0, adaptive_rad + 15.0)
-      slope_dev_norm = slope_dev / max(0.05, adaptive_sdev)
-
-      if len(combined) >= 2:
-        d_other = np.hypot(all_bases[:, 0] - t["base_xy"][0], all_bases[:, 1] - t["base_xy"][1])
-        d_other[idx_t] = 1e9
-        w_jev = np.minimum(all_scores, bundle_max_raw) / ((d_other + 5.0) ** 2)
-        w_jev[idx_t] = 0.0
-        if float(np.sum(w_jev)) > 1e-9:
-          loc_sl = np.average(all_slopes, axis=0, weights=w_jev)
-          jev_sdev = float(np.hypot(t["slope"][0] - loc_sl[0], t["slope"][1] - loc_sl[1]))
-        else:
-          jev_sdev = slope_dev
-      else:
-        jev_sdev = slope_dev
-
-      jev_sdev_norm = min(2.0, jev_sdev / 0.25)
-      if t["pass"] == 3:
-        if not (t["z_span_tracked"] >= 45.0 and t["rmse"] <= 0.75 and jev_sdev_norm <= 0.20 and heur_conf >= 47.0):
+      filtered = []
+      for idx_t, t in enumerate(combined):
+        raw_rel = float(t["raw_score"] / max(1e-6, bundle_max_raw))
+        heur_conf = min(99.9, 100.0 * (raw_rel ** 0.45))
+        if heur_conf < 35.0:
           continue
 
-      feat_14 = np.array([
-          log_raw_rel,
-          min(3.0, raw_rel),
-          min(10.0, mean_r_rel) / 5.0,
-          min(12.0, p75_r_rel) / 5.0,
-          high_frac,
-          rmse_norm,
-          min(2.5, z_span_norm),
-          min(2.5, len_norm),
-          min(2.0, k_min_mm_norm),
-          continuity,
-          dist_mid_norm,
-          dist_med_norm,
-          slope_dev_norm,
-          jev_sdev_norm,
-      ], dtype=np.float64)
-      nn_prob, conf = score_trajectory_hybrid_nn(feat_14)
-      if conf >= float(minConfidence):
-        t["nn_prob"] = nn_prob
-        t["confidence"] = conf
-        filtered.append(t)
+        log_raw_rel = math.log1p(raw_rel * 5.0)
+        mean_r_rel = float(t["mean_r"] / max(1e-6, cand_thresh))
+        p75_r_rel = float(t["p75_r"] / max(1e-6, cand_thresh))
+        high_frac = float(t["high_frac"])
+        rmse_norm = float(t["rmse"] / 1.45)
+        z_span_norm = float(t["z_span_tracked"] / 60.0)
+        len_norm = float(t["length_mm"] / 80.0)
+        k_min_mm_norm = float(max(0, t["k_min_rel"] - bundle_k_min) * sp_k / 30.0)
+        k_span = max(1, t["k_max_rel"] - t["k_min_rel"] + 1)
+        continuity = float(t["n_slices"] / k_span)
+        dist_mid = float(np.hypot(t["base_xy"][0] - bbox_mid[0], t["base_xy"][1] - bbox_mid[1]))
+        dist_med = float(np.hypot(t["base_xy"][0] - med_center[0], t["base_xy"][1] - med_center[1]))
+        slope_dev = float(np.hypot(t["slope"][0] - med_slope[0], t["slope"][1] - med_slope[1]))
+        dist_mid_norm = dist_mid / max(1.0, adaptive_rad)
+        dist_med_norm = dist_med / max(1.0, adaptive_rad + 15.0)
+        slope_dev_norm = slope_dev / max(0.05, adaptive_sdev)
 
-    if renderNeedles and widget is not None:
-      self.deleteNeedleDetectionModelsFromScene()
-      self.cleanTable()
-      widget.initTableView()
-      for idx, t in enumerate(filtered):
-        ras_arr = t["ras"]
-        # Sample up to 15 control points from tip (high Z) to base (low Z)
-        n_ctrl = min(15, len(ras_arr))
-        sample_idx = np.linspace(len(ras_arr) - 1, 0, n_ctrl, dtype=int)
-        ctrl_pts = ras_arr[sample_idx].tolist()
-        comment = f"Conf: {t['confidence']:.1f}% | L: {t['length_mm']:.1f} mm"
-        self.addNeedleToScene(ctrl_pts, idx, "Detection", script=script, comment=comment)
-      if filtered:
-        widget.deleteNeedleButton.setEnabled(1)
-        widget.resetDetectionButton.setEnabled(1)
-        widget.fiducialButton.setEnabled(1)
-        if hasattr(widget, "_NeedleFinderWidget__reportFrame"):
-          widget._NeedleFinderWidget__reportFrame.collapsed = 0
+        if len(combined) >= 2:
+          d_other = np.hypot(all_bases[:, 0] - t["base_xy"][0], all_bases[:, 1] - t["base_xy"][1])
+          d_other[idx_t] = 1e9
+          w_jev = np.minimum(all_scores, bundle_max_raw) / ((d_other + 5.0) ** 2)
+          w_jev[idx_t] = 0.0
+          if float(np.sum(w_jev)) > 1e-9:
+            loc_sl = np.average(all_slopes, axis=0, weights=w_jev)
+            jev_sdev = float(np.hypot(t["slope"][0] - loc_sl[0], t["slope"][1] - loc_sl[1]))
+          else:
+            jev_sdev = slope_dev
+        else:
+          jev_sdev = slope_dev
 
-    elapsed = time.perf_counter() - t0
-    p1_cnt = sum(1 for x in filtered if x.get("pass", 1) == 1)
-    p2_cnt = sum(1 for x in filtered if x.get("pass", 1) == 2)
-    p3_cnt = sum(1 for x in filtered if x.get("pass", 1) == 3)
-    print(f"[NeedleFinder] Auto-detected {len(filtered)} needles (P1={p1_cnt}, P2={p2_cnt}, JEV={p3_cnt}) in {elapsed:.2f}s (k_lim={k_lim}, minConf={minConfidence:.1f}%)")
-    return filtered
+        jev_sdev_norm = min(2.0, jev_sdev / 0.25)
+        if t["pass"] == 3:
+          if not (t["z_span_tracked"] >= 45.0 and t["rmse"] <= 0.75 and jev_sdev_norm <= 0.20 and heur_conf >= 47.0):
+            continue
+
+        feat_14 = np.array([
+            log_raw_rel,
+            min(3.0, raw_rel),
+            min(10.0, mean_r_rel) / 5.0,
+            min(12.0, p75_r_rel) / 5.0,
+            high_frac,
+            rmse_norm,
+            min(2.5, z_span_norm),
+            min(2.5, len_norm),
+            min(2.0, k_min_mm_norm),
+            continuity,
+            dist_mid_norm,
+            dist_med_norm,
+            slope_dev_norm,
+            jev_sdev_norm,
+        ], dtype=np.float64)
+        nn_prob, conf = score_trajectory_hybrid_nn(feat_14)
+        if conf >= float(minConfidence):
+          t["nn_prob"] = nn_prob
+          t["confidence"] = conf
+          filtered.append(t)
+
+      if renderNeedles and widget is not None:
+        update_progress(88, f"Stage 6/6: Rendering {len(filtered)} detected needles in 3D scene...")
+        self.deleteNeedleDetectionModelsFromScene()
+        self.cleanTable()
+        widget.initTableView()
+        for idx, t in enumerate(filtered):
+          if prog_dialog is not None and (idx % 3 == 0 or idx == len(filtered) - 1):
+            pct_r = 88 + int(round(11.0 * (idx + 1) / max(1, len(filtered))))
+            update_progress(pct_r, f"Stage 6/6: Rendering needle {idx + 1}/{len(filtered)} in 3D scene...")
+          ras_arr = t["ras"]
+          # Sample up to 15 control points from tip (high Z) to base (low Z)
+          n_ctrl = min(15, len(ras_arr))
+          sample_idx = np.linspace(len(ras_arr) - 1, 0, n_ctrl, dtype=int)
+          ctrl_pts = ras_arr[sample_idx].tolist()
+          comment = f"Conf: {t['confidence']:.1f}% | L: {t['length_mm']:.1f} mm"
+          self.addNeedleToScene(ctrl_pts, idx, "Detection", script=script, comment=comment)
+        if filtered:
+          widget.deleteNeedleButton.setEnabled(1)
+          widget.resetDetectionButton.setEnabled(1)
+          widget.fiducialButton.setEnabled(1)
+          if hasattr(widget, "_NeedleFinderWidget__reportFrame"):
+            widget._NeedleFinderWidget__reportFrame.collapsed = 0
+
+      elapsed = time.perf_counter() - t0
+      p1_cnt = sum(1 for x in filtered if x.get("pass", 1) == 1)
+      p2_cnt = sum(1 for x in filtered if x.get("pass", 1) == 2)
+      p3_cnt = sum(1 for x in filtered if x.get("pass", 1) == 3)
+      print(f"[NeedleFinder] Auto-detected {len(filtered)} needles (P1={p1_cnt}, P2={p2_cnt}, JEV={p3_cnt}) in {elapsed:.2f}s (k_lim={k_lim}, minConf={minConfidence:.1f}%)")
+      return filtered
+    finally:
+      close_progress()
