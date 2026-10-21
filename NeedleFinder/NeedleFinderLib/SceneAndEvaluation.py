@@ -204,6 +204,8 @@ class SceneAndEvaluationMixin:
       widget.resetDetectionButton.setEnabled(0)
       widget.labelMapNode = None
       widget.tempPointList = []
+      widget.axialSegmentationLimit = None
+      widget.axialSegmentationLimitRAS = None
       widget.templateSliceButton.text = "1. Select Current Axial Slice as Seg. Limit (current: None)"
       if not script:
         widget.onResetParameters()
@@ -1327,9 +1329,11 @@ class SceneAndEvaluationMixin:
       s = slicer.app.layoutManager().sliceWidget("Red").sliceLogic().GetBackgroundLayer().GetSliceNode()
       offSet = s.GetSliceOffset()
       rasVector = [0, 0, offSet]
-      widget.templateSliceButton.text = "1. Select Current Axial Slice as Seg. Limit (current: " + str(offSet) + ")"
-
       widget.axialSegmentationLimit = int(round(self.ras2ijk(rasVector)[2]))
+      widget.axialSegmentationLimitRAS = float(offSet)
+      widget.templateSliceButton.text = (
+          f"1. Select Current Axial Slice as Seg. Limit (current: {offSet:.1f} mm / slice {widget.axialSegmentationLimit})"
+      )
 
       self.fiducialNode = create_fiducial_node(
           name='template slice position',
@@ -1337,6 +1341,14 @@ class SceneAndEvaluationMixin:
           color=(0.0, 1.0, 0.0),
           visibility=True,
       )
+    else:
+      k_lim, z_ras = self.findAxialSegmentationLimitFromMarker(bForceFallback=False)
+      widget.axialSegmentationLimit = int(k_lim)
+      widget.axialSegmentationLimitRAS = float(z_ras)
+      if widget.templateSliceButton is not None:
+        widget.templateSliceButton.text = (
+            f"1. Select Current Axial Slice as Seg. Limit (current: {z_ras:.1f} mm / slice {k_lim})"
+        )
     widget.fiducialButton.setEnabled(1)
     widget.createAddOrSelectLabelMapNode()
 
