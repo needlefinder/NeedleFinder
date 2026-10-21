@@ -10,6 +10,7 @@ set(MODULE_PYTHON_SCRIPTS
   ${MODULE_NAME}Lib/DeflectionModelData.py
   ${MODULE_NAME}Lib/GeometryUtils.py
   ${MODULE_NAME}Lib/LegacyEditorCompat.py
+  ${MODULE_NAME}Lib/NeuralNeedleNet.py
   ${MODULE_NAME}Lib/ProfilingUtils.py
   ${MODULE_NAME}Lib/RustCore.py
   ${MODULE_NAME}Lib/SceneAndEvaluation.py
@@ -20,6 +21,7 @@ set(MODULE_PYTHON_RESOURCES
   Config/default.cfg
   Config/miccai15.cfg
   Config/miccai2013.cfg
+  ${MODULE_NAME}Lib/needle_unet3d.onnx
   NeedleFinderRust/Cargo.toml
   NeedleFinderRust/src/lib.rs
   NeedleFinderRust/src/needlefinder_core.cpp

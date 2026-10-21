@@ -34,6 +34,11 @@ from .RustCore import (
     rust_search_cone_15_1,
     rust_search_cone_current_dev,
 )
+from .NeuralNeedleNet import (
+    create_or_update_slicer_labelmap,
+    extract_nn_labelmap_tubes,
+    run_nn_3d_segmentation,
+)
 from .LegacyEditorCompat import (
     EditorLib,
     create_fiducial_node,
@@ -3343,7 +3348,7 @@ class TrackingAlgorithmsMixin:
         z_all = ras_pts[:, 2]
         x_all = ras_pts[:, 0]
         y_all = ras_pts[:, 1]
-        if sp_k >= 2.8:
+        if (K - k0) * sp_k <= 185.0:
           deg0 = 2 if n >= 7 else 1
           px0 = np.polyfit(z_all, x_all, deg0)
           py0 = np.polyfit(z_all, y_all, deg0)
@@ -3448,8 +3453,7 @@ class TrackingAlgorithmsMixin:
         by_poly = float(np.polyval(py, z_base_ras))
         use_linear_ext = (
             (sp_k >= 2.8 and z_vals[0] > z_base_ras + 2.0 * sp_k)
-            or abs(float(z_vals[0] - z_base_ras)) > 22.0
-            or math.hypot(bx_poly - bx_lin, by_poly - by_lin) > 3.5
+            or ((K - k0) * sp_k > 185.0 and (abs(float(z_vals[0] - z_base_ras)) > 22.0 or math.hypot(bx_poly - bx_lin, by_poly - by_lin) > 3.5))
         )
         if use_linear_ext:
           bx, by = bx_lin, by_lin
@@ -3604,6 +3608,17 @@ class TrackingAlgorithmsMixin:
           ]
           sl_seeds.sort(key=lambda x: -x[0])
           seeds.extend(sl_seeds[:110])
+        if K_sub * sp_k > 185.0:
+          up_max_k = min(K_sub - 5, int(round(165.0 / sp_k)))
+          up_cut = seed_cut * 1.05
+          for k_rel in range(max_seed_k, up_max_k, 2):
+            jj, ii = np.where(loc_max[k_rel] & (resp_sub[k_rel] >= up_cut))
+            sl_seeds = [
+                (float(resp_sub[k_rel, j_s, i_s]), k_rel, float(i_s), float(j_s), False)
+                for j_s, i_s in zip(jj, ii)
+            ]
+            sl_seeds.sort(key=lambda x: -x[0])
+            seeds.extend(sl_seeds[:45])
         seeds.sort(key=lambda x: -x[0])
 
         visited = np.zeros((K_sub, J_sub, I_sub), dtype=bool)
@@ -3781,8 +3796,8 @@ class TrackingAlgorithmsMixin:
             out.append(t)
         return out
 
-      # --- PASS 1: Full-ROI Detection ---
-      update_progress(12, "Stage 1/6: Computing 3D radial symmetry response (Pass 1)...")
+      # --- PASS 1: Full-ROI Detection & Stage 1 3D Multi-Head Neural Network Segmentation ---
+      update_progress(12, "Stage 1/6: Computing 3D radial symmetry & 3D U-Net labelmap (Pass 1)...")
       res1 = rust_compute_3d_sym_response(vol_work, sp_i, sp_j, i0, i1, j0, j1, k0, K, body_thresh)
       if res1 is None:
         res1 = self._compute_3d_sym_response_numpy(vol_work, sp_i, sp_j, i0, i1, j0, j1, k0, K, body_thresh)
@@ -3791,6 +3806,14 @@ class TrackingAlgorithmsMixin:
       cs1 = cs_full[k0:K, j0:j1, i0:i1]
       rsym1 = rsym_full[k0:K, j0:j1, i0:i1]
       K_sub = K - k0
+
+      nn_preds = None
+      try:
+        nn_preds = run_nn_3d_segmentation(vol_work, sp_i, sp_j, sp_k, i0, i1, j0, j1, k0, K, resp1, cs1, rsym1)
+        if nn_preds is not None and not script:
+          create_or_update_slicer_labelmap(volumeNode, nn_preds, k0, i0, i1, j0, j1, K, J, I, threshold=0.40)
+      except Exception:
+        nn_preds = None
 
       pos_vals = resp1[resp1 > 0.5]
       cand_thresh = max(1.2, float(np.percentile(pos_vals, 50))) if len(pos_vals) else 1.2
@@ -3893,13 +3916,20 @@ class TrackingAlgorithmsMixin:
         adaptive_sdev = 0.34
 
       def passes_bundle_filter(t, pass_num=1):
-        if abs(t["base_xy"][0] - fov_center_ras[0]) > 49.5 or abs(t["base_xy"][1] - fov_center_ras[1]) > 66.0:
+        max_fov_dx = 56.5 if is_deep_scan else 49.5
+        if abs(t["base_xy"][0] - fov_center_ras[0]) > max_fov_dx or abs(t["base_xy"][1] - fov_center_ras[1]) > 66.0:
           return False
         dist_start = float(np.hypot(t["track_start_xy"][0] - bbox_mid[0], t["track_start_xy"][1] - bbox_mid[1]))
         dist_end = float(np.hypot(t["track_end_xy"][0] - bbox_mid[0], t["track_end_xy"][1] - bbox_mid[1]))
-        if is_deep_scan and (dist_start > adaptive_rad + 6.5 or dist_end > adaptive_rad + 20.0):
+        if is_deep_scan and (dist_start > adaptive_rad + 12.5 or dist_end > adaptive_rad + 20.0):
           return False
-        if is_deep_scan and t["k_min_rel"] > bundle_k_min + int(round(36.0 / sp_k)) and t["z_span_tracked"] < 42.0:
+        is_deep_uterine = (
+            is_deep_scan
+            and t["k_max_rel"] * sp_k >= 105.0
+            and t["z_span_tracked"] >= 22.0
+            and t["mean_r"] >= cand_thresh * 1.45
+        )
+        if is_deep_scan and t["k_min_rel"] > bundle_k_min + int(round(36.0 / sp_k)) and t["z_span_tracked"] < 42.0 and not is_deep_uterine:
           return False
         if is_deep_scan and t["base_xy"][1] < med_center[1] - 15.0 and t["k_max_rel"] * sp_k < 58.0 and t["z_span_tracked"] < 45.0:
           return False
@@ -3914,6 +3944,7 @@ class TrackingAlgorithmsMixin:
                 and t["raw_score"] >= 0.16 * bundle_max_raw
                 and slope_dev <= min(0.22, adaptive_sdev)
             )
+            or (is_deep_uterine and t["raw_score"] >= 0.12 * bundle_max_raw and slope_dev <= min(0.24, adaptive_sdev))
             or (sp_k >= 4.5 and t["k_min_rel"] <= 11 and t["z_span_tracked"] >= 24.0 and t["raw_score"] >= 0.22 * bundle_max_raw)
         )
         if not k_ok:
@@ -4149,10 +4180,47 @@ class TrackingAlgorithmsMixin:
             jev_sdev_norm,
         ], dtype=np.float64)
         nn_prob, conf = score_trajectory_hybrid_nn(feat_14)
+
+        # Fuse Stage 1 3D U-Net Labelmap & Peak probabilities into trajectory verification
+        if nn_preds is not None:
+          pm_arr = nn_preds["p_mask"]
+          pp_arr = nn_preds["p_peak"]
+          po_arr = nn_preds["p_obt"]
+          H_nn, W_nn = pm_arr.shape[1], pm_arr.shape[2]
+          pm_vals, pp_vals = [], []
+          for kr_v in range(max(0, t["k_min_rel"]), min(K_sub, t["k_max_rel"] + 1)):
+            ic_v = int(round(float(np.polyval(t["pi_abs"], kr_v)) - i0))
+            jc_v = int(round(float(np.polyval(t["pj_abs"], kr_v)) - j0))
+            if 1 <= ic_v < W_nn - 1 and 1 <= jc_v < H_nn - 1:
+              pm_vals.append(max(float(np.max(pm_arr[kr_v, jc_v - 1:jc_v + 2, ic_v - 1:ic_v + 2])), float(np.max(po_arr[kr_v, jc_v - 1:jc_v + 2, ic_v - 1:ic_v + 2]))))
+              pp_vals.append(float(np.max(pp_arr[kr_v, jc_v - 1:jc_v + 2, ic_v - 1:ic_v + 2])))
+          if len(pm_vals) >= 3:
+            mean_pm_v = float(np.mean(pm_vals))
+            p75_pm_v = float(np.percentile(pm_vals, 75))
+            mean_pp_v = float(np.mean(pp_vals))
+            if mean_pm_v < 0.14 and p75_pm_v < 0.22 and mean_pp_v < 0.12 and conf < 78.0:
+              continue
+            if mean_pm_v >= 0.58 and mean_pp_v >= 0.44 and conf >= 38.0:
+              conf = max(conf, min(99.5, 58.0 + 38.0 * mean_pm_v))
+
         if conf >= float(minConfidence):
           t["nn_prob"] = nn_prob
           t["confidence"] = conf
           filtered.append(t)
+
+      # Stage 2 Direct 3D U-Net Labelmap + Tangent-Field Tube Reconstruction (recovers missed & obturator needles)
+      if nn_preds is not None and not script:
+        try:
+          nn_tubes = extract_nn_labelmap_tubes(
+              nn_preds, resp1, k0, i0, j0, sp_i, sp_j, sp_k,
+              ijk_to_ras_mat, ras_to_ijk, filtered, include_obturator=True,
+          )
+          for nt in nn_tubes:
+            if nt["confidence"] >= float(minConfidence):
+              nt["ras"] = nt["points"]
+              filtered.append(nt)
+        except Exception:
+          pass
 
       if renderNeedles and widget is not None:
         update_progress(88, f"Stage 6/6: Rendering {len(filtered)} detected needles in 3D scene...")
