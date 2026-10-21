@@ -33,31 +33,143 @@ def _shared_lib_filename() -> str:
     return "libneedlefinder_rust.so"
 
 
+def _select_macos_sdk() -> str | None:
+    """Return a compatible macOS SDK path if the default CommandLineTools SDK has TAPI issues."""
+    sdk_dir = "/Library/Developer/CommandLineTools/SDKs"
+    if not os.path.isdir(sdk_dir):
+        return None
+    for candidate in ("MacOSX14.4.sdk", "MacOSX14.sdk", "MacOSX15.sdk", "MacOSX13.3.sdk", "MacOSX13.sdk"):
+        full = os.path.join(sdk_dir, candidate)
+        if os.path.exists(full):
+            return full
+    return None
+
+
+def _build_cpp_fallback(crate_dir: str, out_lib_path: str, env: dict) -> bool:
+    """Compile `src/needlefinder_core.cpp` (and combine with Rust arm64 via `lipo` on macOS if present)."""
+    cpp_src = os.path.join(crate_dir, "src", "needlefinder_core.cpp")
+    if not os.path.exists(cpp_src):
+        return False
+    os.makedirs(os.path.dirname(out_lib_path), exist_ok=True)
+    sys_name = platform.system().lower()
+    if sys_name == "darwin":
+        sdk = env.get("SDKROOT") or _select_macos_sdk()
+        sdk_args = ["-isysroot", sdk] if sdk else []
+        # If cargo already built an arm64 Rust dylib, build x86_64 and lipo them into a Universal dylib
+        if os.path.exists(out_lib_path):
+            arm64_rust_path = out_lib_path + ".rust_arm64"
+            x86_cpp_path = out_lib_path + ".cpp_x86_64"
+            try:
+                os.replace(out_lib_path, arm64_rust_path)
+                subprocess.run(
+                    [
+                        "clang++",
+                        "-O3",
+                        "-std=c++17",
+                        "-dynamiclib",
+                        "-arch",
+                        "x86_64",
+                        "-mmacosx-version-min=11.0",
+                        *sdk_args,
+                        cpp_src,
+                        "-o",
+                        x86_cpp_path,
+                    ],
+                    cwd=crate_dir,
+                    env=env,
+                    check=True,
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL,
+                    timeout=60,
+                )
+                subprocess.run(
+                    ["lipo", "-create", arm64_rust_path, x86_cpp_path, "-output", out_lib_path],
+                    cwd=crate_dir,
+                    env=env,
+                    check=True,
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL,
+                    timeout=30,
+                )
+                return os.path.exists(out_lib_path)
+            except Exception:
+                pass
+        cmd = [
+            "clang++",
+            "-O3",
+            "-std=c++17",
+            "-dynamiclib",
+            "-arch",
+            "x86_64",
+            "-arch",
+            "arm64",
+            "-mmacosx-version-min=11.0",
+            *sdk_args,
+            cpp_src,
+            "-o",
+            out_lib_path,
+        ]
+    else:
+        cmd = ["g++", "-O3", "-std=c++17", "-shared", "-fPIC", cpp_src, "-o", out_lib_path]
+
+    try:
+        subprocess.run(
+            cmd,
+            cwd=crate_dir,
+            env=env,
+            check=True,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            timeout=60,
+        )
+        return os.path.exists(out_lib_path)
+    except Exception:
+        return False
+
+
 def _find_or_build_rust_lib():
-    """Locate or compile the Rust shared library for the current OS/architecture."""
+    """Locate or compile the Rust/C++ native shared library for the current OS and Python ABI."""
     crate_dir = os.path.abspath(
         os.path.join(os.path.dirname(__file__), "..", "NeedleFinderRust")
     )
     lib_name = _shared_lib_filename()
-    lib_path = os.path.join(crate_dir, "target", "release", lib_name)
-    src_path = os.path.join(crate_dir, "src", "lib.rs")
+    release_dir = os.path.join(crate_dir, "target", "release")
+    lib_path = os.path.join(release_dir, lib_name)
+    rs_src = os.path.join(crate_dir, "src", "lib.rs")
+    cpp_src = os.path.join(crate_dir, "src", "needlefinder_core.cpp")
+
+    env = os.environ.copy()
+    extra_paths = [
+        os.path.expanduser("~/.cargo/bin"),
+        "/opt/homebrew/bin",
+        "/usr/local/bin",
+    ]
+    env["PATH"] = os.pathsep.join(extra_paths + [env.get("PATH", "")])
+    if platform.system().lower() == "darwin" and "SDKROOT" not in env:
+        sdk = _select_macos_sdk()
+        if sdk:
+            env["SDKROOT"] = sdk
 
     needs_build = not os.path.exists(lib_path)
-    if not needs_build and os.path.exists(src_path):
+    if not needs_build:
         try:
-            if os.path.getmtime(src_path) > os.path.getmtime(lib_path):
+            lib_mtime = os.path.getmtime(lib_path)
+            if (os.path.exists(rs_src) and os.path.getmtime(rs_src) > lib_mtime) or (
+                os.path.exists(cpp_src) and os.path.getmtime(cpp_src) > lib_mtime
+            ):
                 needs_build = True
         except OSError:
             pass
 
+    if not needs_build:
+        try:
+            lib = ctypes.CDLL(lib_path)
+            _bind_signatures(lib)
+            return lib
+        except Exception:
+            needs_build = True
+
     if needs_build and os.path.exists(os.path.join(crate_dir, "Cargo.toml")):
-        env = os.environ.copy()
-        extra_paths = [
-            os.path.expanduser("~/.cargo/bin"),
-            "/opt/homebrew/bin",
-            "/usr/local/bin",
-        ]
-        env["PATH"] = os.pathsep.join(extra_paths + [env.get("PATH", "")])
         try:
             subprocess.run(
                 ["cargo", "build", "--release"],
@@ -71,16 +183,25 @@ def _find_or_build_rust_lib():
         except Exception:
             pass
 
-    if not os.path.exists(lib_path):
-        return None
+        if os.path.exists(lib_path):
+            try:
+                lib = ctypes.CDLL(lib_path)
+                _bind_signatures(lib)
+                return lib
+            except Exception:
+                # Architecture mismatch (e.g. Rosetta x86_64 Slicer with arm64 cargo dylib)
+                pass
 
-    try:
-        lib = ctypes.CDLL(lib_path)
-        _bind_signatures(lib)
-        return lib
-    except Exception as exc:
-        print(f"[NeedleFinder] Could not load Rust acceleration library: {exc}")
-        return None
+    # Build universal / native C++17 fallback if cargo wasn't available or target arch differed
+    if _build_cpp_fallback(crate_dir, lib_path, env):
+        try:
+            lib = ctypes.CDLL(lib_path)
+            _bind_signatures(lib)
+            return lib
+        except Exception as exc:
+            print(f"[NeedleFinder] Could not load native acceleration library: {exc}")
+
+    return None
 
 
 def _bind_signatures(lib: ctypes.CDLL) -> None:
