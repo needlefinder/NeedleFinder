@@ -824,10 +824,10 @@ pub unsafe extern "C" fn nf_compute_3d_sym_response(
     let out_cs = slice::from_raw_parts_mut(out_csmooth_ptr, total_elems);
     let out_rsym = slice::from_raw_parts_mut(out_ringsym_ptr, total_elems);
 
-    let radii = [1.7_f64, 2.5_f64, 3.4_f64];
-    let mut di_tab = [[0_isize; 6]; 3];
-    let mut dj_tab = [[0_isize; 6]; 3];
-    for r in 0..3 {
+    let radii = [1.35_f64, 1.85_f64, 2.5_f64, 3.3_f64];
+    let mut di_tab = [[0_isize; 6]; 4];
+    let mut dj_tab = [[0_isize; 6]; 4];
+    for r in 0..4 {
         for a in 0..6 {
             let th = (a as f64) * (std::f64::consts::PI / 6.0);
             di_tab[r][a] = ((radii[r] * th.cos() / sp_x).round() as isize).clamp(-11, 11);
@@ -884,10 +884,10 @@ pub unsafe extern "C" fn nf_compute_3d_sym_response(
                         let row_m = (j - 1) * dim_x;
                         let row_p = (j + 1) * dim_x;
                         for i in ia_s..ib_s {
-                            let sum = 4.0 * sl[row + i]
+                            let sum = 8.0 * sl[row + i]
                                 + 2.0 * (sl[row + i - 1] + sl[row + i + 1] + sl[row_m + i] + sl[row_p + i])
                                 + (sl[row_m + i - 1] + sl[row_m + i + 1] + sl[row_p + i - 1] + sl[row_p + i + 1]);
-                            cs[row + i] = (sum * 0.0625) as f32;
+                            cs[row + i] = (sum * 0.05) as f32;
                         }
                     }
 
@@ -897,7 +897,7 @@ pub unsafe extern "C" fn nf_compute_3d_sym_response(
                             let c = cs[row + i];
                             let mut best_sym = 0.0_f32;
                             let mut best_med = 0.0_f32;
-                            for r in 0..3 {
+                            for r in 0..4 {
                                 let mut pmins = [0.0_f32; 6];
                                 let mut all12 = [0.0_f32; 12];
                                 for a in 0..6 {
@@ -913,8 +913,9 @@ pub unsafe extern "C" fn nf_compute_3d_sym_response(
                                 }
                                 pmins.sort_unstable_by(|x, y| x.partial_cmp(y).unwrap_or(std::cmp::Ordering::Equal));
                                 all12.sort_unstable_by(|x, y| x.partial_cmp(y).unwrap_or(std::cmp::Ordering::Equal));
-                                if pmins[1] > best_sym {
-                                    best_sym = pmins[1];
+                                let sym_r = 0.45_f32 * pmins[1] + 0.55_f32 * pmins[2];
+                                if sym_r > best_sym {
+                                    best_sym = sym_r;
                                 }
                                 if all12[6] > best_med {
                                     best_med = all12[6];

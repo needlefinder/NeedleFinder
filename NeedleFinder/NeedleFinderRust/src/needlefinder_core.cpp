@@ -688,10 +688,10 @@ int32_t nf_compute_3d_sym_response(
         return 0;
     }
 
-    const double radii[3] = {1.7, 2.5, 3.4};
-    ptrdiff_t di_tab[3][6];
-    ptrdiff_t dj_tab[3][6];
-    for (int r = 0; r < 3; ++r) {
+    const double radii[4] = {1.35, 1.85, 2.5, 3.3};
+    ptrdiff_t di_tab[4][6];
+    ptrdiff_t dj_tab[4][6];
+    for (int r = 0; r < 4; ++r) {
         for (int a = 0; a < 6; ++a) {
             const double th = static_cast<double>(a) * (kPi / 6.0);
             di_tab[r][a] = std::clamp(static_cast<ptrdiff_t>(std::lround(radii[r] * std::cos(th) / sp_x)), ptrdiff_t(-11), ptrdiff_t(11));
@@ -729,10 +729,10 @@ int32_t nf_compute_3d_sym_response(
                 const size_t row_m = (j - 1) * dim_x;
                 const size_t row_p = (j + 1) * dim_x;
                 for (size_t i = ia_s; i < ib_s; ++i) {
-                    const double sum = 4.0 * sl[row + i]
+                    const double sum = 8.0 * sl[row + i]
                         + 2.0 * (sl[row + i - 1] + sl[row + i + 1] + sl[row_m + i] + sl[row_p + i])
                         + (sl[row_m + i - 1] + sl[row_m + i + 1] + sl[row_p + i - 1] + sl[row_p + i + 1]);
-                    cs[row + i] = static_cast<float>(sum * 0.0625);
+                    cs[row + i] = static_cast<float>(sum * 0.05);
                 }
             }
 
@@ -742,7 +742,7 @@ int32_t nf_compute_3d_sym_response(
                     const float c = cs[row + i];
                     float best_sym = 0.0f;
                     float best_med = 0.0f;
-                    for (int r = 0; r < 3; ++r) {
+                    for (int r = 0; r < 4; ++r) {
                         float pmins[6];
                         float all12[12];
                         for (int a = 0; a < 6; ++a) {
@@ -758,7 +758,8 @@ int32_t nf_compute_3d_sym_response(
                         }
                         std::sort(pmins, pmins + 6);
                         std::nth_element(all12, all12 + 6, all12 + 12);
-                        if (pmins[1] > best_sym) best_sym = pmins[1];
+                        const float sym_r = 0.45f * pmins[1] + 0.55f * pmins[2];
+                        if (sym_r > best_sym) best_sym = sym_r;
                         if (all12[6] > best_med) best_med = all12[6];
                     }
                     rsym[row + i] = best_sym;
