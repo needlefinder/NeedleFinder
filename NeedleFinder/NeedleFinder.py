@@ -440,6 +440,34 @@ class NeedleFinderWidget(ScriptedLoadableModuleWidget):
     self.fiducialButton.setEnabled(0)
     segmentationFrame.addRow(self.fiducialButton)
 
+    self.autoDetectAllButton = qt.QPushButton('Auto-Detect All Needles')
+    self.autoDetectAllButton.toolTip = (
+        "Automatically detect and segment all needle trajectories in the volume "
+        "using 3D symmetric tubular filtering and multi-slice momentum tracking "
+        "(no manual tip clicks required)."
+    )
+    self.autoDetectAllButton.setStyleSheet(primary_action_style)
+    self.autoDetectAllButton.clicked.connect(self.onAutoDetectAllNeedlesClicked)
+
+    self.minConfidenceSpinBox = qt.QDoubleSpinBox()
+    self.minConfidenceSpinBox.setRange(5.0, 95.0)
+    self.minConfidenceSpinBox.setSingleStep(5.0)
+    self.minConfidenceSpinBox.setDecimals(0)
+    self.minConfidenceSpinBox.setValue(35.0)
+    self.minConfidenceSpinBox.setSuffix("%")
+    self.minConfidenceSpinBox.toolTip = (
+        "Minimum confidence score (%) for automatically detected needles."
+    )
+
+    autoDetectRow = qt.QFrame()
+    autoDetectLayout = qt.QHBoxLayout(autoDetectRow)
+    autoDetectLayout.setContentsMargins(0, 0, 0, 0)
+    autoDetectLayout.addWidget(self.autoDetectAllButton, 4)
+    minConfLabel = qt.QLabel("Min Conf:")
+    autoDetectLayout.addWidget(minConfLabel, 0)
+    autoDetectLayout.addWidget(self.minConfidenceSpinBox, 1)
+    segmentationFrame.addRow(autoDetectRow)
+
     self.newInsertionButton = None
 
     self.deleteNeedleButton = qt.QPushButton('Delete Last Needle [Ctrl + Z]')
@@ -1064,6 +1092,14 @@ class NeedleFinderWidget(ScriptedLoadableModuleWidget):
     """Skip providing segmentation limit plane, as already in scene."""
     profprint()
     self.logic.placeAxialLimitMarker(assign=False)
+
+  def onAutoDetectAllNeedlesClicked(self, _=False):
+    """Automatically detect and segment all needles in the active volume."""
+    profprint()
+    if self.fiducialButton.checked:
+      self.fiducialButton.checked = 0
+    min_conf = float(self.minConfidenceSpinBox.value)
+    self.logic.autoDetectAllNeedles(minConfidence=min_conf)
 
   def onStartStopGivingObturatorNeedleTipsToggled(self, checked):
     """Start/stop giving obturator needle tips."""
@@ -2472,5 +2508,29 @@ class NeedleFinderTest(ScriptedLoadableModuleTest):
     widget.resetParametersButton.click()
     slicer.app.processEvents()
     self.assertEqual(widget.algoVersParameter.value, 3)
+
+    # 11. Test "Auto-Detect All Needles" button and 3D tubular detector
+    volumeNode = sliceWidgetRed.sliceLogic().GetBackgroundLayer().GetVolumeNode()
+    imageData = volumeNode.GetImageData()
+    dims = imageData.GetDimensions()
+    vol_arr = vtk.util.numpy_support.vtk_to_numpy(imageData.GetPointData().GetScalars()).reshape(dims[2], dims[1], dims[0])
+    mid_i, mid_j = dims[0] // 2, dims[1] // 2
+    # Embed 3 realistic dark needle tracks into bright tissue background
+    vol_arr[:, max(0, mid_j - 35):min(dims[1], mid_j + 35), max(0, mid_i - 35):min(dims[0], mid_i + 35)] = 200
+    for ni, nj, k_end in ((mid_i - 12, mid_j - 8, 70), (mid_i, mid_j + 6, 75), (mid_i + 12, mid_j - 6, 68)):
+      for k in range(20, min(k_end, dims[2])):
+        vol_arr[k, nj - 1:nj + 2, ni - 1:ni + 2] = 10
+    imageData.GetPointData().GetScalars().Modified()
+    imageData.Modified()
+
+    widget.axialSegmentationLimit = 20
+    widget.minConfidenceSpinBox.setValue(25.0)
+    widget.autoDetectAllButton.click()
+    slicer.app.processEvents()
+    self.assertGreaterEqual(widget.model.rowCount(), 3)
+    self.assertIsNotNone(getNode("*auto-seg_0*"))
+    comment_item = widget.model.item(0, 4)
+    self.assertIsNotNone(comment_item)
+    self.assertIn("Conf:", comment_item.text())
 
     self.delayDisplay("UI and slice-view interaction test passed!", 50)

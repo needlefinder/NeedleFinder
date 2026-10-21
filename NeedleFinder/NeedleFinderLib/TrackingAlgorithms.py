@@ -27,6 +27,8 @@ from .GeometryUtils import (
     unique_points,
 )
 from .RustCore import (
+    get_volume_f64_buffer,
+    rust_compute_3d_sym_response,
     rust_find_tip,
     rust_search_cone_13,
     rust_search_cone_15_1,
@@ -409,6 +411,7 @@ class TrackingAlgorithmsMixin:
     if not found or bForceFallback:
       print("/!\\ z-limit marker in scene required! --> fallback")
       bases, names = self.returnBasesFromNeedleModels()
+      auto_attr = {}
       if len(bases) > 0:
         bases2 = np.array(bases)[:, 2]
         i = bases2.argmin()
@@ -416,18 +419,42 @@ class TrackingAlgorithmsMixin:
         asl = [coord[0], coord[1], asl[2]]
       else:
         asl = [0.0, 0.0, 0.0]
+        try:
+          vnode = (
+              slicer.app.layoutManager()
+              .sliceWidget("Red")
+              .sliceLogic()
+              .GetBackgroundLayer()
+              .GetVolumeNode()
+          )
+          if vnode is None:
+            vnode = slicer.mrmlScene.GetFirstNodeByClass("vtkMRMLScalarVolumeNode")
+          if vnode is not None and vnode.GetImageData() is not None:
+            vol_buf, _ = get_volume_f64_buffer(vnode.GetImageData())
+            sp_z = float(vnode.GetSpacing()[2])
+            k_est = self.estimateAxialLimitSlice(vol_buf, sp_z)
+            asl = list(self.ijk2ras([0.0, 0.0, float(k_est)], vnode))
+            auto_attr = {"AutoEstimated": "1"}
+        except Exception:
+          asl = [0.0, 0.0, 0.0]
       if not node:
         self.fiducialNode = create_fiducial_node(
             name='template slice position',
             ras=asl,
             color=(0.0, 1.0, 0.0),
             visibility=True,
+            attributes=auto_attr if auto_attr else None,
         )
       else:
         set_fiducial_coords(node, asl)
     if asl[2] == -float("inf"):
       asl = [0.0, 0.0, 0.0]
-    return int(round(self.ras2ijk(asl)[2])), asl[2]
+    k_out = int(round(self.ras2ijk(asl)[2]))
+    widget = getattr(slicer.modules, "NeedleFinderWidget", None)
+    if widget is not None:
+      widget.axialSegmentationLimit = k_out
+      widget.axialSegmentationLimitRAS = float(asl[2])
+    return k_out, asl[2]
 
   def interp3(self, V, x, y, z, interpswitch):
     """Trilinear or nearest-neighbor interpolation in 3D volume V."""
@@ -2862,7 +2889,7 @@ class TrackingAlgorithmsMixin:
     """Remove duplicates in 2D array."""
     return unique_points(a)
 
-  def addNeedleToScene(self, controlPoint, colorVar, needleType='Detection', script=False, trans=0, manualName="", bPause=False):
+  def addNeedleToScene(self, controlPoint, colorVar, needleType='Detection', script=False, trans=0, manualName="", bPause=False, comment=""):
     """Computes the Bezier curve and adds visual representation of a needle to the scene."""
     profprint()
     widget = slicer.modules.NeedleFinderWidget
@@ -2919,4 +2946,762 @@ class TrackingAlgorithmsMixin:
     model.SetAttribute("nth", str(nth))
 
     if needleType != 'Validation' and not script:
-      self.addNeedleToTable(extract_model_id_number(model.GetID()), label)
+      self.addNeedleToTable(extract_model_id_number(model.GetID()), label, comment=comment)
+    return model
+
+  def estimateAxialLimitSlice(self, vol_arr: np.ndarray, sp_k: float) -> int:
+    """Automatically estimate the lower axial template/insertion slice `k_lim` from 3D volume intensities."""
+    from scipy.ndimage import gaussian_filter1d
+
+    K, J, I = vol_arr.shape
+    if K < 8:
+      return 0
+    c_roi = vol_arr[:, int(0.30 * J):int(0.70 * J), int(0.30 * I):int(0.70 * I)]
+    p50 = gaussian_filter1d(np.percentile(c_roi, 50, axis=(1, 2)).astype(np.float64), sigma=max(1.0, 2.5 / max(0.5, float(sp_k))))
+    if K <= 42:
+      min_bot = float(np.min(p50[:max(2, int(0.25 * K))]))
+      t_ref = float(np.percentile(p50[int(0.30 * K):max(int(0.30 * K) + 2, int(0.85 * K))], 65))
+      if min_bot > 0.38 * t_ref:
+        return max(0, int(round(3.0 / max(1.0, float(sp_k)))))
+      k_lo, k_hi = int(0.18 * K), max(int(0.18 * K) + 2, int(0.70 * K))
+      k_peak = k_lo + int(np.argmax(p50[k_lo:k_hi]))
+      s_lo = max(1, k_peak - int(round(45.0 / max(0.5, float(sp_k)))))
+    else:
+      k_lo, k_hi = int(0.25 * K), max(int(0.25 * K) + 2, int(0.62 * K))
+      k_peak = k_lo + int(np.argmax(p50[k_lo:k_hi]))
+      s_lo = max(int(0.10 * K), k_peak - int(round(52.0 / max(0.5, float(sp_k)))))
+    grad = np.gradient(p50)
+    if k_peak <= s_lo:
+      return max(0, int(0.25 * K))
+    k_steep = s_lo + int(np.argmax(grad[s_lo:k_peak]))
+    k_est = k_steep
+    while k_est > s_lo and grad[k_est] > 0.22 * grad[k_steep]:
+      k_est -= 1
+    return int(np.clip(k_est, 0, K - 5))
+
+  def _compute_3d_sym_response_numpy(
+      self,
+      vol_arr: np.ndarray,
+      sp_x: float,
+      sp_y: float,
+      i0: int,
+      i1: int,
+      j0: int,
+      j1: int,
+      k0: int,
+      k1: int,
+      body_thresh: float,
+  ):
+    """Pure-NumPy/SciPy fallback for `rust_compute_3d_sym_response`."""
+    from scipy.ndimage import gaussian_filter
+
+    dim_z, dim_y, dim_x = vol_arr.shape
+    out_resp = np.zeros((dim_z, dim_y, dim_x), dtype=np.float32)
+    out_cs = np.zeros((dim_z, dim_y, dim_x), dtype=np.float32)
+    out_rsym = np.zeros((dim_z, dim_y, dim_x), dtype=np.float32)
+
+    sub = vol_arr[k0:k1, j0:j1, i0:i1].astype(np.float32)
+    cs_sub = gaussian_filter(sub, sigma=(0.0, 0.85, 0.85))
+    out_cs[k0:k1, j0:j1, i0:i1] = cs_sub
+
+    K_s, J_s, I_s = cs_sub.shape
+    m = 10
+    if J_s <= 2 * m or I_s <= 2 * m:
+      return out_resp, out_cs, out_rsym
+
+    center_crop = cs_sub[:, m:J_s - m, m:I_s - m]
+    best_sym = np.zeros_like(center_crop)
+    best_med = np.zeros_like(center_crop)
+
+    for r_mm in (1.35, 1.85, 2.5, 3.3):
+      pair_mins = []
+      all_12 = []
+      for a_deg in (0, 30, 60, 90, 120, 150):
+        th = math.radians(a_deg)
+        di = int(round(r_mm * math.cos(th) / sp_x))
+        dj = int(round(r_mm * math.sin(th) / sp_y))
+        v_pos = cs_sub[:, m + dj:J_s - m + dj, m + di:I_s - m + di]
+        v_neg = cs_sub[:, m - dj:J_s - m - dj, m - di:I_s - m - di]
+        pair_mins.append(np.minimum(v_pos, v_neg))
+        all_12.append(v_pos)
+        all_12.append(v_neg)
+      p_stack = np.sort(np.stack(pair_mins, axis=0), axis=0)
+      best_sym = np.maximum(best_sym, 0.45 * p_stack[1] + 0.55 * p_stack[2])
+      best_med = np.maximum(best_med, np.median(np.stack(all_12, axis=0), axis=0))
+
+    min_tissue = max(12.0, float(body_thresh) * 0.45)
+    valid = (best_med > min_tissue) & (best_sym > center_crop)
+    drop = np.where(valid, best_sym - center_crop, 0.0)
+    rel_drop = drop / (best_med + 12.0)
+    dark_ratio = np.clip(1.0 - center_crop / (best_sym + 1e-3), 0.0, 1.0)
+    resp_crop = drop * (rel_drop ** 1.5) * (dark_ratio ** 2)
+
+    out_rsym[k0:k1, j0 + m:j1 - m, i0 + m:i1 - m] = best_sym
+    out_resp[k0:k1, j0 + m:j1 - m, i0 + m:i1 - m] = resp_crop
+    return out_resp, out_cs, out_rsym
+
+  def autoDetectAllNeedles(
+      self,
+      volumeNode=None,
+      kLim=None,
+      minConfidence: float = 35.0,
+      script: bool = False,
+      renderNeedles: bool = True,
+  ):
+    """Automatically detect and segment all needles in the 3D volume without manual seed clicks.
+
+    Uses a 2-pass iterative tract-peeling architecture:
+    - Pass 1 runs the multi-radius (1.35, 1.85, 2.5, 3.3 mm) 6-diameter symmetric dark-tube filter
+      (executed in multi-threaded Rust/C++), extracts local-maxima seeds, tracks bidirectionally
+      with intra-pass tract attenuation and core-shaft residual tail trimming, and locks high-confidence
+      template-bundle needles via consensus spatial-slope voting.
+    - Pass 2 inpaints the dark cores of Pass-1 locked needles in the volume with surrounding tissue
+      ring intensity so adjacent needles are unoccluded, re-runs the 3D symmetric response on the
+      tight bundle ROI, masks Pass-1 tracts so Pass-2 trajectories cannot cross or re-track them,
+      and performs bundle-slope-guided tracking to recover closely spaced or lower-contrast needles.
+    """
+    from scipy.ndimage import maximum_filter
+
+    profprint()
+    t0 = time.perf_counter()
+    widget = getattr(slicer.modules, "NeedleFinderWidget", None)
+
+    if volumeNode is None:
+      try:
+        volumeNode = (
+            slicer.app.layoutManager()
+            .sliceWidget("Red")
+            .sliceLogic()
+            .GetBackgroundLayer()
+            .GetVolumeNode()
+        )
+      except Exception:
+        volumeNode = None
+    if volumeNode is None:
+      volumeNode = slicer.mrmlScene.GetFirstNodeByClass("vtkMRMLScalarVolumeNode")
+    if volumeNode is None or volumeNode.GetImageData() is None:
+      if not script:
+        msgbox("Please load an MR/CT volume before running Auto-Detect All Needles.")
+      return []
+
+    imageData = volumeNode.GetImageData()
+    vol_arr, dims = get_volume_f64_buffer(imageData)
+    if vol_arr is None or vol_arr.ndim != 3:
+      return []
+
+    invert = bool(widget and hasattr(widget, "invertedContrast") and widget.invertedContrast.isChecked())
+    if invert:
+      v_max = float(np.max(vol_arr))
+      vol_raw = np.ascontiguousarray(v_max - vol_arr, dtype=np.float64)
+    else:
+      vol_raw = vol_arr
+
+    sp_i, sp_j, sp_k = [float(x) for x in volumeNode.GetSpacing()]
+    K, J, I = vol_raw.shape
+
+    vtk_mat = vtk.vtkMatrix4x4()
+    volumeNode.GetIJKToRASMatrix(vtk_mat)
+    ijk_to_ras_mat = np.array(
+        [[vtk_mat.GetElement(r, c) for c in range(4)] for r in range(4)],
+        dtype=np.float64,
+    )
+    rot_mat = ijk_to_ras_mat[:3, :3]
+    trans_vec = ijk_to_ras_mat[:3, 3]
+    ras_to_ijk = np.linalg.inv(ijk_to_ras_mat)
+    vol_id = volumeNode.GetID() if hasattr(volumeNode, "GetID") else None
+
+    # Determine axial base limit slice k_lim
+    k_lim = None
+    limit_source = "auto"
+    if kLim is not None:
+      k_lim = int(round(float(kLim)))
+      limit_source = "explicit"
+    else:
+      # 1. Check if a 'template slice position*' marker exists in the MRML scene
+      try:
+        marker_nodes = slicer.util.getNodes('template slice position*') if hasattr(slicer, "util") else {}
+      except Exception:
+        marker_nodes = {}
+      best_marker_z = -float("inf")
+      marker_found = False
+      for m_node in list(marker_nodes.values()):
+        is_auto = (m_node.GetAttribute("AutoEstimated") == "1") if hasattr(m_node, "GetAttribute") else False
+        m_vol_id = m_node.GetAttribute("VolumeNodeID") if hasattr(m_node, "GetAttribute") else None
+        if is_auto and m_vol_id != vol_id:
+          continue
+        c_ras = [0.0, 0.0, 0.0]
+        get_fiducial_coords(m_node, c_ras)
+        if c_ras[2] > best_marker_z:
+          best_marker_z = float(c_ras[2])
+          marker_found = True
+          limit_source = "auto" if is_auto else "marker"
+      if marker_found:
+        k_cand = int(round(float((ras_to_ijk @ np.array([0.0, 0.0, best_marker_z, 1.0]))[2])))
+        if 0 <= k_cand < K:
+          k_lim = k_cand
+
+      # 2. Check widget.axialSegmentationLimit if explicitly set for this volume
+      if k_lim is None and widget is not None and widget.axialSegmentationLimit is not None:
+        auto_vid = getattr(widget, "_autoLimitVolumeID", None)
+        if auto_vid is None or auto_vid == vol_id:
+          k_cand = int(round(float(widget.axialSegmentationLimit)))
+          if 0 <= k_cand < K:
+            k_lim = k_cand
+            limit_source = "widget"
+
+      # 3. Check scene validation models via returnBasesFromNeedleModels if available
+      if k_lim is None and hasattr(self, "returnBasesFromNeedleModels"):
+        try:
+          bases, _ = self.returnBasesFromNeedleModels()
+          if len(bases) > 0:
+            k_cand = int(round(float(np.min(np.array(bases)[:, 2]))))
+            if 0 <= k_cand < K:
+              k_lim = k_cand
+              limit_source = "models"
+        except Exception:
+          pass
+
+      # 4. Fallback to automatic intensity-based template slice estimation
+      if k_lim is None:
+        k_lim = self.estimateAxialLimitSlice(vol_raw, sp_k)
+        limit_source = "auto"
+
+    k_lim = int(np.clip(k_lim, 0, max(0, K - 5)))
+    z_base_ras = float((rot_mat @ np.array([0.0, 0.0, float(k_lim)]) + trans_vec)[2])
+    fov_center_ras = (rot_mat @ np.array([0.5 * I, 0.5 * J, float(k_lim)]) + trans_vec)[:2]
+
+    if widget is not None:
+      widget.axialSegmentationLimit = k_lim
+      widget.axialSegmentationLimitRAS = z_base_ras
+      if limit_source == "auto":
+        widget._autoLimitVolumeID = vol_id
+      else:
+        widget._autoLimitVolumeID = None
+      if getattr(widget, "templateSliceButton", None) is not None:
+        tag = "auto" if limit_source == "auto" else "current"
+        widget.templateSliceButton.text = (
+            f"1. Select Current Axial Slice as Seg. Limit ({tag}: {z_base_ras:.1f} mm / slice {k_lim})"
+        )
+      if not script and hasattr(slicer, "mrmlScene") and slicer.mrmlScene is not None:
+        try:
+          existing_markers = slicer.util.getNodes('template slice position*') if hasattr(slicer, "util") else {}
+          if not existing_markers:
+            self.fiducialNode = create_fiducial_node(
+                name='template slice position',
+                ras=[float(fov_center_ras[0]), float(fov_center_ras[1]), float(z_base_ras)],
+                color=(0.0, 1.0, 0.0),
+                visibility=True,
+                attributes={"AutoEstimated": "1", "VolumeNodeID": str(vol_id or "")} if limit_source == "auto" else None,
+            )
+          elif limit_source == "auto":
+            for m_node in list(existing_markers.values()):
+              set_fiducial_coords(m_node, [float(fov_center_ras[0]), float(fov_center_ras[1]), float(z_base_ras)])
+              if hasattr(m_node, "SetAttribute"):
+                m_node.SetAttribute("AutoEstimated", "1")
+                m_node.SetAttribute("VolumeNodeID", str(vol_id or ""))
+        except Exception:
+          pass
+
+    k0 = max(0, k_lim - 1)
+    i0, i1 = int(0.18 * I), int(0.82 * I)
+    j0, j1 = int(0.18 * J), int(0.82 * J)
+    if i1 - i0 < 26 or j1 - j0 < 26:
+      i0, i1 = 0, I
+      j0, j1 = 0, J
+
+    roi_raw = vol_raw[k0:K, j0:j1, i0:i1]
+    pos_raw = roi_raw[roi_raw > 5.0]
+    med_tissue = float(np.percentile(pos_raw, 55)) if len(pos_raw) else 85.0
+    if med_tissue > 450.0:
+      scale_factor = 160.0 / med_tissue
+      vol_work = np.ascontiguousarray(vol_raw * scale_factor, dtype=np.float64)
+      body_thresh = float(np.percentile(pos_raw * scale_factor, 30))
+    else:
+      vol_work = vol_raw.copy()
+      body_thresh = float(np.percentile(pos_raw, 30)) if len(pos_raw) else 25.0
+
+    nms_px = max(2, int(round(1.30 / sp_i)))
+    visit_r_px = max(1, int(round(1.15 / sp_i)))
+    search_r_px = max(2, int(round(2.05 / sp_i)))
+    yy_grid, xx_grid = np.mgrid[-search_r_px:search_r_px + 1, -search_r_px:search_r_px + 1]
+    wy, wx = np.mgrid[-1:2, -1:2]
+
+    max_gap_slices = 3 if sp_k < 2.2 else 2
+    min_pts_slices = 5 if (sp_k < 2.6 and (K - k0) > 28) else 4
+
+    def track_pass(resp_sub, c_smooth, ring_sym, sub_i0, sub_j0, cand_thresh, prior_slope_ij=None, pass_idx=1):
+      K_sub, J_sub, I_sub = resp_sub.shape
+      pos_v = resp_sub[resp_sub > 0.5]
+      if len(pos_v) > 20:
+        cap_val = float(np.percentile(pos_v, 99.0))
+        np.minimum(resp_sub, cap_val, out=resp_sub)
+
+      loc_max = resp_sub == maximum_filter(resp_sub, size=(1, 2 * nms_px + 1, 2 * nms_px + 1))
+      max_seed_k = min(K_sub - 2, max(18, min(34, int(round(48.0 / sp_k)))))
+      seed_cut = cand_thresh * ((0.85 if K_sub <= 28 else 0.95) if pass_idx == 1 else 0.70)
+      seeds = []
+      for k_rel in range(0, max_seed_k):
+        jj, ii = np.where(loc_max[k_rel] & (resp_sub[k_rel] >= seed_cut))
+        sl_seeds = [
+            (float(resp_sub[k_rel, j_s, i_s]), k_rel, float(i_s), float(j_s))
+            for j_s, i_s in zip(jj, ii)
+        ]
+        sl_seeds.sort(key=lambda x: -x[0])
+        seeds.extend(sl_seeds[:85])
+      seeds.sort(key=lambda x: -x[0])
+
+      visited = np.zeros((K_sub, J_sub, I_sub), dtype=bool)
+      trajs_out = []
+      max_step_px = (0.65 if pass_idx == 1 else 0.55) * (sp_k / sp_i)
+
+      for s_val, k_start, i_start, j_start in seeds:
+        if visited[k_start, int(j_start), int(i_start)]:
+          continue
+        pts = {k_start: (i_start, j_start, s_val)}
+        peak_r = min(s_val, cand_thresh * 40.0)
+        for direction in (1, -1):
+          curr_i, curr_j = i_start, j_start
+          if prior_slope_ij is not None:
+            vel_i = float(prior_slope_ij[0]) * direction
+            vel_j = float(prior_slope_ij[1]) * direction
+          else:
+            vel_i, vel_j = 0.0, 0.0
+          gap = 0
+          k_cur = k_start + direction
+          while 0 <= k_cur < K_sub:
+            pred_i = curr_i + vel_i
+            pred_j = curr_j + vel_j
+            ic, jc = int(round(pred_i)), int(round(pred_j))
+            if not (
+                search_r_px <= ic < I_sub - search_r_px
+                and search_r_px <= jc < J_sub - search_r_px
+            ):
+              break
+            patch_r = resp_sub[k_cur, jc - search_r_px:jc + search_r_px + 1, ic - search_r_px:ic + search_r_px + 1]
+            patch_c = c_smooth[k_cur, jc - search_r_px:jc + search_r_px + 1, ic - search_r_px:ic + search_r_px + 1]
+            patch_sym = ring_sym[k_cur, jc - search_r_px:jc + search_r_px + 1, ic - search_r_px:ic + search_r_px + 1]
+            dist_mm = np.hypot((ic + xx_grid - pred_i) * sp_i, (jc + yy_grid - pred_j) * sp_j)
+            eff_score = patch_r * np.exp((-0.36 if pass_idx == 1 else -0.45) * (dist_mm ** 2))
+            best_idx = np.unravel_index(np.argmax(eff_score), eff_score.shape)
+            best_r = float(patch_r[best_idx])
+            best_c = float(patch_c[best_idx])
+            best_sym = float(patch_sym[best_idx])
+            ni = float(ic - search_r_px + best_idx[1])
+            nj = float(jc - search_r_px + best_idx[0])
+            ii0, jj0 = int(ni), int(nj)
+            if 1 <= ii0 < I_sub - 1 and 1 <= jj0 < J_sub - 1 and best_r > 0.5:
+              w_patch = np.maximum(resp_sub[k_cur, jj0 - 1:jj0 + 2, ii0 - 1:ii0 + 2], 0.0)
+              w_sum = float(np.sum(w_patch))
+              if w_sum > 0:
+                ni = ii0 + float(np.sum(wx * w_patch)) / w_sum
+                nj = jj0 + float(np.sum(wy * w_patch)) / w_sum
+
+            min_step_r = max(cand_thresh * (0.28 if pass_idx == 1 else 0.22), 0.045 * peak_r)
+            is_dark = (best_r >= min_step_r) or (best_sym > 14.0 and best_c < 0.55 * best_sym and best_r >= 0.28 * min_step_r)
+            if is_dark:
+              pts[k_cur] = (ni, nj, best_r)
+              peak_r = max(peak_r, min(best_r, cand_thresh * 42.0))
+              step_i = float(np.clip(ni - curr_i, -max_step_px, max_step_px))
+              step_j = float(np.clip(nj - curr_j, -max_step_px, max_step_px))
+              vel_i = 0.65 * vel_i + 0.35 * step_i
+              vel_j = 0.65 * vel_j + 0.35 * step_j
+              curr_i, curr_j = ni, nj
+              gap = 0
+            else:
+              gap += 1
+              if gap > max_gap_slices:
+                break
+              curr_i, curr_j = pred_i, pred_j
+            k_cur += direction
+
+        ks = sorted(pts.keys())
+        if len(ks) < min_pts_slices:
+          continue
+        r_arr_ks = np.array([pts[k][2] for k in ks])
+        shaft_p75 = float(np.percentile(r_arr_ks, 75))
+        tip_cut = max(cand_thresh * 0.38, 0.08 * shaft_p75)
+        base_cut = max(cand_thresh * 0.24, 0.05 * shaft_p75)
+        while len(ks) > 2 and pts[ks[-1]][2] < tip_cut:
+          ks.pop()
+        while len(ks) > 2 and pts[ks[0]][2] < base_cut:
+          ks.pop(0)
+        if len(ks) < min_pts_slices:
+          continue
+
+        arr_pts = np.array([[pts[k][0] + sub_i0, pts[k][1] + sub_j0, k + k0, pts[k][2]] for k in ks], dtype=np.float64)
+        ras_pts = arr_pts[:, :3] @ rot_mat.T + trans_vec
+        order = np.argsort(ras_pts[:, 2])
+        ras_pts = ras_pts[order]
+        arr_pts = arr_pts[order]
+        ks = [ks[idx] for idx in order]
+
+        # Core-shaft residual tail trimming to remove post-tip background drift
+        if len(ks) >= 7:
+          core_mask = arr_pts[:, 3] >= 0.20 * shaft_p75
+          if np.sum(core_mask) >= 4:
+            c_z = ras_pts[core_mask, 2]
+            c_px = np.polyfit(c_z, ras_pts[core_mask, 0], 1)
+            c_py = np.polyfit(c_z, ras_pts[core_mask, 1], 1)
+            while len(ks) > 3:
+              dev_top = np.hypot(ras_pts[-1, 0] - np.polyval(c_px, ras_pts[-1, 2]), ras_pts[-1, 1] - np.polyval(c_py, ras_pts[-1, 2]))
+              if dev_top > 1.60 and arr_pts[-1, 3] < 0.35 * shaft_p75:
+                ras_pts = ras_pts[:-1]
+                arr_pts = arr_pts[:-1]
+                ks.pop()
+              else:
+                break
+            while len(ks) > 3:
+              dev_bot = np.hypot(ras_pts[0, 0] - np.polyval(c_px, ras_pts[0, 2]), ras_pts[0, 1] - np.polyval(c_py, ras_pts[0, 2]))
+              if dev_bot > 1.75 and arr_pts[0, 3] < 0.30 * shaft_p75:
+                ras_pts = ras_pts[1:]
+                arr_pts = arr_pts[1:]
+                ks.pop(0)
+              else:
+                break
+        if len(ks) < min_pts_slices:
+          continue
+
+        k_min_rel, k_max_rel = min(ks), max(ks)
+        z_span_mm = float(ras_pts[-1, 2] - ras_pts[0, 2])
+        if z_span_mm < (8.8 if K_sub <= 28 else 12.0):
+          continue
+        mean_r = float(np.mean(arr_pts[:, 3]))
+        if k_min_rel > 11:
+          continue
+
+        z_vals = ras_pts[:, 2]
+        deg = 2 if len(z_vals) >= 7 else 1
+        px = np.polyfit(z_vals, ras_pts[:, 0], deg)
+        py = np.polyfit(z_vals, ras_pts[:, 1], deg)
+        fit_x = np.polyval(px, z_vals)
+        fit_y = np.polyval(py, z_vals)
+        rmse = float(np.sqrt(np.mean((ras_pts[:, 0] - fit_x) ** 2 + (ras_pts[:, 1] - fit_y) ** 2)))
+        if rmse > 1.35:
+          continue
+
+        dz = z_vals[-1] - z_vals[0]
+        if abs(dz) < 1e-3:
+          continue
+        slope_x = (fit_x[-1] - fit_x[0]) / dz
+        slope_y = (fit_y[-1] - fit_y[0]) / dz
+        if np.hypot(slope_x, slope_y) > 0.72:
+          continue
+
+        high_frac = float(np.mean(arr_pts[:, 3] >= cand_thresh * ((0.38 if K_sub <= 28 else 0.42) if pass_idx == 1 else 0.32)))
+        if high_frac < ((0.48 if K_sub <= 28 else 0.52) if pass_idx == 1 else 0.45):
+          continue
+
+        # Mark visited and attenuate resp_sub along the accepted tract so adjacent seeds do not jump onto it
+        for k_v in ks:
+          iv, jv = int(round(pts[k_v][0])), int(round(pts[k_v][1]))
+          j_lo, j_hi = max(0, jv - visit_r_px), min(J_sub, jv + visit_r_px + 1)
+          i_lo, i_hi = max(0, iv - visit_r_px), min(I_sub, iv + visit_r_px + 1)
+          visited[k_v, j_lo:j_hi, i_lo:i_hi] = True
+          resp_sub[k_v, j_lo:j_hi, i_lo:i_hi] *= 0.08
+
+        k_rels = arr_pts[:, 2] - k0
+        pi_abs = np.polyfit(k_rels, arr_pts[:, 0], 1)
+        pj_abs = np.polyfit(k_rels, arr_pts[:, 1], 1)
+
+        bx = float(np.polyval(px, z_base_ras))
+        by = float(np.polyval(py, z_base_ras))
+        base_xy = np.array([bx, by])
+        if z_vals[-1] >= z_vals[0]:
+          above_mask = z_vals > z_base_ras + 0.15 * sp_k
+        else:
+          above_mask = z_vals < z_base_ras - 0.15 * sp_k
+        if np.any(above_mask):
+          smooth_ras = np.vstack([
+              [bx, by, z_base_ras],
+              np.column_stack([fit_x[above_mask], fit_y[above_mask], z_vals[above_mask]]),
+          ])
+        else:
+          smooth_ras = np.vstack([
+              [bx, by, z_base_ras],
+              [fit_x[-1], fit_y[-1], z_vals[-1]],
+          ])
+
+        raw_score = mean_r * (high_frac ** 1.5) * np.sqrt(z_span_mm) / (1.0 + 0.5 * rmse)
+        trajs_out.append({
+            "ras": smooth_ras,
+            "ks": np.array(ks) + k0,
+            "k_min_rel": int(k_min_rel),
+            "k_max_rel": int(k_max_rel),
+            "pi_abs": pi_abs,
+            "pj_abs": pj_abs,
+            "slope_ij": np.array([pi_abs[0], pj_abs[0]]),
+            "base_xy": base_xy,
+            "tip_ras": smooth_ras[-1].copy(),
+            "slope": np.array([slope_x, slope_y]),
+            "mean_r": mean_r,
+            "high_frac": high_frac,
+            "rmse": rmse,
+            "length_mm": float(smooth_ras[-1, 2] - smooth_ras[0, 2]),
+            "z_span_tracked": z_span_mm,
+            "raw_score": raw_score,
+            "pass": pass_idx,
+        })
+      return trajs_out
+
+    def dedup_trajs(traj_list, existing_list=None):
+      out = list(existing_list) if existing_list else []
+      for t in sorted(traj_list, key=lambda x: -x["raw_score"]):
+        dup = False
+        for p in out:
+          base_d = float(np.hypot(t["base_xy"][0] - p["base_xy"][0], t["base_xy"][1] - p["base_xy"][1]))
+          if base_d < 2.25:
+            dup = True
+            break
+          z_min = max(t["ras"][0, 2], p["ras"][0, 2])
+          z_max = min(t["ras"][-1, 2], p["ras"][-1, 2])
+          if z_max >= z_min:
+            zs = np.linspace(z_min, z_max, 12)
+            tx = np.interp(zs, t["ras"][:, 2], t["ras"][:, 0])
+            ty = np.interp(zs, t["ras"][:, 2], t["ras"][:, 1])
+            px_i = np.interp(zs, p["ras"][:, 2], p["ras"][:, 0])
+            py_i = np.interp(zs, p["ras"][:, 2], p["ras"][:, 1])
+            if float(np.mean(np.hypot(tx - px_i, ty - py_i))) < 2.55:
+              dup = True
+              break
+        if not dup:
+          out.append(t)
+      return out
+
+    # --- PASS 1: Full-ROI Detection ---
+    res1 = rust_compute_3d_sym_response(vol_work, sp_i, sp_j, i0, i1, j0, j1, k0, K, body_thresh)
+    if res1 is None:
+      res1 = self._compute_3d_sym_response_numpy(vol_work, sp_i, sp_j, i0, i1, j0, j1, k0, K, body_thresh)
+    resp_full, cs_full, rsym_full = res1
+    resp1 = resp_full[k0:K, j0:j1, i0:i1].copy()
+    cs1 = cs_full[k0:K, j0:j1, i0:i1]
+    rsym1 = rsym_full[k0:K, j0:j1, i0:i1]
+    K_sub = K - k0
+
+    pos_vals = resp1[resp1 > 0.5]
+    cand_thresh = max(1.2, float(np.percentile(pos_vals, 50))) if len(pos_vals) else 1.2
+
+    trajs1 = track_pass(resp1, cs1, rsym1, i0, j0, cand_thresh, pass_idx=1)
+    if not trajs1:
+      return []
+    prelim1 = dedup_trajs(trajs1)
+
+    k_tol = 4 if sp_k <= 2.1 else max(2, int(round(6.5 / sp_k)))
+    pelvic_cands = [
+        t for t in prelim1
+        if abs(t["base_xy"][0] - fov_center_ras[0]) <= 45.0
+        and abs(t["base_xy"][1] - fov_center_ras[1]) <= 47.0
+    ]
+    base_pool = pelvic_cands if len(pelvic_cands) >= 3 else prelim1
+    low_k_cands = [t for t in base_pool if t["k_min_rel"] <= k_tol]
+    vote_pool = low_k_cands[:min(30, len(low_k_cands))] if len(low_k_cands) >= 3 else base_pool[:min(30, len(base_pool))]
+
+    raw_arr = np.array([t["raw_score"] for t in vote_pool])
+    ref_raw = float(np.percentile(raw_arr[:min(10, len(raw_arr))], 65)) if len(raw_arr) >= 3 else float(raw_arr[0])
+    clamped_w = np.sqrt(np.minimum(raw_arr, 1.5 * ref_raw))
+    bases = np.array([t["base_xy"] for t in vote_pool])
+    slopes = np.array([t["slope"] for t in vote_pool])
+
+    best_cluster_score = -1e18
+    best_idx = 0
+    for idx in range(len(vote_pool)):
+      d_xy = np.hypot(bases[:, 0] - bases[idx, 0], bases[:, 1] - bases[idx, 1])
+      d_sl = np.hypot(slopes[:, 0] - slopes[idx, 0], slopes[:, 1] - slopes[idx, 1])
+      inliers = (d_xy <= 36.0) & (d_sl <= 0.25)
+      dx_fov = float(bases[idx, 0] - fov_center_ras[0])
+      dy_fov = float(bases[idx, 1] - fov_center_ras[1])
+      fov_prior = np.exp(-0.5 * ((dx_fov / 32.0) ** 2 + (dy_fov / 38.0) ** 2))
+      c_score = float(np.sum(clamped_w[inliers])) * (int(np.sum(inliers)) ** 0.80) * fov_prior
+      if c_score > best_cluster_score:
+        best_cluster_score = c_score
+        best_idx = idx
+
+    seed_center = bases[best_idx]
+    seed_slope = slopes[best_idx]
+    inlier_mask = (
+        (np.hypot(bases[:, 0] - seed_center[0], bases[:, 1] - seed_center[1]) <= 42.0)
+        & (np.hypot(slopes[:, 0] - seed_slope[0], slopes[:, 1] - seed_slope[1]) <= 0.28)
+    )
+    if np.sum(inlier_mask) >= 3:
+      inlier_bases = bases[inlier_mask]
+      inlier_w = clamped_w[inlier_mask]
+      med_center = np.average(inlier_bases, axis=0, weights=inlier_w)
+      med_slope = np.median(slopes[inlier_mask], axis=0)
+      med_slope_ij = np.median(np.array([vote_pool[i]["slope_ij"] for i in np.where(inlier_mask)[0]]), axis=0)
+      bbox_mid = 0.5 * (np.min(inlier_bases, axis=0) + np.max(inlier_bases, axis=0))
+    else:
+      med_center = seed_center
+      med_slope = seed_slope
+      med_slope_ij = vote_pool[best_idx]["slope_ij"]
+      bbox_mid = seed_center
+
+    spatial_inliers = [
+        t for t in base_pool
+        if np.hypot(t["base_xy"][0] - bbox_mid[0], t["base_xy"][1] - bbox_mid[1]) <= 44.0
+        and np.hypot(t["slope"][0] - med_slope[0], t["slope"][1] - med_slope[1]) <= 0.30
+    ]
+    if spatial_inliers:
+      bundle_k_min = int(np.percentile([t["k_min_rel"] for t in spatial_inliers[:min(12, len(spatial_inliers))]], 25))
+    else:
+      bundle_k_min = 0
+
+    valid_k_inliers = [
+        t for t in spatial_inliers
+        if t["k_min_rel"] <= bundle_k_min + k_tol or (t["z_span_tracked"] >= 30.0 and t["mean_r"] >= cand_thresh * 2.0)
+    ]
+    if len(valid_k_inliers) >= 2:
+      sc_sorted = sorted([t["raw_score"] for t in valid_k_inliers], reverse=True)
+      bundle_max_raw = float(min(sc_sorted[0], 1.40 * sc_sorted[min(2, len(sc_sorted) - 1)]))
+    elif len(valid_k_inliers) == 1:
+      bundle_max_raw = float(valid_k_inliers[0]["raw_score"])
+    else:
+      bundle_max_raw = ref_raw
+
+    core_inliers = [t for t in valid_k_inliers if t["raw_score"] >= 0.14 * bundle_max_raw]
+    if len(core_inliers) >= 3:
+      c_bases = np.array([t["base_xy"] for t in core_inliers])
+      bbox_mid = 0.5 * (np.min(c_bases, axis=0) + np.max(c_bases, axis=0))
+      med_center = np.median(c_bases, axis=0)
+      c_slopes = np.array([t["slope"] for t in core_inliers])
+      med_slope = np.median(c_slopes, axis=0)
+      med_slope_ij = np.median(np.array([t["slope_ij"] for t in core_inliers]), axis=0)
+      r_max_core = float(np.max(np.hypot(c_bases[:, 0] - bbox_mid[0], c_bases[:, 1] - bbox_mid[1])))
+      adaptive_rad = float(np.clip(max(36.5, r_max_core + 8.0), 36.5, 47.5))
+      sdev_p75 = float(np.percentile(np.hypot(c_slopes[:, 0] - med_slope[0], c_slopes[:, 1] - med_slope[1]), 75))
+      adaptive_sdev = float(np.clip(max(0.28, 2.4 * sdev_p75), 0.28, 0.38))
+    else:
+      adaptive_rad = 38.5
+      adaptive_sdev = 0.34
+
+    def passes_bundle_filter(t, is_pass2=False):
+      if abs(t["base_xy"][0] - fov_center_ras[0]) > 47.5 or abs(t["base_xy"][1] - fov_center_ras[1]) > 49.5:
+        return False
+      dist_mid = float(np.hypot(t["base_xy"][0] - bbox_mid[0], t["base_xy"][1] - bbox_mid[1]))
+      dist_med = float(np.hypot(t["base_xy"][0] - med_center[0], t["base_xy"][1] - med_center[1]))
+      slope_dev = float(np.hypot(t["slope"][0] - med_slope[0], t["slope"][1] - med_slope[1]))
+      k_ok = (
+          t["k_min_rel"] <= bundle_k_min + k_tol
+          or (t["k_min_rel"] <= bundle_k_min + 2 * k_tol + 1 and t["z_span_tracked"] >= 32.0 and t["mean_r"] >= cand_thresh * 2.0 and t["raw_score"] >= 0.22 * bundle_max_raw)
+          or (sp_k >= 5.0 and t["k_min_rel"] <= 11 and t["z_span_tracked"] >= 26.0 and t["raw_score"] >= 0.28 * bundle_max_raw)
+      )
+      if not k_ok:
+        return False
+      if not is_pass2:
+        max_sdev = adaptive_sdev if (dist_mid <= 30.0 or len(core_inliers) >= 12) else min(adaptive_sdev, 0.22)
+        return (
+            dist_mid <= adaptive_rad
+            and dist_med <= adaptive_rad + 10.5
+            and slope_dev <= max_sdev
+            and t["raw_score"] >= 0.11 * bundle_max_raw
+        )
+      else:
+        return (
+            dist_mid <= adaptive_rad - 1.5
+            and dist_med <= adaptive_rad + 7.0
+            and slope_dev <= min(0.24, adaptive_sdev * 0.8)
+            and t["k_min_rel"] <= bundle_k_min + k_tol
+            and t["z_span_tracked"] >= (11.5 if K_sub <= 28 else 18.0)
+            and t["rmse"] <= 1.18
+            and t["raw_score"] >= 0.12 * bundle_max_raw
+        )
+
+    locked = [t for t in prelim1 if passes_bundle_filter(t, is_pass2=False)]
+
+    # --- PASS 2: Tight-ROI Volume Tract Inpainting, Response Masking & Guided Re-Detection ---
+    if len(locked) >= 2:
+      corners_ras = np.array([
+          [bbox_mid[0] - (adaptive_rad + 8.0), bbox_mid[1] - (adaptive_rad + 8.0), z_base_ras, 1.0],
+          [bbox_mid[0] + (adaptive_rad + 8.0), bbox_mid[1] + (adaptive_rad + 8.0), z_base_ras, 1.0],
+          [bbox_mid[0] - (adaptive_rad + 8.0), bbox_mid[1] + (adaptive_rad + 8.0), z_base_ras + 90.0, 1.0],
+          [bbox_mid[0] + (adaptive_rad + 8.0), bbox_mid[1] - (adaptive_rad + 8.0), z_base_ras + 90.0, 1.0],
+      ])
+      corners_ijk = (ras_to_ijk @ corners_ras.T).T
+      p2_i0 = max(i0, int(np.floor(np.min(corners_ijk[:, 0]))) - 6)
+      p2_i1 = min(i1, int(np.ceil(np.max(corners_ijk[:, 0]))) + 6)
+      p2_j0 = max(j0, int(np.floor(np.min(corners_ijk[:, 1]))) - 6)
+      p2_j1 = min(j1, int(np.ceil(np.max(corners_ijk[:, 1]))) + 6)
+
+      if p2_i1 - p2_i0 >= 24 and p2_j1 - p2_j0 >= 24:
+        ri_in = max(1, int(round(1.35 / sp_i)))
+        rj_in = max(1, int(round(1.35 / sp_j)))
+        yy_in, xx_in = np.mgrid[-rj_in:rj_in + 1, -ri_in:ri_in + 1]
+        disk_in = ((xx_in * sp_i) ** 2 + (yy_in * sp_j) ** 2) <= (1.35 ** 2)
+
+        for t in locked:
+          ks_r = np.arange(max(0, t["k_min_rel"] - 1), min(K_sub, t["k_max_rel"] + 2))
+          ics = np.round(np.polyval(t["pi_abs"], ks_r)).astype(int)
+          jcs = np.round(np.polyval(t["pj_abs"], ks_r)).astype(int)
+          for kr, ic_a, jc_a in zip(ks_r, ics, jcs):
+            if p2_i0 <= ic_a < p2_i1 and p2_j0 <= jc_a < p2_j1:
+              k_a = kr + k0
+              bg_v = float(rsym_full[k_a, jc_a, ic_a])
+              if bg_v > 5.0:
+                j_lo, j_hi = max(0, jc_a - rj_in), min(J, jc_a + rj_in + 1)
+                i_lo, i_hi = max(0, ic_a - ri_in), min(I, ic_a + ri_in + 1)
+                d_sub = disk_in[(j_lo - (jc_a - rj_in)):(j_hi - (jc_a - rj_in)), (i_lo - (ic_a - ri_in)):(i_hi - (ic_a - ri_in))]
+                patch = vol_work[k_a, j_lo:j_hi, i_lo:i_hi]
+                patch[d_sub] = np.maximum(patch[d_sub], bg_v * 0.92)
+
+        res2 = rust_compute_3d_sym_response(vol_work, sp_i, sp_j, p2_i0, p2_i1, p2_j0, p2_j1, k0, K, body_thresh)
+        if res2 is None:
+          res2 = self._compute_3d_sym_response_numpy(vol_work, sp_i, sp_j, p2_i0, p2_i1, p2_j0, p2_j1, k0, K, body_thresh)
+        resp2_full, cs2_full, rsym2_full = res2
+        resp2 = resp2_full[k0:K, p2_j0:p2_j1, p2_i0:p2_i1].copy()
+        cs2 = cs2_full[k0:K, p2_j0:p2_j1, p2_i0:p2_i1]
+        rsym2 = rsym2_full[k0:K, p2_j0:p2_j1, p2_i0:p2_i1]
+        J2, I2 = p2_j1 - p2_j0, p2_i1 - p2_i0
+
+        ri_m = max(1, int(round(1.65 / sp_i)))
+        rj_m = max(1, int(round(1.65 / sp_j)))
+        yy_m, xx_m = np.mgrid[-rj_m:rj_m + 1, -ri_m:ri_m + 1]
+        disk_m = ((xx_m * sp_i) ** 2 + (yy_m * sp_j) ** 2) <= (1.65 ** 2)
+        all_kr = np.arange(K_sub)
+
+        for t in locked:
+          ics = np.round(np.polyval(t["pi_abs"], all_kr)).astype(int) - p2_i0
+          jcs = np.round(np.polyval(t["pj_abs"], all_kr)).astype(int) - p2_j0
+          for kr, ic_s, jc_s in zip(all_kr, ics, jcs):
+            if 0 <= ic_s < I2 and 0 <= jc_s < J2:
+              j_lo, j_hi = max(0, jc_s - rj_m), min(J2, jc_s + rj_m + 1)
+              i_lo, i_hi = max(0, ic_s - ri_m), min(I2, ic_s + ri_m + 1)
+              d_sub = disk_m[(j_lo - (jc_s - rj_m)):(j_hi - (jc_s - rj_m)), (i_lo - (ic_s - ri_m)):(i_hi - (ic_s - ri_m))]
+              resp2[kr, j_lo:j_hi, i_lo:i_hi][d_sub] = 0.0
+
+        trajs2 = track_pass(resp2, cs2, rsym2, p2_i0, p2_j0, cand_thresh, prior_slope_ij=med_slope_ij, pass_idx=2)
+        trajs2_valid = [t for t in trajs2 if passes_bundle_filter(t, is_pass2=True)]
+        combined = dedup_trajs(trajs2_valid, existing_list=locked)
+      else:
+        combined = locked
+    else:
+      combined = locked
+
+    filtered = []
+    for t in combined:
+      conf = min(99.9, 100.0 * ((t["raw_score"] / max(1e-6, bundle_max_raw)) ** 0.45))
+      if conf >= float(minConfidence):
+        t["confidence"] = conf
+        filtered.append(t)
+
+    if renderNeedles and widget is not None:
+      self.deleteNeedleDetectionModelsFromScene()
+      self.cleanTable()
+      widget.initTableView()
+      for idx, t in enumerate(filtered):
+        ras_arr = t["ras"]
+        # Sample up to 15 control points from tip (high Z) to base (low Z)
+        n_ctrl = min(15, len(ras_arr))
+        sample_idx = np.linspace(len(ras_arr) - 1, 0, n_ctrl, dtype=int)
+        ctrl_pts = ras_arr[sample_idx].tolist()
+        comment = f"Conf: {t['confidence']:.1f}% | L: {t['length_mm']:.1f} mm"
+        self.addNeedleToScene(ctrl_pts, idx, "Detection", script=script, comment=comment)
+      if filtered:
+        widget.deleteNeedleButton.setEnabled(1)
+        widget.resetDetectionButton.setEnabled(1)
+        widget.fiducialButton.setEnabled(1)
+        if hasattr(widget, "_NeedleFinderWidget__reportFrame"):
+          widget._NeedleFinderWidget__reportFrame.collapsed = 0
+
+    elapsed = time.perf_counter() - t0
+    p1_cnt = sum(1 for x in filtered if x.get("pass", 1) == 1)
+    p2_cnt = sum(1 for x in filtered if x.get("pass", 1) == 2)
+    print(f"[NeedleFinder] Auto-detected {len(filtered)} needles (P1={p1_cnt}, P2={p2_cnt}) in {elapsed:.2f}s (k_lim={k_lim}, minConf={minConfidence:.1f}%)")
+    return filtered
