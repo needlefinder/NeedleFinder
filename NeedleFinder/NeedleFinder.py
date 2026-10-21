@@ -269,15 +269,17 @@ class NeedleFinderWidget(ScriptedLoadableModuleWidget):
         self.model.setHeaderData(4, 1, "Comments")
         if self.view is None:
           self.view = qt.QTableView()
-          self.view.setMinimumHeight(300)
+          self.view.setMinimumHeight(240)
           self.view.sortingEnabled = True
           self.view.verticalHeader().visible = False
           self.view.horizontalHeader().setStretchLastSection(True)
+          self.view.alternatingRowColors = True
 
         self.view.setModel(self.model)
-        self.view.setColumnWidth(0, 18)
-        self.view.setColumnWidth(1, 58)
-        self.view.setColumnWidth(2, 58)
+        self.view.setColumnWidth(0, 24)
+        self.view.setColumnWidth(1, 64)
+        self.view.setColumnWidth(2, 76)
+        self.view.setColumnWidth(3, 84)
         self.table = 1
         self.row = 0
         self.col = 0
@@ -299,19 +301,20 @@ class NeedleFinderWidget(ScriptedLoadableModuleWidget):
         self.modelCTL.setHeaderData(1, 1, "# Needle")
         self.modelCTL.setHeaderData(2, 1, "# Point")
         self.modelCTL.setHeaderData(3, 1, "Delete")
-        self.modelCTL.setHeaderData(4, 1, "Reformat")
-        self.modelCTL.setHeaderData(5, 1, "Comments")
+        self.modelCTL.setHeaderData(4, 1, "Focus")
         if self.viewCTL is None:
           self.viewCTL = qt.QTableView()
-          self.viewCTL.setMinimumHeight(300)
+          self.viewCTL.setMinimumHeight(240)
           self.viewCTL.sortingEnabled = True
           self.viewCTL.verticalHeader().visible = False
           self.viewCTL.horizontalHeader().setStretchLastSection(True)
+          self.viewCTL.alternatingRowColors = True
 
         self.viewCTL.setModel(self.modelCTL)
-        self.viewCTL.setColumnWidth(0, 18)
-        self.viewCTL.setColumnWidth(1, 58)
-        self.viewCTL.setColumnWidth(2, 58)
+        self.viewCTL.setColumnWidth(0, 24)
+        self.viewCTL.setColumnWidth(1, 72)
+        self.viewCTL.setColumnWidth(2, 72)
+        self.viewCTL.setColumnWidth(3, 76)
         self.tableCTL = 1
         self.rowCTL = 0
         self.colCTL = 0
@@ -355,103 +358,150 @@ class NeedleFinderWidget(ScriptedLoadableModuleWidget):
     profprint()
     logic = self.logic
 
+    # Dark-mode & light-mode compatible high-contrast stylesheets
+    toggle_ready_style = (
+        "QPushButton { background-color: #238636; color: #ffffff; font-weight: 600; padding: 5px 8px; border-radius: 4px; }"
+        "QPushButton:hover { background-color: #2ea043; }"
+        "QPushButton:disabled { background-color: rgba(128, 128, 128, 0.25); color: rgba(160, 160, 160, 0.7); }"
+        "QPushButton:checked { background-color: #da3633; color: #ffffff; font-weight: 700; }"
+    )
+    primary_action_style = (
+        "QPushButton { background-color: #1f6feb; color: #ffffff; font-weight: 600; padding: 5px 8px; border-radius: 4px; }"
+        "QPushButton:hover { background-color: #388bfd; }"
+        "QPushButton:disabled { background-color: rgba(128, 128, 128, 0.25); color: rgba(160, 160, 160, 0.7); }"
+    )
+    secondary_toggle_style = (
+        "QPushButton { padding: 5px 8px; }"
+        "QPushButton:checked { background-color: #da3633; color: #ffffff; font-weight: 700; }"
+    )
+
     self.__reportFrame = ctk.ctkCollapsibleButton()
     self.__reportFrame.text = "Segmentation Report"
     self.__reportFrame.collapsed = 1
     reportFrame = qt.QFormLayout(self.__reportFrame)
 
-    self.analysisGroupBox = qt.QGroupBox()
-    self.analysisGroupBox.setFixedHeight(330)
-    self.analysisGroupBox.setTitle('Segmentation Report')
+    self.analysisGroupBox = qt.QWidget()
     reportFrame.addRow(self.analysisGroupBox)
     self.analysisGroupBoxLayout = qt.QFormLayout(self.analysisGroupBox)
+    self.analysisGroupBoxLayout.setContentsMargins(0, 0, 0, 0)
 
     self.__reportFrameCTL = ctk.ctkCollapsibleButton()
-    self.__reportFrameCTL.text = "Manual Segmentation Report"
+    self.__reportFrameCTL.text = "Manual Segmentation Points"
     self.__reportFrameCTL.collapsed = 1
     reportFrameCTL = qt.QFormLayout(self.__reportFrameCTL)
 
-    self.analysisGroupBoxCTL = qt.QGroupBox()
-    self.analysisGroupBoxCTL.setFixedHeight(330)
-    self.analysisGroupBoxCTL.setTitle('Manual Segmentation Report')
+    self.analysisGroupBoxCTL = qt.QWidget()
     reportFrameCTL.addRow(self.analysisGroupBoxCTL)
     self.analysisGroupBoxLayoutCTL = qt.QFormLayout(self.analysisGroupBoxCTL)
+    self.analysisGroupBoxLayoutCTL.setContentsMargins(0, 0, 0, 0)
 
+    # ------------------------------------------------------------------
+    # 1. Automated Needle Segmentation
+    # ------------------------------------------------------------------
     self.__segmentationFrame = ctk.ctkCollapsibleButton()
-    self.__segmentationFrame.text = "Segmentation"
+    self.__segmentationFrame.text = "1. Automated Needle Segmentation"
     self.__segmentationFrame.collapsed = 0
     segmentationFrame = qt.QFormLayout(self.__segmentationFrame)
 
+    self.algoComboBox = qt.QComboBox()
+    self.algoComboBox.addItems([
+        "0 — 3x3 Neighborhood Cone Search (Dev)",
+        "1 — MICCAI 2013 v1 (Cone Ray Search)",
+        "2 — MICCAI 2013 v2 (Spacing-Corrected Cone)",
+        "3 — MICCAI 2015 (Mechanical Deflection Model) [Recommended]",
+        "4 — MICCAI 2013 + Multi-Needle Rationality Check",
+        "5 — MICCAI 2015 + Multi-Needle Rationality Check",
+    ])
+    self.algoComboBox.setCurrentIndex(3)
+    self.algoComboBox.toolTip = "Select the needle tracking algorithm version."
+    segmentationFrame.addRow("Tracking Algorithm:", self.algoComboBox)
+
     self.templateSliceButton = qt.QPushButton('1. Select Current Axial Slice as Seg. Limit (current: None)')
-    segmentationFrame.addRow(self.templateSliceButton)
+    self.templateSliceButton.toolTip = "Set the axial base limit slice (template plane) from the current Red slice position."
     self.templateSliceButton.clicked.connect(lambda _=False: logic.placeAxialLimitMarker(assign=True))
     self.templateSliceButton.setEnabled(1)
 
+    self.skipSegLimitButton = qt.QPushButton('Skip Limit')
+    self.skipSegLimitButton.checkable = False
+    self.skipSegLimitButton.toolTip = "Use an existing axial segmentation limit marker in the scene."
+    self.skipSegLimitButton.clicked.connect(lambda _=False: self.onSkipSegLimit())
+
+    step1Row = qt.QFrame()
+    step1Layout = qt.QHBoxLayout(step1Row)
+    step1Layout.setContentsMargins(0, 0, 0, 0)
+    step1Layout.addWidget(self.templateSliceButton, 4)
+    step1Layout.addWidget(self.skipSegLimitButton, 1)
+    segmentationFrame.addRow(step1Row)
+
     self.fiducialButton = qt.QPushButton('2. Start Giving Needle Tips [CTRL + ENTER]')
     self.fiducialButton.checkable = True
-    segmentationFrame.addRow(self.fiducialButton)
+    self.fiducialButton.setStyleSheet(toggle_ready_style)
     self.fiducialButton.toggled.connect(self.onStartStopGivingNeedleTipsToggled)
     self.fiducialButton.setEnabled(0)
+    segmentationFrame.addRow(self.fiducialButton)
 
     self.newInsertionButton = None
 
-    self.deleteNeedleButton = qt.QPushButton('Delete Last Segmented Needle [Ctrl + Z]')
-    segmentationFrame.addRow(self.deleteNeedleButton)
+    self.deleteNeedleButton = qt.QPushButton('Delete Last Needle [Ctrl + Z]')
     self.deleteNeedleButton.clicked.connect(lambda _=False: logic.deleteLastNeedle())
     self.deleteNeedleButton.setEnabled(0)
 
-    self.resetDetectionButton = qt.QPushButton('Reset Needle Detection (Start Over)')
-    segmentationFrame.addRow(self.resetDetectionButton)
+    self.resetDetectionButton = qt.QPushButton('Reset Detection')
     self.resetDetectionButton.clicked.connect(lambda _=False: logic.resetNeedleDetection())
     self.resetDetectionButton.setEnabled(0)
 
+    segActionsRow = qt.QFrame()
+    segActionsLayout = qt.QHBoxLayout(segActionsRow)
+    segActionsLayout.setContentsMargins(0, 0, 0, 0)
+    segActionsLayout.addWidget(self.deleteNeedleButton)
+    segActionsLayout.addWidget(self.resetDetectionButton)
+    segmentationFrame.addRow(segActionsRow)
+
     segmentationFrame.addRow(self.__reportFrame)
 
+    # ------------------------------------------------------------------
+    # 2. Manual Ground Truth & Validation
+    # ------------------------------------------------------------------
     self.__validationFrame = ctk.ctkCollapsibleButton()
-    self.__validationFrame.text = "Validation"
+    self.__validationFrame.text = "2. Manual Segmentation && Evaluation"
     self.__validationFrame.collapsed = 0
     validationFrame = qt.QFormLayout(self.__validationFrame)
 
     self.startGivingControlPointsButton = qt.QPushButton('Start Giving Control Points')
     self.startGivingControlPointsButton.checkable = True
-    self.startGivingControlPointsButton.setStyleSheet(
-        "QPushButton {background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1, stop: 0 #ccffcc, stop: 1 #f3fff3)}"
-        "QPushButton:checked{background-color: red;}"
-    )
+    self.startGivingControlPointsButton.setStyleSheet(toggle_ready_style)
     self.startGivingControlPointsButton.toggled.connect(self.onStartStopGivingValidationControlPointsToggled)
 
     self.startAssistModeButton = qt.QPushButton('Assisted Manual Segmentation')
     self.startAssistModeButton.checkable = True
+    self.startAssistModeButton.setStyleSheet(secondary_toggle_style)
     self.startAssistModeButton.toggled.connect(self.onStartAssistModeToggled)
 
     self.validationNeedleButton = qt.QPushButton('Next Validation Needle: (0)->(1)')
     self.validationNeedleButton.toolTip = (
-        "By clicking on this button, you will increment the number of the needle"
-        "that you want to manually segment. Thus, the points you will add will be used to draw a new needle.<br/>"
-        "<b>Warning:<b> You can/'t add any more points to the current needle after clicking here"
+        "Increment the active manual needle index so subsequent clicks belong to the next needle."
     )
     self.validationNeedleButton.clicked.connect(lambda _=False: logic.validationNeedle())
 
     self.drawValidationNeedlesButton = qt.QPushButton('Render Manual Needle 0')
     self.drawValidationNeedlesButton.toolTip = (
-        "Redraw every manually segmented needles. This is usefull for example if you moved a control point, or after you added a new needle"
+        "Redraw manually segmented needles after adding or moving control points."
     )
     self.drawValidationNeedlesButton.clicked.connect(lambda _=False: logic.drawValidationNeedles())
 
-    self.startValidationButton = qt.QPushButton('Start Evaluation')
-    self.startValidationButton.toolTip = "Launch tracking algo. from the tip of the manually segmented needles"
+    self.startValidationButton = qt.QPushButton('Start Evaluation (Auto vs. Manual)')
+    self.startValidationButton.toolTip = "Launch tracking algorithm from the tips of all manually segmented needles and compute Hausdorff/tip/base accuracy."
     self.startValidationButton.clicked.connect(lambda _=False: logic.startValidation())
-    self.startValidationButton.setStyleSheet(
-        "background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1, stop: 0 #f7f700, stop: 1 #dbdb00)"
-    )
+    self.startValidationButton.setStyleSheet(primary_action_style)
 
-    self.resetValidationButton = qt.QPushButton('Reset Manual Segmentation')
+    self.resetValidationButton = qt.QPushButton('Reset Manual Seg.')
     self.templateRegistrationButton = qt.QPushButton('[Beta] Template Registration')
 
     self.hideAnnotationTextButton = qt.QPushButton('Hide Marker Texts')
     self.hideAnnotationTextButton.checkable = True
+    self.hideAnnotationTextButton.setStyleSheet(secondary_toggle_style)
 
-    self.undoButton = qt.QPushButton('Undo Fiducial Mvt')
+    self.undoButton = qt.QPushButton('Undo Point Move')
     self.undoButton.checkable = False
 
     self.resetValidationButton.clicked.connect(lambda _=False: logic.resetNeedleValidation())
@@ -461,31 +511,46 @@ class NeedleFinderWidget(ScriptedLoadableModuleWidget):
 
     self.editNeedleTxtBox = qt.QSpinBox()
     self.editNeedleTxtBox.valueChanged.connect(logic.changeValue)
-    editLabel = qt.QLabel('Choose Needle:')
+    editLabel = qt.QLabel('Needle #:')
 
     self.configFrameCTL = qt.QFrame()
     self.configFrameCTL.setLayout(qt.QHBoxLayout())
+    self.configFrameCTL.layout().setContentsMargins(0, 0, 0, 0)
     self.configFrameCTL.layout().addWidget(editLabel)
     self.configFrameCTL.layout().addWidget(self.editNeedleTxtBox)
     self.configFrameCTL.layout().addWidget(self.validationNeedleButton)
+    self.configFrameCTL.layout().addWidget(self.drawValidationNeedlesButton)
+
+    valModesRow = qt.QFrame()
+    valModesLayout = qt.QHBoxLayout(valModesRow)
+    valModesLayout.setContentsMargins(0, 0, 0, 0)
+    valModesLayout.addWidget(self.startGivingControlPointsButton)
+    valModesLayout.addWidget(self.startAssistModeButton)
+
+    valToolsRow = qt.QFrame()
+    valToolsLayout = qt.QHBoxLayout(valToolsRow)
+    valToolsLayout.setContentsMargins(0, 0, 0, 0)
+    valToolsLayout.addWidget(self.undoButton)
+    valToolsLayout.addWidget(self.hideAnnotationTextButton)
+    valToolsLayout.addWidget(self.resetValidationButton)
 
     validationFrame.layout().addRow(self.configFrameCTL)
-    validationFrame.addRow(self.startGivingControlPointsButton)
-    validationFrame.addRow(self.startAssistModeButton)
-    validationFrame.addRow(self.drawValidationNeedlesButton)
+    validationFrame.addRow(valModesRow)
+    validationFrame.addRow(valToolsRow)
     validationFrame.addRow(self.startValidationButton)
-    validationFrame.addRow(self.resetValidationButton)
-    validationFrame.addRow(self.hideAnnotationTextButton)
-    validationFrame.addRow(self.undoButton)
     validationFrame.addRow(self.__reportFrameCTL)
 
+    # ------------------------------------------------------------------
+    # 3. Advanced Parameters & R&D (Collapsed by default for clean UX)
+    # ------------------------------------------------------------------
     self.__parameterFrame = ctk.ctkCollapsibleButton()
-    self.__parameterFrame.text = "Needle Detection Parameters (Developers)"
-    self.__parameterFrame.collapsed = 0
+    self.__parameterFrame.text = "Advanced Detection Parameters"
+    self.__parameterFrame.collapsed = 1
     parameterFrame = qt.QFormLayout(self.__parameterFrame)
 
     self.configFrame = qt.QFrame()
     self.configFrame.setLayout(qt.QHBoxLayout())
+    self.configFrame.layout().setContentsMargins(0, 0, 0, 0)
     parameterFrame.layout().addRow(self.configFrame)
     self.loadButton = qt.QPushButton()
     self.loadButton.text = "Load Parameters"
@@ -607,7 +672,7 @@ class NeedleFinderWidget(ScriptedLoadableModuleWidget):
     self.lenghtNeedleParameter.setMinimum(1)
     self.lenghtNeedleParameter.setMaximum(10000)
     self.lenghtNeedleParameter.setValue(100)
-    stepsizeLabel = qt.QLabel("Lenght of the needles (mm): ")
+    stepsizeLabel = qt.QLabel("Length of the needles (mm): ")
     parameterFrame.addRow(stepsizeLabel, self.lenghtNeedleParameter)
 
     self.radiusNeedleParameter = qt.QSpinBox()
@@ -620,21 +685,30 @@ class NeedleFinderWidget(ScriptedLoadableModuleWidget):
     self.algoVersParameter = qt.QSpinBox()
     self.algoVersParameter.setMinimum(0)
     self.algoVersParameter.setMaximum(9)
-    self.algoVersParameter.setValue(0)
+    self.algoVersParameter.setValue(3)
     algoLabel = qt.QLabel("Needle detection version: ")
     parameterFrame.addRow(algoLabel, self.algoVersParameter)
 
-    self.__devFrame = ctk.ctkCollapsibleButton()
-    self.__devFrame.text = "R&&D (Developers)"
-    self.__devFrame.collapsed = 0
-    devFrame = qt.QFormLayout(self.__devFrame)
+    # Keep top-level combo box and developer spinbox bidirectionally synchronized
+    def _on_algo_spin_changed(val):
+      if 0 <= val < self.algoComboBox.count and self.algoComboBox.currentIndex != val:
+        self.algoComboBox.setCurrentIndex(val)
 
-    self.skipSegLimitButton = qt.QPushButton('Skip Giving Seg. Limit.')
-    self.skipSegLimitButton.checkable = False
-    self.skipSegLimitButton.clicked.connect(lambda _=False: self.onSkipSegLimit())
+    def _on_algo_combo_changed(idx):
+      if idx >= 0 and self.algoVersParameter.value != idx:
+        self.algoVersParameter.setValue(idx)
+
+    self.algoVersParameter.valueChanged.connect(_on_algo_spin_changed)
+    self.algoComboBox.currentIndexChanged.connect(_on_algo_combo_changed)
+
+    self.__devFrame = ctk.ctkCollapsibleButton()
+    self.__devFrame.text = "Obturators, Isosurfaces && R&&D Tools"
+    self.__devFrame.collapsed = 1
+    devFrame = qt.QFormLayout(self.__devFrame)
 
     self.fiducialObturatorButton = qt.QPushButton('Start Giving Obturator Needle Tips')
     self.fiducialObturatorButton.checkable = True
+    self.fiducialObturatorButton.setStyleSheet(secondary_toggle_style)
     self.fiducialObturatorButton.toggled.connect(self.onStartStopGivingObturatorNeedleTipsToggled)
 
     self.renderObturatorNeedlesButton = qt.QPushButton('Render Obturator Needles')
@@ -650,10 +724,11 @@ class NeedleFinderWidget(ScriptedLoadableModuleWidget):
 
     self.hideContourButton = qt.QPushButton('Hide Radiation Isosurfaces')
     self.hideContourButton.checkable = True
+    self.hideContourButton.setStyleSheet(secondary_toggle_style)
     self.hideContourButton.clicked.connect(lambda _=False: logic.hideIsoSurfaces())
     self.hideContourButton.setEnabled(0)
 
-    self.filterButton = qt.QPushButton('Preprocessing')
+    self.filterButton = qt.QPushButton('Preprocessing (SITK)')
     self.filterButton.checkable = False
     self.filterButton.clicked.connect(lambda _=False: logic.filterWithSITK())
     self.filterButton.setEnabled(1)
@@ -663,13 +738,11 @@ class NeedleFinderWidget(ScriptedLoadableModuleWidget):
     self.parSearchButton.clicked.connect(lambda _=False: logic.parSearch())
     self.parSearchButton.setEnabled(1)
 
-    self.setAsValNeedlesButton = qt.QPushButton('Use Needles for Validation')
+    self.setAsValNeedlesButton = qt.QPushButton('Use Segmented Needles for Validation')
     self.setAsValNeedlesButton.checkable = False
     self.setAsValNeedlesButton.clicked.connect(lambda _=False: logic.setAllNeedleTubesAsValidationNeedles())
     self.setAsValNeedlesButton.setEnabled(1)
-    self.setAsValNeedlesButton.setStyleSheet(
-        "background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1, stop: 0 #f7f700, stop: 1 #dbdb00)"
-    )
+    self.setAsValNeedlesButton.setStyleSheet(primary_action_style)
 
     editorWidgetParent = slicer.qMRMLWidget()
     editorWidgetParent.setLayout(qt.QVBoxLayout())
@@ -690,21 +763,37 @@ class NeedleFinderWidget(ScriptedLoadableModuleWidget):
     self.editUtil.setCurrentEffect("NeedleFinder")
 
     self.scenePath = qt.QLineEdit()
+    self.scenePath.setPlaceholderText("Scene folder path for Clean Scene...")
     self.cleanSceneButton = qt.QPushButton('Clean Scene')
     self.cleanSceneButton.clicked.connect(lambda _=False: logic.cleanScene())
 
-    devFrame.addWidget(editorWidgetParent)
-    devFrame.addRow(self.scenePath)
-    devFrame.addRow(self.cleanSceneButton)
-    devFrame.addRow(self.skipSegLimitButton)
-    devFrame.addRow(self.fiducialObturatorButton)
-    devFrame.addRow(self.renderObturatorNeedlesButton)
-    devFrame.addRow(self.displayContourButton)
-    devFrame.addRow(self.hideContourButton)
-    devFrame.addRow(self.filterButton)
-    devFrame.addRow(self.parSearchButton)
+    obturatorRow = qt.QHBoxLayout()
+    obturatorRow.setSpacing(6)
+    obturatorRow.addWidget(self.fiducialObturatorButton, 1)
+    obturatorRow.addWidget(self.renderObturatorNeedlesButton, 1)
+
+    contourRow = qt.QHBoxLayout()
+    contourRow.setSpacing(6)
+    contourRow.addWidget(self.displayContourButton, 1)
+    contourRow.addWidget(self.hideContourButton, 1)
+
+    rdRow = qt.QHBoxLayout()
+    rdRow.setSpacing(6)
+    rdRow.addWidget(self.filterButton, 1)
+    rdRow.addWidget(self.parSearchButton, 1)
+
+    cleanSceneRow = qt.QHBoxLayout()
+    cleanSceneRow.setSpacing(6)
+    cleanSceneRow.addWidget(self.scenePath, 2)
+    cleanSceneRow.addWidget(self.cleanSceneButton, 1)
+
+    devFrame.addRow(obturatorRow)
+    devFrame.addRow(contourRow)
     devFrame.addRow(self.setAsValNeedlesButton)
     devFrame.addRow(self.templateRegistrationButton)
+    devFrame.addRow(rdRow)
+    devFrame.addRow(cleanSceneRow)
+    devFrame.addWidget(editorWidgetParent)
 
     self.layout.addRow(self.__segmentationFrame)
     self.layout.addRow(self.__validationFrame)

@@ -657,8 +657,6 @@ class SceneAndEvaluationMixin:
     ################################################
     # Column 3
     displayButton = qt.QPushButton("Delete")
-    displayButton.checked = True
-    displayButton.checkable = True
     if needleType == 'Validation':
       ID = int(getNode('.' + str(ID)).GetID().strip('vtkMRMLModelNode'))
     listArgs = [ID, needleNumber, pointNumber]
