@@ -913,8 +913,20 @@ class NeedleFinderWidget(ScriptedLoadableModuleWidget):
       profbox()
     import importlib
     import sys
-    for mod_name in sorted(list(sys.modules.keys())):
-      if mod_name == "NeedleFinderLib" or mod_name.startswith("NeedleFinderLib."):
+    reload_order = [
+        "NeedleFinderLib.Constants",
+        "NeedleFinderLib.DeflectionModelData",
+        "NeedleFinderLib.ProfilingUtils",
+        "NeedleFinderLib.LegacyEditorCompat",
+        "NeedleFinderLib.RustCore",
+        "NeedleFinderLib.GeometryUtils",
+        "NeedleFinderLib.AssistedSegmentation",
+        "NeedleFinderLib.SceneAndEvaluation",
+        "NeedleFinderLib.TrackingAlgorithms",
+        "NeedleFinderLib",
+    ]
+    for mod_name in reload_order:
+      if mod_name in sys.modules:
         importlib.reload(sys.modules[mod_name])
     globals()[moduleName] = slicer.util.reloadScriptedModule(moduleName)
 
