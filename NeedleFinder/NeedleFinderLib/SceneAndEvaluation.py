@@ -531,7 +531,7 @@ class SceneAndEvaluationMixin:
   """ Needle segmentation report"""
   #----------------------------------------------------------------------------------------------
 
-  def addNeedleToTable(self, ID, label=None, needleType=None):
+  def addNeedleToTable(self, ID, label=None, needleType=None, comment=""):
     """
     Add last segmented needle to the table
     The color icon corresponds to the color of the needle, which corresponds to its label (color code)
@@ -591,7 +591,7 @@ class SceneAndEvaluationMixin:
     widget.view.setIndexWidget(index, reformatButton)
     ################################################
     # Column 4
-    editField = qt.QTextEdit("")
+    editField = qt.QTextEdit(str(comment) if comment else "")
     index = widget.model.index(widget.row, 4)
     widget.items.append(editField)
     widget.col += 1

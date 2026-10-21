@@ -777,3 +777,164 @@ pub unsafe extern "C" fn nf_center_of_mass_ijk(
     }
     0
 }
+
+/// Multi-threaded 3D symmetric diameter-pair tubularity filter for automatic needle detection.
+///
+/// Computes per-slice 3x3 Gaussian-smoothed intensity `out_csmooth`, multi-radius (1.7, 2.5, 3.4 mm)
+/// 6-diameter symmetric outer ring intensity `out_ringsym`, and dark-tube response `out_resp`.
+#[no_mangle]
+pub unsafe extern "C" fn nf_compute_3d_sym_response(
+    vol_ptr: *const f64,
+    dim_x: usize,
+    dim_y: usize,
+    dim_z: usize,
+    sp_x: f64,
+    sp_y: f64,
+    i0: usize,
+    i1: usize,
+    j0: usize,
+    j1: usize,
+    k0: usize,
+    k1: usize,
+    body_thresh: f64,
+    out_resp_ptr: *mut f32,
+    out_csmooth_ptr: *mut f32,
+    out_ringsym_ptr: *mut f32,
+) -> i32 {
+    if vol_ptr.is_null()
+        || out_resp_ptr.is_null()
+        || out_csmooth_ptr.is_null()
+        || out_ringsym_ptr.is_null()
+        || dim_x < 25
+        || dim_y < 25
+        || dim_z == 0
+    {
+        return -1;
+    }
+    let k_start = k0.min(dim_z);
+    let k_end = k1.min(dim_z);
+    if k_end <= k_start {
+        return 0;
+    }
+
+    let slice_elems = dim_x * dim_y;
+    let total_elems = slice_elems * dim_z;
+    let vol = slice::from_raw_parts(vol_ptr, total_elems);
+    let out_resp = slice::from_raw_parts_mut(out_resp_ptr, total_elems);
+    let out_cs = slice::from_raw_parts_mut(out_csmooth_ptr, total_elems);
+    let out_rsym = slice::from_raw_parts_mut(out_ringsym_ptr, total_elems);
+
+    let radii = [1.7_f64, 2.5_f64, 3.4_f64];
+    let mut di_tab = [[0_isize; 6]; 3];
+    let mut dj_tab = [[0_isize; 6]; 3];
+    for r in 0..3 {
+        for a in 0..6 {
+            let th = (a as f64) * (std::f64::consts::PI / 6.0);
+            di_tab[r][a] = ((radii[r] * th.cos() / sp_x).round() as isize).clamp(-11, 11);
+            dj_tab[r][a] = ((radii[r] * th.sin() / sp_y).round() as isize).clamp(-11, 11);
+        }
+    }
+
+    let margin = 12_usize;
+    let ja_s = j0.saturating_sub(margin).max(1);
+    let jb_s = (j1 + margin).min(dim_y - 1);
+    let ia_s = i0.saturating_sub(margin).max(1);
+    let ib_s = (i1 + margin).min(dim_x - 1);
+
+    let ja = j0.max(margin);
+    let jb = j1.min(dim_y - margin);
+    let ia = i0.max(margin);
+    let ib = i1.min(dim_x - margin);
+    let min_tissue = (body_thresh as f32 * 0.45_f32).max(12.0_f32);
+
+    let num_slices = k_end - k_start;
+    let n_threads = std::thread::available_parallelism()
+        .map(|n| n.get())
+        .unwrap_or(4)
+        .min(num_slices)
+        .max(1);
+    let chunk_slices = (num_slices + n_threads - 1) / n_threads;
+
+    let start_offset = k_start * slice_elems;
+    let active_len = num_slices * slice_elems;
+    let cs_sub = &mut out_cs[start_offset..start_offset + active_len];
+    let resp_sub = &mut out_resp[start_offset..start_offset + active_len];
+    let rsym_sub = &mut out_rsym[start_offset..start_offset + active_len];
+
+    let chunk_elems = chunk_slices * slice_elems;
+    std::thread::scope(|s| {
+        for (chunk_idx, ((cs_chunk, resp_chunk), rsym_chunk)) in cs_sub
+            .chunks_mut(chunk_elems)
+            .zip(resp_sub.chunks_mut(chunk_elems))
+            .zip(rsym_sub.chunks_mut(chunk_elems))
+            .enumerate()
+        {
+            let k_chunk_start = k_start + chunk_idx * chunk_slices;
+            let slices_in_chunk = cs_chunk.len() / slice_elems;
+            s.spawn(move || {
+                for s_idx in 0..slices_in_chunk {
+                    let k = k_chunk_start + s_idx;
+                    let sl = &vol[k * slice_elems..(k + 1) * slice_elems];
+                    let cs = &mut cs_chunk[s_idx * slice_elems..(s_idx + 1) * slice_elems];
+                    let resp = &mut resp_chunk[s_idx * slice_elems..(s_idx + 1) * slice_elems];
+                    let rsym = &mut rsym_chunk[s_idx * slice_elems..(s_idx + 1) * slice_elems];
+
+                    for j in ja_s..jb_s {
+                        let row = j * dim_x;
+                        let row_m = (j - 1) * dim_x;
+                        let row_p = (j + 1) * dim_x;
+                        for i in ia_s..ib_s {
+                            let sum = 4.0 * sl[row + i]
+                                + 2.0 * (sl[row + i - 1] + sl[row + i + 1] + sl[row_m + i] + sl[row_p + i])
+                                + (sl[row_m + i - 1] + sl[row_m + i + 1] + sl[row_p + i - 1] + sl[row_p + i + 1]);
+                            cs[row + i] = (sum * 0.0625) as f32;
+                        }
+                    }
+
+                    for j in ja..jb {
+                        let row = j * dim_x;
+                        for i in ia..ib {
+                            let c = cs[row + i];
+                            let mut best_sym = 0.0_f32;
+                            let mut best_med = 0.0_f32;
+                            for r in 0..3 {
+                                let mut pmins = [0.0_f32; 6];
+                                let mut all12 = [0.0_f32; 12];
+                                for a in 0..6 {
+                                    let di = di_tab[r][a];
+                                    let dj = dj_tab[r][a];
+                                    let idx_pos = ((j as isize + dj) as usize) * dim_x + ((i as isize + di) as usize);
+                                    let idx_neg = ((j as isize - dj) as usize) * dim_x + ((i as isize - di) as usize);
+                                    let v_pos = cs[idx_pos];
+                                    let v_neg = cs[idx_neg];
+                                    pmins[a] = v_pos.min(v_neg);
+                                    all12[2 * a] = v_pos;
+                                    all12[2 * a + 1] = v_neg;
+                                }
+                                pmins.sort_unstable_by(|x, y| x.partial_cmp(y).unwrap_or(std::cmp::Ordering::Equal));
+                                all12.sort_unstable_by(|x, y| x.partial_cmp(y).unwrap_or(std::cmp::Ordering::Equal));
+                                if pmins[1] > best_sym {
+                                    best_sym = pmins[1];
+                                }
+                                if all12[6] > best_med {
+                                    best_med = all12[6];
+                                }
+                            }
+                            rsym[row + i] = best_sym;
+                            if best_med > min_tissue && best_sym > c {
+                                let drop = best_sym - c;
+                                let rel_drop = drop / (best_med + 12.0_f32);
+                                let dark_ratio = 1.0_f32 - c / (best_sym + 1e-3_f32);
+                                resp[row + i] = drop * rel_drop * rel_drop.sqrt() * (dark_ratio * dark_ratio);
+                            } else {
+                                resp[row + i] = 0.0_f32;
+                            }
+                        }
+                    }
+                }
+            });
+        }
+    });
+
+    0
+}
