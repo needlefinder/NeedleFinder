@@ -138,32 +138,81 @@ def unique_points(points_array):
     return arr[mask]
 
 
-def trilinear_interp(image_data, x, y, z, interpolate=True):
-    """Perform trilinear or nearest-neighbor scalar lookup on a `vtkImageData`."""
-    if not interpolate:
-        return image_data.GetScalarComponentAsDouble(
-            int(round(x)), int(round(y)), int(round(z)), 0
+def make_fast_scalar_getter(image_data):
+    """Return a fast bounds-checked callable `get_scalar(x, y, z, c=0) -> float` backed by NumPy."""
+    if image_data is None:
+        return lambda x, y, z, c=0: 0.0
+    point_data = image_data.GetPointData()
+    scalars = point_data.GetScalars() if point_data is not None else None
+    if scalars is None:
+        return lambda x, y, z, c=0: 0.0
+    dims = image_data.GetDimensions()
+    x0, x1, y0, y1, z0, z1 = image_data.GetExtent()
+    from vtk.util import numpy_support
+
+    raw = numpy_support.vtk_to_numpy(scalars)
+    num_comp = scalars.GetNumberOfComponents()
+    if num_comp > 1:
+        arr = np.asarray(
+            raw.reshape((dims[2], dims[1], dims[0], num_comp))[..., 0], dtype=float
         )
+    else:
+        arr = np.asarray(raw.reshape((dims[2], dims[1], dims[0])), dtype=float)
+
+    if x0 == 0 and y0 == 0 and z0 == 0:
+
+        def _get_zero_origin(x, y, z, c=0):
+            ix, iy, iz = int(x), int(y), int(z)
+            if 0 <= ix <= x1 and 0 <= iy <= y1 and 0 <= iz <= z1:
+                return float(arr[iz, iy, ix])
+            return 0.0
+
+        return _get_zero_origin
+
+    def _get_offset(x, y, z, c=0):
+        ix, iy, iz = int(x), int(y), int(z)
+        if x0 <= ix <= x1 and y0 <= iy <= y1 and z0 <= iz <= z1:
+            return float(arr[iz - z0, iy - y0, ix - x0])
+        return 0.0
+
+    return _get_offset
+
+
+def compute_center_of_mass_ijk(volume_node, step=1):
+    """Compute the IJK center of mass of positive voxels in `volume_node` using vectorized NumPy."""
+    if volume_node is None or volume_node.GetImageData() is None:
+        return [0.0, 0.0, 0.0]
+    step = max(1, int(step))
+    ext = volume_node.GetImageData().GetExtent()
+    arr = slicer.util.arrayFromVolume(volume_node)
+    sub = arr[:, ::step, ::step]
+    kz, jy, ix = np.nonzero(sub > 0)
+    if len(ix) == 0:
+        return [0.0, 0.0, 0.0]
+    return [
+        float(np.mean(ix * step + ext[0])),
+        float(np.mean(jy * step + ext[2])),
+        float(np.mean(kz + ext[4])),
+    ]
+
+
+def trilinear_interp(image_data, x, y, z, interpolate=True):
+    """Perform bounds-safe trilinear or nearest-neighbor scalar lookup on `image_data`."""
+    get_val = (
+        image_data
+        if callable(image_data)
+        else make_fast_scalar_getter(image_data)
+    )
+    if not interpolate:
+        return get_val(int(round(x)), int(round(y)), int(round(z)), 0)
     xf, yf, zf = int(math.floor(x)), int(math.floor(y)), int(math.floor(z))
     xc, yc, zc = int(math.ceil(x)), int(math.ceil(y)), int(math.ceil(z))
     xd, yd, zd = x - xf, y - yf, z - zf
     zdd = 1.0 - zd
-    i1 = (
-        image_data.GetScalarComponentAsDouble(xf, yf, zf, 0) * zdd
-        + image_data.GetScalarComponentAsDouble(xf, yf, zc, 0) * zd
-    )
-    i2 = (
-        image_data.GetScalarComponentAsDouble(xf, yc, zf, 0) * zdd
-        + image_data.GetScalarComponentAsDouble(xf, yc, zc, 0) * zd
-    )
-    j1 = (
-        image_data.GetScalarComponentAsDouble(xc, yf, zf, 0) * zdd
-        + image_data.GetScalarComponentAsDouble(xc, yf, zc, 0) * zd
-    )
-    j2 = (
-        image_data.GetScalarComponentAsDouble(xc, yc, zf, 0) * zdd
-        + image_data.GetScalarComponentAsDouble(xc, yc, zc, 0) * zd
-    )
+    i1 = get_val(xf, yf, zf, 0) * zdd + get_val(xf, yf, zc, 0) * zd
+    i2 = get_val(xf, yc, zf, 0) * zdd + get_val(xf, yc, zc, 0) * zd
+    j1 = get_val(xc, yf, zf, 0) * zdd + get_val(xc, yf, zc, 0) * zd
+    j2 = get_val(xc, yc, zf, 0) * zdd + get_val(xc, yc, zc, 0) * zd
     w1 = i1 * (1.0 - yd) + i2 * yd
     w2 = j1 * (1.0 - yd) + j2 * yd
     return w1 * (1.0 - xd) + w2 * xd
@@ -171,6 +220,11 @@ def trilinear_interp(image_data, x, y, z, interpolate=True):
 
 def compute_bezier_curve(control_points, num_eval_points=50):
     """Evaluate a 3D Bezier curve defined by `control_points` at `num_eval_points + 1` points."""
+    from .RustCore import rust_bezier_curve
+    rust_res = rust_bezier_curve(control_points, num_eval_points)
+    if rust_res is not None:
+        return rust_res
+
     n = len(control_points) - 1
     curve_points = [[0.0, 0.0, 0.0] for _ in range(num_eval_points + 1)]
     coeffs = [binomial(n, i) for i in range(n + 1)]
@@ -200,8 +254,10 @@ def build_polyline_polydata(points_list):
     return poly_data
 
 
-def build_tube_polydata(poly_data, radius=1.0, num_sides=50):
+def build_tube_polydata(poly_data, radius=1.0, num_sides=50, sides=None):
     """Generate a tubular surface `vtkPolyData` around an input polyline `vtkPolyData`."""
+    if sides is not None:
+        num_sides = sides
     tube = vtk.vtkTubeFilter()
     tube.SetInputData(poly_data)
     tube.SetRadius(float(radius))
@@ -210,8 +266,10 @@ def build_tube_polydata(poly_data, radius=1.0, num_sides=50):
     return tube.GetOutput()
 
 
-def build_cspline_polydata(control_points, num_output_points=50):
+def build_cspline_polydata(control_points, num_output_points=50, num_points=None):
     """Build a cardinal spline polyline `vtkPolyData` interpolating `control_points`."""
+    if num_points is not None:
+        num_output_points = num_points
     spline_x = vtk.vtkCardinalSpline()
     spline_y = vtk.vtkCardinalSpline()
     spline_z = vtk.vtkCardinalSpline()

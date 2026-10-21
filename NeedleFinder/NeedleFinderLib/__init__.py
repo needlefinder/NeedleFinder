@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """NeedleFinder modular support package for 3D Slicer 5+."""
 
 from .AssistedSegmentation import AssistedSegmentationMixin
@@ -26,6 +25,7 @@ from .GeometryUtils import (
     clip_polydata_axial,
     compute_base_distance,
     compute_bezier_curve,
+    compute_center_of_mass_ijk,
     compute_hausdorff_distance,
     compute_tip_distance,
     distance_3d,
@@ -35,6 +35,7 @@ from .GeometryUtils import (
     fibonacci,
     get_active_background_volume,
     ijk_to_ras,
+    make_fast_scalar_getter,
     norm,
     normalized,
     ras_to_ijk,
@@ -50,7 +51,15 @@ from .LegacyEditorCompat import (
     EditorWidget,
     Helper,
     LabelStatisticsLogic,
+    add_fiducial_modified_observer,
+    create_fiducial_node,
+    create_roi_node,
+    get_all_fiducial_nodes,
+    get_fiducial_coords,
     get_node_or_none,
+    is_fiducial_node,
+    set_all_fiducial_text_scale,
+    set_fiducial_coords,
 )
 from .ProfilingUtils import (
     MAXCOL,
@@ -74,6 +83,16 @@ from .ProfilingUtils import (
     whoami,
     whosdaddy,
     whosgranny,
+)
+from .RustCore import (
+    get_rust_lib,
+    is_rust_available,
+    rust_bezier_curve,
+    rust_center_of_mass_ijk,
+    rust_find_tip,
+    rust_search_cone_13,
+    rust_search_cone_15_1,
+    rust_search_cone_current_dev,
 )
 from .SceneAndEvaluation import SceneAndEvaluationMixin
 from .TrackingAlgorithms import TrackingAlgorithmsMixin
@@ -99,6 +118,7 @@ __all__ = [
     "OUTLIER_THRESHOLD_MM",
     "SceneAndEvaluationMixin",
     "TrackingAlgorithmsMixin",
+    "add_fiducial_modified_observer",
     "angle_between_vectors",
     "assertbox",
     "binomial",
@@ -110,9 +130,12 @@ __all__ = [
     "cmp",
     "compute_base_distance",
     "compute_bezier_curve",
+    "compute_center_of_mass_ijk",
     "compute_hausdorff_distance",
     "compute_tip_distance",
     "conesColor",
+    "create_fiducial_node",
+    "create_roi_node",
     "distance_3d",
     "extract_centerline",
     "extract_model_id_number",
@@ -122,11 +145,15 @@ __all__ = [
     "getClassName",
     "getNode",
     "get_active_background_volume",
+    "get_all_fiducial_nodes",
+    "get_fiducial_coords",
     "get_node_or_none",
     "ijk_to_ras",
+    "is_fiducial_node",
     "lineno",
     "loggingInfos",
     "logprint",
+    "make_fast_scalar_getter",
     "msgbox",
     "norm",
     "normalized",
@@ -136,6 +163,8 @@ __all__ = [
     "profiling",
     "profprint",
     "ras_to_ijk",
+    "set_all_fiducial_text_scale",
+    "set_fiducial_coords",
     "sort_table",
     "step_size",
     "step_size_13",
