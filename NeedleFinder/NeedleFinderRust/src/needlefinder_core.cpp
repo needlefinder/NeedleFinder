@@ -9,6 +9,7 @@
 #include <limits>
 #include <vector>
 #include <algorithm>
+#include <thread>
 
 namespace {
 
@@ -656,6 +657,135 @@ int32_t nf_center_of_mass_ijk(
         out_com_ptr[0] = sum_i / sum_w;
         out_com_ptr[1] = sum_j / sum_w;
         out_com_ptr[2] = sum_k / sum_w;
+    }
+    return 0;
+}
+
+int32_t nf_compute_3d_sym_response(
+    const double* vol_ptr,
+    size_t dim_x,
+    size_t dim_y,
+    size_t dim_z,
+    double sp_x,
+    double sp_y,
+    size_t i0,
+    size_t i1,
+    size_t j0,
+    size_t j1,
+    size_t k0,
+    size_t k1,
+    double body_thresh,
+    float* out_resp_ptr,
+    float* out_csmooth_ptr,
+    float* out_ringsym_ptr
+) {
+    if (!vol_ptr || !out_resp_ptr || !out_csmooth_ptr || !out_ringsym_ptr || dim_x < 25 || dim_y < 25 || dim_z == 0) {
+        return -1;
+    }
+    const size_t k_start = std::min(k0, dim_z);
+    const size_t k_end = std::min(k1, dim_z);
+    if (k_end <= k_start) {
+        return 0;
+    }
+
+    const double radii[4] = {1.35, 1.85, 2.5, 3.3};
+    ptrdiff_t di_tab[4][6];
+    ptrdiff_t dj_tab[4][6];
+    for (int r = 0; r < 4; ++r) {
+        for (int a = 0; a < 6; ++a) {
+            const double th = static_cast<double>(a) * (kPi / 6.0);
+            di_tab[r][a] = std::clamp(static_cast<ptrdiff_t>(std::lround(radii[r] * std::cos(th) / sp_x)), ptrdiff_t(-11), ptrdiff_t(11));
+            dj_tab[r][a] = std::clamp(static_cast<ptrdiff_t>(std::lround(radii[r] * std::sin(th) / sp_y)), ptrdiff_t(-11), ptrdiff_t(11));
+        }
+    }
+
+    const size_t margin = 12;
+    const size_t ja_s = std::max(size_t(1), j0 > margin ? j0 - margin : 1);
+    const size_t jb_s = std::min(dim_y - 1, j1 + margin);
+    const size_t ia_s = std::max(size_t(1), i0 > margin ? i0 - margin : 1);
+    const size_t ib_s = std::min(dim_x - 1, i1 + margin);
+
+    const size_t ja = std::max(margin, j0);
+    const size_t jb = std::min(dim_y - margin, j1);
+    const size_t ia = std::max(margin, i0);
+    const size_t ib = std::min(dim_x - margin, i1);
+    const float min_tissue = std::max(12.0f, static_cast<float>(body_thresh) * 0.45f);
+    const size_t slice_elems = dim_x * dim_y;
+
+    const size_t num_slices = k_end - k_start;
+    const size_t hw = std::max(1u, std::thread::hardware_concurrency());
+    const size_t n_threads = std::min(num_slices, hw);
+    const size_t chunk = (num_slices + n_threads - 1) / n_threads;
+
+    auto worker = [&](size_t ks, size_t ke) {
+        for (size_t k = ks; k < ke; ++k) {
+            const double* sl = vol_ptr + k * slice_elems;
+            float* cs = out_csmooth_ptr + k * slice_elems;
+            float* resp = out_resp_ptr + k * slice_elems;
+            float* rsym = out_ringsym_ptr + k * slice_elems;
+
+            for (size_t j = ja_s; j < jb_s; ++j) {
+                const size_t row = j * dim_x;
+                const size_t row_m = (j - 1) * dim_x;
+                const size_t row_p = (j + 1) * dim_x;
+                for (size_t i = ia_s; i < ib_s; ++i) {
+                    const double sum = 8.0 * sl[row + i]
+                        + 2.0 * (sl[row + i - 1] + sl[row + i + 1] + sl[row_m + i] + sl[row_p + i])
+                        + (sl[row_m + i - 1] + sl[row_m + i + 1] + sl[row_p + i - 1] + sl[row_p + i + 1]);
+                    cs[row + i] = static_cast<float>(sum * 0.05);
+                }
+            }
+
+            for (size_t j = ja; j < jb; ++j) {
+                const size_t row = j * dim_x;
+                for (size_t i = ia; i < ib; ++i) {
+                    const float c = cs[row + i];
+                    float best_sym = 0.0f;
+                    float best_med = 0.0f;
+                    for (int r = 0; r < 4; ++r) {
+                        float pmins[6];
+                        float all12[12];
+                        for (int a = 0; a < 6; ++a) {
+                            const ptrdiff_t di = di_tab[r][a];
+                            const ptrdiff_t dj = dj_tab[r][a];
+                            const size_t idx_pos = static_cast<size_t>(static_cast<ptrdiff_t>(j) + dj) * dim_x + static_cast<size_t>(static_cast<ptrdiff_t>(i) + di);
+                            const size_t idx_neg = static_cast<size_t>(static_cast<ptrdiff_t>(j) - dj) * dim_x + static_cast<size_t>(static_cast<ptrdiff_t>(i) - di);
+                            const float v_pos = cs[idx_pos];
+                            const float v_neg = cs[idx_neg];
+                            pmins[a] = std::min(v_pos, v_neg);
+                            all12[2 * a] = v_pos;
+                            all12[2 * a + 1] = v_neg;
+                        }
+                        std::sort(pmins, pmins + 6);
+                        std::nth_element(all12, all12 + 6, all12 + 12);
+                        const float sym_r = 0.45f * pmins[1] + 0.55f * pmins[2];
+                        if (sym_r > best_sym) best_sym = sym_r;
+                        if (all12[6] > best_med) best_med = all12[6];
+                    }
+                    rsym[row + i] = best_sym;
+                    if (best_med > min_tissue && best_sym > c) {
+                        const float drop = best_sym - c;
+                        const float rel_drop = drop / (best_med + 12.0f);
+                        const float dark_ratio = 1.0f - c / (best_sym + 1e-3f);
+                        resp[row + i] = drop * rel_drop * std::sqrt(rel_drop) * (dark_ratio * dark_ratio);
+                    } else {
+                        resp[row + i] = 0.0f;
+                    }
+                }
+            }
+        }
+    };
+
+    std::vector<std::thread> threads;
+    threads.reserve(n_threads);
+    for (size_t t = 0; t < n_threads; ++t) {
+        const size_t ks = k_start + t * chunk;
+        if (ks >= k_end) break;
+        const size_t ke = std::min(k_end, ks + chunk);
+        threads.emplace_back(worker, ks, ke);
+    }
+    for (auto& th : threads) {
+        th.join();
     }
     return 0;
 }
