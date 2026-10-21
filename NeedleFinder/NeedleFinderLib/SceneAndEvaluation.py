@@ -547,7 +547,8 @@ class SceneAndEvaluationMixin:
       needleLabel = str(ID)
       ref = ID % MAXNEEDLES
 
-    widget.labelStats["Labels"].append(ref)
+    widget.row = widget.model.rowCount()
+    widget.labelStats["Labels"].append(ID)
     widget.labelStats[ref, "#"] = needleLabel
 
     ################################################
@@ -605,8 +606,9 @@ class SceneAndEvaluationMixin:
     profprint()
     widget = slicer.modules.NeedleFinderWidget
     print("len(items): ", len(widget.items))
-    if widget.row and ID in widget.labelStats.get("Labels", []):
-      pos = widget.labelStats["Labels"].index(ID)
+    labels = widget.labelStats.get("Labels", [])
+    if widget.row and ID in labels:
+      pos = labels.index(ID)
       ref = ID % MAXNEEDLES
       widget.labelStats["Labels"].pop(pos)
       widget.labelStats[ref, "Label"] = None

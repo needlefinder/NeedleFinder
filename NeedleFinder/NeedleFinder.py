@@ -261,29 +261,29 @@ class NeedleFinderWidget(ScriptedLoadableModuleWidget):
       self.items = []
       if self.model is None:
         self.model = qt.QStandardItemModel()
-        self.model.setColumnCount(5)
-        self.model.setHeaderData(0, 1, "")
-        self.model.setHeaderData(1, 1, "#")
-        self.model.setHeaderData(2, 1, "Display")
-        self.model.setHeaderData(3, 1, "Reformat")
-        self.model.setHeaderData(4, 1, "Comments")
-        if self.view is None:
-          self.view = qt.QTableView()
-          self.view.setMinimumHeight(240)
-          self.view.sortingEnabled = True
-          self.view.verticalHeader().visible = False
-          self.view.horizontalHeader().setStretchLastSection(True)
-          self.view.alternatingRowColors = True
+      self.model.setColumnCount(5)
+      self.model.setHeaderData(0, 1, "")
+      self.model.setHeaderData(1, 1, "#")
+      self.model.setHeaderData(2, 1, "Display")
+      self.model.setHeaderData(3, 1, "Reformat")
+      self.model.setHeaderData(4, 1, "Comments")
+      if self.view is None:
+        self.view = qt.QTableView()
+        self.view.setMinimumHeight(240)
+        self.view.sortingEnabled = False
+        self.view.verticalHeader().visible = False
+        self.view.horizontalHeader().setStretchLastSection(True)
+        self.view.alternatingRowColors = True
+        self.analysisGroupBoxLayout.addRow(self.view)
 
-        self.view.setModel(self.model)
-        self.view.setColumnWidth(0, 24)
-        self.view.setColumnWidth(1, 64)
-        self.view.setColumnWidth(2, 76)
-        self.view.setColumnWidth(3, 84)
-        self.table = 1
-        self.row = 0
-        self.col = 0
-        slicer.modules.NeedleFinderWidget.analysisGroupBoxLayout.addRow(self.view)
+      self.view.setModel(self.model)
+      self.view.setColumnWidth(0, 24)
+      self.view.setColumnWidth(1, 64)
+      self.view.setColumnWidth(2, 76)
+      self.view.setColumnWidth(3, 84)
+      self.table = 1
+      self.row = 0
+      self.col = 0
 
   def initTableViewControlPoints(self):
     """Initialize a table gathering control points from manual segmentation."""
@@ -296,29 +296,29 @@ class NeedleFinderWidget(ScriptedLoadableModuleWidget):
       self.itemsCTL = []
       if self.modelCTL is None:
         self.modelCTL = qt.QStandardItemModel()
-        self.modelCTL.setColumnCount(5)
-        self.modelCTL.setHeaderData(0, 1, "")
-        self.modelCTL.setHeaderData(1, 1, "# Needle")
-        self.modelCTL.setHeaderData(2, 1, "# Point")
-        self.modelCTL.setHeaderData(3, 1, "Delete")
-        self.modelCTL.setHeaderData(4, 1, "Focus")
-        if self.viewCTL is None:
-          self.viewCTL = qt.QTableView()
-          self.viewCTL.setMinimumHeight(240)
-          self.viewCTL.sortingEnabled = True
-          self.viewCTL.verticalHeader().visible = False
-          self.viewCTL.horizontalHeader().setStretchLastSection(True)
-          self.viewCTL.alternatingRowColors = True
-
-        self.viewCTL.setModel(self.modelCTL)
-        self.viewCTL.setColumnWidth(0, 24)
-        self.viewCTL.setColumnWidth(1, 72)
-        self.viewCTL.setColumnWidth(2, 72)
-        self.viewCTL.setColumnWidth(3, 76)
-        self.tableCTL = 1
-        self.rowCTL = 0
-        self.colCTL = 0
+      self.modelCTL.setColumnCount(5)
+      self.modelCTL.setHeaderData(0, 1, "")
+      self.modelCTL.setHeaderData(1, 1, "# Needle")
+      self.modelCTL.setHeaderData(2, 1, "# Point")
+      self.modelCTL.setHeaderData(3, 1, "Delete")
+      self.modelCTL.setHeaderData(4, 1, "Focus")
+      if self.viewCTL is None:
+        self.viewCTL = qt.QTableView()
+        self.viewCTL.setMinimumHeight(240)
+        self.viewCTL.sortingEnabled = True
+        self.viewCTL.verticalHeader().visible = False
+        self.viewCTL.horizontalHeader().setStretchLastSection(True)
+        self.viewCTL.alternatingRowColors = True
         self.analysisGroupBoxLayoutCTL.addRow(self.viewCTL)
+
+      self.viewCTL.setModel(self.modelCTL)
+      self.viewCTL.setColumnWidth(0, 24)
+      self.viewCTL.setColumnWidth(1, 72)
+      self.viewCTL.setColumnWidth(2, 72)
+      self.viewCTL.setColumnWidth(3, 76)
+      self.tableCTL = 1
+      self.rowCTL = 0
+      self.colCTL = 0
 
   def createAddOrSelectLabelMapNode(self, script=False):
     """Create label map node for Segmentation editor and needle finder."""
@@ -1160,6 +1160,8 @@ class NeedleFinderWidget(ScriptedLoadableModuleWidget):
     widget = slicer.modules.NeedleFinderWidget
     logic = slicer.modules.NeedleFinderWidget.logic
     ras = [0.0, 0.0, 0.0]
+    if self.CrosshairNode is None or self.CrosshairNode.GetScene() != slicer.mrmlScene:
+      self.CrosshairNode = slicer.mrmlScene.GetNthNodeByClass(0, 'vtkMRMLCrosshairNode')
     if self.CrosshairNode:
       self.CrosshairNode.GetCursorPositionRAS(ras)
 
@@ -2421,6 +2423,7 @@ class NeedleFinderTest(ScriptedLoadableModuleTest):
     widget.segmentNeedle()
     slicer.app.processEvents()
     self.assertTrue(widget.fiducialButton.checked)
+    widget.CrosshairNode = slicer.mrmlScene.GetNthNodeByClass(0, 'vtkMRMLCrosshairNode')
     if widget.CrosshairNode:
       widget.CrosshairNode.SetCrosshairRAS(-128.0, -128.0, 117.0)
     sliceNodeRed.SetSliceOffset(117.0)
