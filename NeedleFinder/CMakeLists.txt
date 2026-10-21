@@ -11,6 +11,7 @@ set(MODULE_PYTHON_SCRIPTS
   ${MODULE_NAME}Lib/GeometryUtils.py
   ${MODULE_NAME}Lib/LegacyEditorCompat.py
   ${MODULE_NAME}Lib/ProfilingUtils.py
+  ${MODULE_NAME}Lib/RustCore.py
   ${MODULE_NAME}Lib/SceneAndEvaluation.py
   ${MODULE_NAME}Lib/TrackingAlgorithms.py
   )
@@ -19,6 +20,9 @@ set(MODULE_PYTHON_RESOURCES
   Config/default.cfg
   Config/miccai15.cfg
   Config/miccai2013.cfg
+  NeedleFinderRust/Cargo.toml
+  NeedleFinderRust/src/lib.rs
+  NeedleFinderRust/src/needlefinder_core.cpp
   )
 
 #-----------------------------------------------------------------------------
