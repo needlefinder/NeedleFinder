@@ -17,6 +17,7 @@ import vtk
 import vtk.util.numpy_support
 
 _DOUBLE_PTR = ctypes.POINTER(ctypes.c_double)
+_FLOAT_PTR = ctypes.POINTER(ctypes.c_float)
 _SIZE_PTR = ctypes.POINTER(ctypes.c_size_t)
 _SSIZE_PTR = ctypes.POINTER(ctypes.c_ssize_t)
 
@@ -333,6 +334,26 @@ def _bind_signatures(lib: ctypes.CDLL) -> None:
     ]
     lib.nf_center_of_mass_ijk.restype = ctypes.c_int32
 
+    lib.nf_compute_3d_sym_response.argtypes = [
+        _DOUBLE_PTR,        # vol_ptr
+        ctypes.c_size_t,    # dim_x
+        ctypes.c_size_t,    # dim_y
+        ctypes.c_size_t,    # dim_z
+        ctypes.c_double,    # sp_x
+        ctypes.c_double,    # sp_y
+        ctypes.c_size_t,    # i0
+        ctypes.c_size_t,    # i1
+        ctypes.c_size_t,    # j0
+        ctypes.c_size_t,    # j1
+        ctypes.c_size_t,    # k0
+        ctypes.c_size_t,    # k1
+        ctypes.c_double,    # body_thresh
+        _FLOAT_PTR,         # out_resp_ptr
+        _FLOAT_PTR,         # out_csmooth_ptr
+        _FLOAT_PTR,         # out_ringsym_ptr
+    ]
+    lib.nf_compute_3d_sym_response.restype = ctypes.c_int32
+
 
 def get_rust_lib():
     """Return the loaded `ctypes.CDLL` instance or `None` if unavailable."""
@@ -356,7 +377,7 @@ def get_volume_f64_buffer(image_data):
     scalars = image_data.GetPointData().GetScalars() if image_data.GetPointData() else None
     if scalars is None:
         return None, dims
-    mtime = scalars.GetMTime()
+    mtime = (image_data.GetMTime(), scalars.GetMTime())
     cache = getattr(image_data, "_nf_f64_cache", None)
     if cache is not None and cache[0] == mtime:
         return cache[1], dims
@@ -728,3 +749,47 @@ def rust_center_of_mass_ijk(image_data):
     if rc != 0:
         return None
     return [float(out_com[0]), float(out_com[1]), float(out_com[2])]
+
+
+def rust_compute_3d_sym_response(
+    vol_arr: np.ndarray,
+    sp_x: float,
+    sp_y: float,
+    i0: int,
+    i1: int,
+    j0: int,
+    j1: int,
+    k0: int,
+    k1: int,
+    body_thresh: float,
+):
+    """Compute 3D symmetric diameter-pair dark-tube response `(resp, csmooth, ringsym)` in Rust/C++."""
+    lib = get_rust_lib()
+    if lib is None or vol_arr is None or vol_arr.ndim != 3:
+        return None
+    vol_f64 = np.ascontiguousarray(vol_arr, dtype=np.float64)
+    dim_z, dim_y, dim_x = vol_f64.shape
+    out_resp = np.zeros((dim_z, dim_y, dim_x), dtype=np.float32)
+    out_cs = np.zeros((dim_z, dim_y, dim_x), dtype=np.float32)
+    out_rsym = np.zeros((dim_z, dim_y, dim_x), dtype=np.float32)
+    rc = lib.nf_compute_3d_sym_response(
+        vol_f64.ctypes.data_as(_DOUBLE_PTR),
+        int(dim_x),
+        int(dim_y),
+        int(dim_z),
+        float(sp_x),
+        float(sp_y),
+        int(max(0, i0)),
+        int(min(dim_x, i1)),
+        int(max(0, j0)),
+        int(min(dim_y, j1)),
+        int(max(0, k0)),
+        int(min(dim_z, k1)),
+        float(body_thresh),
+        out_resp.ctypes.data_as(_FLOAT_PTR),
+        out_cs.ctypes.data_as(_FLOAT_PTR),
+        out_rsym.ctypes.data_as(_FLOAT_PTR),
+    )
+    if rc != 0:
+        return None
+    return out_resp, out_cs, out_rsym
