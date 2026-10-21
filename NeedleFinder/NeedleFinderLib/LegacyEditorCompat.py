@@ -1,10 +1,11 @@
-"""Compatibility layer for legacy Slicer 4 Editor/LabelStatistics APIs on Slicer 5+."""
+"""Slicer 5+ Markups, SubjectHierarchy, and Segment/LabelMap helpers with Slicer 4 compatibility."""
 
 import ctk
 import numpy as np
 import SimpleITK as sitk
 import sitkUtils
 import slicer
+import vtk
 
 
 def get_node_or_none(pattern=None, index=0, scene=None):
@@ -15,6 +16,138 @@ def get_node_or_none(pattern=None, index=0, scene=None):
         return slicer.util.getNode(pattern=pattern, index=index)
     except slicer.util.MRMLNodeNotFoundException:
         return None
+
+
+def is_fiducial_node(node):
+    """Return True if `node` is a Slicer 5 Markups fiducial node or legacy Annotation fiducial node."""
+    if node is None:
+        return False
+    cls_name = node.GetClassName()
+    return cls_name in ("vtkMRMLMarkupsFiducialNode", "vtkMRMLAnnotationFiducialNode")
+
+
+def get_fiducial_coords(node, coord_out=None):
+    """Read 3D RAS coordinates from a `vtkMRMLMarkupsFiducialNode` or `vtkMRMLAnnotationFiducialNode`."""
+    pos = [0.0, 0.0, 0.0]
+    if node is not None:
+        if hasattr(node, "GetNthControlPointPosition"):
+            if node.GetNumberOfControlPoints() > 0:
+                node.GetNthControlPointPosition(0, pos)
+        elif hasattr(node, "GetFiducialCoordinates"):
+            node.GetFiducialCoordinates(pos)
+    if coord_out is not None:
+        coord_out[0] = float(pos[0])
+        coord_out[1] = float(pos[1])
+        coord_out[2] = float(pos[2])
+        return coord_out
+    return [float(pos[0]), float(pos[1]), float(pos[2])]
+
+
+def set_fiducial_coords(node, ras):
+    """Set 3D RAS coordinates on a `vtkMRMLMarkupsFiducialNode` or `vtkMRMLAnnotationFiducialNode`."""
+    if node is None:
+        return
+    x, y, z = float(ras[0]), float(ras[1]), float(ras[2])
+    if hasattr(node, "SetNthControlPointPosition"):
+        if node.GetNumberOfControlPoints() == 0:
+            node.AddControlPoint(vtk.vtkVector3d(x, y, z), node.GetName() or "")
+        else:
+            node.SetNthControlPointPosition(0, x, y, z)
+    elif hasattr(node, "SetFiducialCoordinates"):
+        node.SetFiducialCoordinates([x, y, z])
+
+
+def create_fiducial_node(
+    name,
+    ras,
+    color=None,
+    glyph_scale=2.0,
+    text_scale=4.0,
+    locked=False,
+    selectable=True,
+    visibility=True,
+    attributes=None,
+    scene=None,
+):
+    """Create a Slicer 5 `vtkMRMLMarkupsFiducialNode` with a single control point at `ras`."""
+    scene = scene or slicer.mrmlScene
+    fid = scene.AddNewNodeByClass("vtkMRMLMarkupsFiducialNode", str(name))
+    fid.CreateDefaultDisplayNodes()
+    x, y, z = float(ras[0]), float(ras[1]), float(ras[2])
+    fid.AddControlPoint(vtk.vtkVector3d(x, y, z), str(name))
+    fid.SetLocked(bool(locked))
+    if not selectable and hasattr(fid, "SetNthControlPointSelected"):
+        fid.SetNthControlPointSelected(0, False)
+    if attributes:
+        for k, v in attributes.items():
+            fid.SetAttribute(str(k), str(v))
+    dn = fid.GetDisplayNode()
+    if dn is not None:
+        if color is not None:
+            r, g, b = float(color[0]), float(color[1]), float(color[2])
+            dn.SetSelectedColor(r, g, b)
+            dn.SetColor(r, g, b)
+            if hasattr(dn, "SetActiveColor"):
+                dn.SetActiveColor(r, g, b)
+        if glyph_scale is not None:
+            dn.SetGlyphScale(float(glyph_scale))
+        if text_scale is not None:
+            dn.SetTextScale(float(text_scale))
+    fid.SetDisplayVisibility(1 if visibility else 0)
+    return fid
+
+
+def get_all_fiducial_nodes(scene=None):
+    """Return all fiducial nodes (`vtkMRMLMarkupsFiducialNode` and `vtkMRMLAnnotationFiducialNode`) in `scene`."""
+    scene = scene or slicer.mrmlScene
+    result = []
+    for cls_name in ("vtkMRMLMarkupsFiducialNode", "vtkMRMLAnnotationFiducialNode"):
+        col = scene.GetNodesByClass(cls_name)
+        if col:
+            for i in range(col.GetNumberOfItems()):
+                node = col.GetItemAsObject(i)
+                if node is not None:
+                    result.append(node)
+    return result
+
+
+def set_all_fiducial_text_scale(scale, scene=None):
+    """Set label text scale on all Markups and legacy Annotation display nodes in `scene`."""
+    scene = scene or slicer.mrmlScene
+    scale_val = float(scale)
+    for cls_name in ("vtkMRMLMarkupsDisplayNode", "vtkMRMLAnnotationTextDisplayNode"):
+        col = scene.GetNodesByClass(cls_name)
+        if col:
+            for i in range(col.GetNumberOfItems()):
+                dn = col.GetItemAsObject(i)
+                if dn is not None and hasattr(dn, "SetTextScale"):
+                    dn.SetTextScale(scale_val)
+
+
+def add_fiducial_modified_observer(node, callback):
+    """Observe position modifications on a Markups or legacy Annotation fiducial node."""
+    if node is None:
+        return None
+    if hasattr(slicer, "vtkMRMLMarkupsNode") and node.IsA("vtkMRMLMarkupsNode"):
+        return node.AddObserver(slicer.vtkMRMLMarkupsNode.PointModifiedEvent, callback)
+    return node.AddObserver("ModifiedEvent", callback)
+
+
+def create_roi_node(name, center_ras, radius_xyz, locked=True, visibility=True, scene=None):
+    """Create a Slicer 5 `vtkMRMLMarkupsROINode` with center and half-extents `radius_xyz`."""
+    scene = scene or slicer.mrmlScene
+    roi = scene.AddNewNodeByClass("vtkMRMLMarkupsROINode", str(name))
+    roi.CreateDefaultDisplayNodes()
+    roi.SetCenter(float(center_ras[0]), float(center_ras[1]), float(center_ras[2]))
+    roi.SetSize(
+        float(radius_xyz[0]) * 2.0,
+        float(radius_xyz[1]) * 2.0,
+        float(radius_xyz[2]) * 2.0,
+    )
+    roi.SetLocked(bool(locked))
+    roi.SetDisplayVisibility(1 if visibility else 0)
+    return roi
+
 
 
 try:

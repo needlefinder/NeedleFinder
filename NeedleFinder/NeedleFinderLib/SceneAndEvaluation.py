@@ -1,91 +1,66 @@
-# -*- coding: utf-8 -*-
 """Scene management, UI table synchronization, parameter persistence, and Hausdorff evaluation."""
 
 import configparser
 import csv
-import math
-import operator
 import os
-import os.path
 import random
 import shutil
 import time
-import time as t
-import numpy
 import numpy as np
 import SimpleITK as sitk
 import sitkUtils
 import vtk
 import qt
-import ctk
 import slicer
 
 from .Constants import COLORS_255, COLORS_RGB, HOLE_COORDINATES, HOLE_LABELS
-from .GeometryUtils import extract_model_id_number
-from .LegacyEditorCompat import EditorLib, Helper, LabelStatisticsLogic
+from .GeometryUtils import (
+    clip_polydata_axial,
+    compute_base_distance,
+    compute_hausdorff_distance,
+    compute_tip_distance,
+    distance_3d,
+    extract_model_id_number,
+)
+from .LegacyEditorCompat import (
+    create_fiducial_node,
+    get_fiducial_coords,
+    set_all_fiducial_text_scale,
+)
 from .ProfilingUtils import (
     MAXCOL,
     MAXNEEDLES,
-    assertbox,
     breakbox,
-    cmp,
-    conesColor,
     frequent,
-    getClassName,
     getNode,
-    lineno,
-    loggingInfos,
-    logprint,
     msgbox,
     outlierThresh_mm,
-    pause,
     profbox,
-    profiling,
     profprint,
-    whoami,
-    whosdaddy,
-    whosgranny,
 )
 
 
-class SceneAndEvaluationMixin(object):
+class SceneAndEvaluationMixin:
   """Mixin providing scene cleanup, report table management, Hausdorff distance evaluation, and config I/O."""
 
   def deleteTempModels(self):
     """
     Delete control points from needle curves etc.
     """
-    # research
-    # remove old control pts and debug annotations from scene
     while slicer.util.getNodes('.*') != {}:
       nodes = slicer.util.getNodes('.*')
-      for key,value in zip(list(nodes.keys()),list(nodes.values())):
-        if key != ".temp": slicer.mrmlScene.RemoveNode(value)
+      for key, value in zip(list(nodes.keys()), list(nodes.values())):
+        if key != ".temp":
+          slicer.mrmlScene.RemoveNode(value)
     while slicer.util.getNodes('_*') != {}:
       nodes = slicer.util.getNodes('_*')
-      for key,value in zip(list(nodes.keys()),list(nodes.values())):
+      for key, value in zip(list(nodes.keys()), list(nodes.values())):
         slicer.mrmlScene.RemoveNode(value)
-    # ruler measurements
-    while 0 and slicer.util.getNodes('M*') != {}:
-      nodes = slicer.util.getNodes('M*')
-      for node in list(nodes.values()):
-        slicer.mrmlScene.RemoveNode(node)
-    # ROI annotations
-    while 0 and slicer.util.getNodes('R*') != {}:
-      nodes = slicer.util.getNodes('R*')
-      for node in list(nodes.values()):
-        slicer.mrmlScene.RemoveNode(node)
-    # fiducial annotations
-    while 0 and slicer.util.getNodes('F*') != {}:
-      nodes = slicer.util.getNodes('F*')
-      for node in list(nodes.values()):
-        slicer.mrmlScene.RemoveNode(node)
 
   def deleteAllAutoNeedlesFromScene(self):
     """
     Delete every segmented needle of the current set
     """
-    # productive #onButton
     profprint()
     while slicer.util.getNodes('auto-seg_' + str(self.round) + '*') != {}:
       nodes = slicer.util.getNodes('auto-seg_' + str(self.round) + '*')
@@ -96,7 +71,6 @@ class SceneAndEvaluationMixin(object):
     """
     Delete every segmented needle, template slice markers and reset yellow segment
     """
-    # research
     self.deleteNeedleDetectionModelsFromScene()
     self.deleteNeedleValidationModelsFromScene()
 
@@ -104,7 +78,6 @@ class SceneAndEvaluationMixin(object):
     """
     Delete artifacts from validation from scene.
     """
-    # producitve #onbutton
     profprint()
     while slicer.util.getNodes('manual-seg_*') != {}:
       nodes = slicer.util.getNodes('manual-seg_*')
@@ -114,7 +87,6 @@ class SceneAndEvaluationMixin(object):
       nodes = slicer.util.getNodes('obturator-seg_*')
       for node in list(nodes.values()):
         slicer.mrmlScene.RemoveNode(node)
-    # bezier control points
     self.deleteTempModels()
     while slicer.util.getNodes('template slice position*') != {}:
       nodes = slicer.util.getNodes('template slice position*')
@@ -125,28 +97,19 @@ class SceneAndEvaluationMixin(object):
     """
     Delete artifacts from semi-auto segmentation from scene.
     """
-    # productive #onButton
     profprint()
     widget = slicer.modules.NeedleFinderWidget
-    # remove artifacts from segmentation editor, 3d models (from SE's model builder)
     if widget.currentLabel:
       for i in range(widget.currentLabel + 1):
         while slicer.util.getNodes(str(i)) != {}:
           nodes = slicer.util.getNodes(str(i))
           for node in list(nodes.values()):
             slicer.mrmlScene.RemoveNode(node)
-    # remove artifacts from needle finder
     while slicer.util.getNodes('auto-seg_*') != {}:
       nodes = slicer.util.getNodes('auto-seg_*')
       for node in list(nodes.values()):
         slicer.mrmlScene.RemoveNode(node)
-    # while slicer.mrmlScene.GetNodesByClass('vtkMRMLAnnotationFiducialNode') !={}:
-      # nodes = slicer.mrmlScene.GetNodesByClass('vtkMRMLAnnotationFiducialNode')
-      # for node in nodes.values():
-        # slicer.mrmlScene.RemoveNode(node)
-    sYellow = slicer.mrmlScene.GetNodeByID("vtkMRMLSliceNodeYellow")
-    if sYellow == None :
-        sYellow = slicer.mrmlScene.GetNodeByID("vtkMRMLSliceNode2")
+    sYellow = slicer.mrmlScene.GetNodeByID("vtkMRMLSliceNodeYellow") or slicer.mrmlScene.GetNodeByID("vtkMRMLSliceNode2")
     sYellow.SetSliceVisible(0)
     reformatLogic = slicer.vtkSlicerReformatLogic()
     reformatLogic.SetSliceNormal(sYellow, 1, 0, 0)
@@ -155,7 +118,6 @@ class SceneAndEvaluationMixin(object):
       node = tempFidNodes.GetItemAsObject(i)
       if node:
         slicer.mrmlScene.RemoveNode(node)
-    # bezier control points
     self.deleteTempModels()
     sYellow.Modified()
 
@@ -163,7 +125,6 @@ class SceneAndEvaluationMixin(object):
     """
     Delete last segmented needle of the current round
     """
-    # productive #onButton
     profprint(self.getName())
     widget = slicer.modules.NeedleFinderWidget
     if widget.deleteNeedleButton.isEnabled() and self.lastNeedleNames:
@@ -173,7 +134,6 @@ class SceneAndEvaluationMixin(object):
         nodes = slicer.util.getNodes(name + '*')
         for node in list(nodes.values()):
           slicer.mrmlScene.RemoveNode(node)
-      # rebuild report table
       model_id = extract_model_id_number(name)
       print("needle ID: <%s>" % model_id)
       if model_id is not None:
@@ -183,12 +143,11 @@ class SceneAndEvaluationMixin(object):
     """
     Start a new round
     """
-    # productive #onButton
     profbox()
     widget = slicer.modules.NeedleFinderWidget
     if widget.newInsertionButton:
       dialog = qt.QDialog()
-      messageBox = qt.QMessageBox.information(dialog, 'Information', 'You are creating a new set of needles')
+      qt.QMessageBox.information(dialog, 'Information', 'You are creating a new set of needles')
       self.round += 1
       widget.newInsertionButton.setText('Start a new set of needles - Round ' + str(self.round + 1) + '?')
       widget.deleteNeedleButton.setText('Delete Needles from round ' + str(self.round))
@@ -197,29 +156,27 @@ class SceneAndEvaluationMixin(object):
     """
     Reset the needle detection to completely start over.
     """
-    # productive #onButton
     profprint()
     widget = slicer.modules.NeedleFinderWidget
     ret = 0
-    if script == False:
+    if not script:
       dialog = qt.QDialog()
-      ret = messageBox = qt.QMessageBox.question(dialog, 'Attention', """
+      ret = qt.QMessageBox.question(dialog, 'Attention', """
           Are you sure that you want to reset the needle detection?
           It will delete every segmented needles...
           """, qt.QMessageBox.Ok, qt.QMessageBox.Cancel)
-    if ret == qt.QMessageBox.Ok or script == True:
+    if ret == qt.QMessageBox.Ok or script:
       self.deleteNeedleDetectionModelsFromScene()
       self.previousValues = [[0, 0, 0]]
       self.round = 1
       if widget.newInsertionButton:
         widget.newInsertionButton.setText('Start a new set of needles (' + str(self.round + 1) + ') ?')
         widget.deleteNeedleButton.setText('Delete Needles from set (' + str(self.round) + ")")
-      # reset report table
       widget.table = None
       widget.row = 0
       widget.col = 0
       if not script:
-        for i in widget.items:
+        for _ in widget.items:
           item = widget.items.pop()
           del item
         widget.items = None
@@ -237,12 +194,10 @@ class SceneAndEvaluationMixin(object):
         widget.view = None
         widget.initTableView()
 
-      # ## Leave the needle detection mode
       widget.fiducialButton.checked = 0
       widget.stop()
       widget.fiducialButton.text = "2. Start Giving Needle Tips"
 
-      # reset button and parameter states
       widget.templateSliceButton.setEnabled(1)
       widget.fiducialButton.setEnabled(0)
       widget.deleteNeedleButton.setEnabled(0)
@@ -250,45 +205,32 @@ class SceneAndEvaluationMixin(object):
       widget.labelMapNode = None
       widget.tempPointList = []
       widget.templateSliceButton.text = "1. Select Current Axial Slice as Seg. Limit (current: None)"
-      if not script: widget.onResetParameters()
+      if not script:
+        widget.onResetParameters()
 
   def hideAnnotations(self):
     """
     This function shows/hides all text annotation in the scene.
-    :return:
     """
     widget = slicer.modules.NeedleFinderWidget
-    nodes = slicer.mrmlScene.GetNodesByClass('vtkMRMLAnnotationTextDisplayNode')
-    for i in range(nodes.GetNumberOfItems()):
-        node = nodes.GetItemAsObject(i)
-        if widget.hideAnnotationTextButton.checked:
-          node.SetTextScale(0)
-        else:
-          node.SetTextScale(3)
+    set_all_fiducial_text_scale(0.0 if widget.hideAnnotationTextButton.checked else 3.0)
 
   def resetNeedleValidation(self):
     """
     Reset the needle validation to completely start over.
     """
-    # productive #onButton
     profprint()
     widget = slicer.modules.NeedleFinderWidget
     dialog = qt.QDialog()
-    ret = messageBox = qt.QMessageBox.question(dialog, 'Attention', """
+    ret = qt.QMessageBox.question(dialog, 'Attention', """
       Are you sure that you want to reset the needle validation?
       It will delete every segmented needles and the control points...
       """, qt.QMessageBox.Ok, qt.QMessageBox.Cancel)
     if ret == qt.QMessageBox.Ok:
       self.deleteNeedleValidationModelsFromScene()
-      # while slicer.mrmlScene.GetNodesByClass('vtkMRMLAnnotationFiducialNode') !={}:
-        # nodes = slicer.mrmlScene.GetNodesByClass('vtkMRMLAnnotationFiducialNode')
-        # for node in nodes:
-          # slicer.mrmlScene.RemoveNode(node)
-      # self.deleteEvaluationNeedlesFromTable()
-
       widget.editNeedleTxtBox.value = 1
       widget.stepNeedle = 0
-      self.tableValueCtrPt = [[[999, 999, 999] for i in range(100)] for j in range(100)]
+      self.tableValueCtrPt = [[[999, 999, 999] for _ in range(100)] for _ in range(100)]
       self.cleanTable()
       print("Manual needle validation segmentation reset!")
 
@@ -296,7 +238,6 @@ class SceneAndEvaluationMixin(object):
     """
     Delete all manually segmented needles from report table.
     """
-    # productive #onButton
     profprint()
     widget = slicer.modules.NeedleFinderWidget
     widget.initTableView()
@@ -312,72 +253,44 @@ class SceneAndEvaluationMixin(object):
 
   def changeCursor(self, cursorNumber):
     """
-    changes the cursor
+    Changes the cursor in all slice widgets.
     """
-    # productive
     profprint()
     appLogic = slicer.app.applicationLogic()
     interactionNode = appLogic.GetInteractionNode()
     interactionNode.SetCurrentInteractionMode(interactionNode.ViewTransform)
-    # baseImage = qt.QImage(":/Icons/AnnotationPointWithArrow.png")
-    # width =  baseImage.width()
-    # height = width
-    # center= int(width/2)
-    # cursorImage = qt.QImage(width, height, qt.QImage().Format_ARGB32)
-    # cursorImage.fill(0)
-    # cursorPixmap = qt.QPixmap()
-    # cursorPixmap = cursorPixmap.fromImage(cursorImage)
-    # cursor = qt.QCursor(cursorPixmap,center,0)
 
     layoutManager = slicer.app.layoutManager()
     sliceNodeCount = slicer.mrmlScene.GetNumberOfNodesByClass('vtkMRMLSliceNode')
     for nodeIndex in range(sliceNodeCount):
-      # find the widget for each node in scene
       sliceNode = slicer.mrmlScene.GetNthNodeByClass(nodeIndex, 'vtkMRMLSliceNode')
       sliceWidget = layoutManager.sliceWidget(sliceNode.GetLayoutName())
-      # sliceWidget.setCursor(cursor)    # doesn't work. Why?
-      sliceWidget.setCursor(qt.QCursor(cursorNumber))
+      if sliceWidget:
+        sliceWidget.setCursor(qt.QCursor(cursorNumber))
 
-  def changeValue(self):
-    """Read the value of the Qt widget and select this needle. It is then possible to display sequentially the points used as
-     control points of this needle
-    """
-    # productive #onUpDnArrow
+  def changeValue(self, *_args):
+    """Read the value of the Qt widget and select this needle."""
     profprint()
     widget = slicer.modules.NeedleFinderWidget
-    # widget.scrollPointButton.setText('Scroll Point for Needle ' + str(widget.editNeedleTxtBox.value) + ' (pt: ' + str(self.ptNumber) + ')')
     self.lockControlPoints(widget.editNeedleTxtBox.value)
     self.unlockControlPoints(widget.editNeedleTxtBox.value)
     widget.drawValidationNeedlesButton.text = "Render Manual Needle  " + str(widget.editNeedleTxtBox.value)
-
 
   def goToPoint(self, ID):
     """
     Focus the slices on the selected point
     :param ID: name of the fiducial point
-    :return:
     """
     profprint()
     modelNode = getNode(ID)
-    coord = [0, 0, 0]
-    if modelNode != None:
-      # if modelNode.GetAttribute("ValidationNeedle") == "1":
-      modelNode.GetFiducialCoordinates(coord)
-      X = coord[0]
-      Y = coord[1]
-      Z = coord[2]
+    coord = [0.0, 0.0, 0.0]
+    if modelNode is not None:
+      get_fiducial_coords(modelNode, coord)
+      X, Y, Z = coord[0], coord[1], coord[2]
 
-      sRed = slicer.mrmlScene.GetNodeByID("vtkMRMLSliceNodeRed")
-      if sRed == None :
-        sRed = slicer.mrmlScene.GetNodeByID("vtkMRMLSliceNode1")
-
-      sYellow = slicer.mrmlScene.GetNodeByID("vtkMRMLSliceNodeYellow")
-      if sYellow == None :
-        sYellow = slicer.mrmlScene.GetNodeByID("vtkMRMLSliceNode2")
-
-      sGreen = slicer.mrmlScene.GetNodeByID("vtkMRMLSliceNodeGreen")
-      if sGreen == None :
-        sGreen = slicer.mrmlScene.GetNodeByID("vtkMRMLSliceNode3")
+      sRed = slicer.mrmlScene.GetNodeByID("vtkMRMLSliceNodeRed") or slicer.mrmlScene.GetNodeByID("vtkMRMLSliceNode1")
+      sYellow = slicer.mrmlScene.GetNodeByID("vtkMRMLSliceNodeYellow") or slicer.mrmlScene.GetNodeByID("vtkMRMLSliceNode2")
+      sGreen = slicer.mrmlScene.GetNodeByID("vtkMRMLSliceNodeGreen") or slicer.mrmlScene.GetNodeByID("vtkMRMLSliceNode3")
 
       mYellow = sYellow.GetSliceToRAS()
       mYellow.SetElement(0, 3, X)
@@ -399,40 +312,25 @@ class SceneAndEvaluationMixin(object):
     for node in list(nodes.values()):
       node.SetName(node.GetName()[:-1])
 
-
   def scrollPoint(self):
-    """Reformat the axial view to display the slice containing the currently selected point.
-    """
-    # productive #onButton
+    """Reformat the axial view to display the slice containing the currently selected point."""
     profprint()
     self.changeValue()
     widget = slicer.modules.NeedleFinderWidget
     needle = widget.editNeedleTxtBox.value
-    # print self.ptNumber
-    # print needle
-    coord = [0, 0, 0]
+    coord = [0.0, 0.0, 0.0]
     ptName = '.' + str(needle) + '-' + str(self.ptNumber)
-    # print ptName
     modelNode = getNode(ptName)
-    if modelNode != None:
+    if modelNode is not None:
         self.ptNumber = self.ptNumber + 1
+        X = Y = Z = 0.0
         if modelNode.GetAttribute("ValidationNeedle") == "1":
-          modelNode.GetFiducialCoordinates(coord)
-          X = coord[0]
-          Y = coord[1]
-          Z = coord[2]
+          get_fiducial_coords(modelNode, coord)
+          X, Y, Z = coord[0], coord[1], coord[2]
 
-        sRed = slicer.mrmlScene.GetNodeByID("vtkMRMLSliceNodeRed")
-        if sRed == None :
-          sRed = slicer.mrmlScene.GetNodeByID("vtkMRMLSliceNode1")
-
-        sYellow = slicer.mrmlScene.GetNodeByID("vtkMRMLSliceNodeYellow")
-        if sYellow == None :
-          sYellow = slicer.mrmlScene.GetNodeByID("vtkMRMLSliceNode2")
-
-        sGreen = slicer.mrmlScene.GetNodeByID("vtkMRMLSliceNodeGreen")
-        if sGreen == None :
-          sGreen = slicer.mrmlScene.GetNodeByID("vtkMRMLSliceNode3")
+        sRed = slicer.mrmlScene.GetNodeByID("vtkMRMLSliceNodeRed") or slicer.mrmlScene.GetNodeByID("vtkMRMLSliceNode1")
+        sYellow = slicer.mrmlScene.GetNodeByID("vtkMRMLSliceNodeYellow") or slicer.mrmlScene.GetNodeByID("vtkMRMLSliceNode2")
+        sGreen = slicer.mrmlScene.GetNodeByID("vtkMRMLSliceNodeGreen") or slicer.mrmlScene.GetNodeByID("vtkMRMLSliceNode3")
 
         mYellow = sYellow.GetSliceToRAS()
         mYellow.SetElement(0, 3, X)
@@ -453,35 +351,23 @@ class SceneAndEvaluationMixin(object):
         self.scrollPoint()
 
   def validationNeedle(self):
-    """ When the button 'new validation needle' is pressed, the needle number is incremented, the needle step is reset to
-     0
-
-    """
-    # productive #onButton
+    """When the button 'new validation needle' is pressed, increment the needle number and reset step to 0."""
     profprint()
     widget = slicer.modules.NeedleFinderWidget
-    # widget.editNeedleTxtBox.value += 1
     widget.validationNeedleButton.text = "New Validation Needle: (" + str(widget.editNeedleTxtBox.value) + ")->(" + str(widget.editNeedleTxtBox.value + 1) + ")"
     widget.editNeedleTxtBox.value += 1
-    # self.tableValueCtrPt.append([])
     widget.stepNeedle = 0
     self.lockControlPoints(widget.editNeedleTxtBox.value)
 
   def filterWithSITK(self):
     """
     Demo method to filter image using SimpleITK.
-    See https://github.com/Slicer/Slicer/blob/140b36b50877d85703c094a97fe13303dee570b5/Modules/Scripted/EditorLib/WatershedFromMarkerEffect.py
     """
-    # research
     profbox()
     backgroundNode = slicer.app.layoutManager().sliceWidget("Red").sliceLogic().GetBackgroundLayer().GetVolumeNode()
-    backgroundNodeName = backgroundNode.GetName()
-    backgroundImage = sitk.ReadImage(sitkUtils.GetSlicerITKReadWriteAddress(backgroundNodeName))
-    filterImage = sitk.GradientMagnitudeRecursiveGaussian(backgroundImage, float(2));
-    del backgroundImage
-    sitk.WriteImage(filterImage, sitkUtils.GetSlicerITKReadWriteAddress(backgroundNodeName))
-
-    # notify
+    backgroundImage = sitkUtils.PullVolumeFromSlicer(backgroundNode)
+    filterImage = sitk.GradientMagnitudeRecursiveGaussian(backgroundImage, 2.0)
+    sitkUtils.PushVolumeToSlicer(filterImage, backgroundNode)
     backgroundNode.GetImageData().Modified()
     backgroundNode.Modified()
 
@@ -489,12 +375,11 @@ class SceneAndEvaluationMixin(object):
     """
     Write table header to file.
     """
-    # research
     w = slicer.modules.NeedleFinderWidget
     l = w.logic
     if not variant:
-      l.exportEvaluation(['user','case','maxTipHD','maxHD', 'avgHD', 'stdHD', 'medHD',
-                        'nNeedles','nOutliers','outliers',
+      l.exportEvaluation(['user', 'case', 'maxTipHD', 'maxHD', 'avgHD', 'stdHD', 'medHD',
+                        'nNeedles', 'nOutliers', 'outliers',
                         'radiusNeedle',
                         'lenghtNeedle',
                         'radiusMax',
@@ -507,10 +392,10 @@ class SceneAndEvaluationMixin(object):
                         'sigma',
                         'algoV',
                         'case',
-                        t.strftime("%d/%m/%Y"), t.strftime("%H:%M:%S")
+                        time.strftime("%d/%m/%Y"), time.strftime("%H:%M:%S")
                         ], fileName)
     else:
-      l.exportEvaluation(['user','case','tipHD','HD', 'man.-seg_', 'ID1', 'ID2',
+      l.exportEvaluation(['user', 'case', 'tipHD', 'HD', 'man.-seg_', 'ID1', 'ID2',
                         'outlier?',
                         'radiusNeedle',
                         'lenghtNeedle',
@@ -523,156 +408,113 @@ class SceneAndEvaluationMixin(object):
                         'gaussianAttenuationButton',
                         'sigma',
                         'algoV',
-                        #'case',
-                        t.strftime("%d/%m/%Y"), t.strftime("%H:%M:%S")
+                        time.strftime("%d/%m/%Y"), time.strftime("%H:%M:%S")
                         ], fileName)
 
   def parSearch(self, mode=False):
     """
     Parameter evaluation/optimization using no, grid brute-force or random-search algo.
     """
-    # research
     profprint()
     w = slicer.modules.NeedleFinderWidget
     l = w.logic
-    path = [ 0 for i in range(100)]
-    
-    if 0:
-      path[24] = '/Users/guillaume/Dropbox/AMIGO Gyn Data NRRD/Case 24 NRRD/Manual/2013-02-25-Scene-without-CtrPt.mrml'
-      path[29] = '/Users/guillaume/Dropbox/AMIGO Gyn Data NRRD/Case 29 NRRD/Manual/2013-02-26-Scene-without-CtrPts.mrml'
-      path[30] = '/Users/guillaume/Dropbox/AMIGO Gyn Data NRRD/Case 30 NRRD/Manual/2013-02-26-Scene-without-CtrPt.mrml'
-      path[31] = '/Users/guillaume/Dropbox/AMIGO Gyn Data NRRD/Case 31 NRRD/Manual/2013-02-27-Scene-without-CtrPts.mrml'
-      path[34] = '/Users/guillaume/Dropbox/AMIGO Gyn Data NRRD/Case 34 NRRD/Manual/2013-02-27-Scene-without-CtrPts.mrml'
-      path[35] = '/Users/guillaume/Dropbox/AMIGO Gyn Data NRRD/Case 35 NRRD/Manual/2013-02-27-Scene-without-CtrPts.mrml'
-      path[37] = '/Users/guillaume/Dropbox/AMIGO Gyn Data NRRD/Case 37 NRRD/Manual/2013-02-27-Scene-without-CtrPts.mrml'
-      path[38] = '/Users/guillaume/Dropbox/AMIGO Gyn Data NRRD/Case 38 NRRD/Manual/2013-02-27-Scene-without-CtrPts.mrml'
-      path[40] = '/Users/guillaume/Dropbox/AMIGO Gyn Data NRRD/Case 40 NRRD/Manual/2013-02-27-Scene-without-CtrPts.mrml'
+    path = [0 for _ in range(100)]
+    path[24] = '/home/mastmeyer/Dropbox/GYN Cases/Case  024/NRRD/Auto-Eval-LB/2013-02-28-Scene.mrml'
+    path[28] = '/home/mastmeyer/Dropbox/GYN Cases/Case  028/NRRD/Auto-Eval-LB/2013-02-28-Scene.mrml'
+    path[29] = '/home/mastmeyer/Dropbox/GYN Cases/Case  029/NRRD/Auto-Eval-LB/2013-02-26-Scene.mrml'
+    path[30] = '/home/mastmeyer/Dropbox/GYN Cases/Case  030/NRRD/Auto-Eval-LB/2013-02-26-Scene.mrml'
+    path[31] = '/home/mastmeyer/Dropbox/GYN Cases/Case  031/NRRD/Auto-Eval-LB/2013-02-27-Scene.mrml'
+    path[33] = '/home/mastmeyer/Dropbox/GYN Cases/Case  033/NRRD/Auto-Eval-LB/2013-02-27-Scene.mrml'
+    path[34] = '/home/mastmeyer/Dropbox/GYN Cases/Case  034/NRRD/Auto-Eval-LB/2013-02-27-Scene.mrml'
+    path[37] = '/home/mastmeyer/Dropbox/GYN Cases/Case  037/NRRD/Manual Alireza/2013-02-27-Scene.mrml'
+    path[38] = '/home/mastmeyer/Dropbox/GYN Cases/Case  038/NRRD/Manual Alireza/2013-02-27-Scene.mrml'
+    path[40] = '/home/mastmeyer/Dropbox/GYN Cases/Case  040/NRRD/Manual Alireza/2013-02-27-Scene.mrml'
 
-    #Andre's file system (case copies from AMIGO share)
-    # stripped OTHER cases
-    if 0: path[33] = '/home/mastmeyer/Dropbox/GYN Cases/Case  033/NRRD/Auto-Eval-LB/2013-02-27-Scene.mrml'
-    if 0:
-      path[ 8] = '/home/mastmeyer/Dropbox/GYN Cases/Case  008/NRRD/Auto-Eval-LB/2013-05-07-Scene.mrml'
-      path[12] = '/home/mastmeyer/Dropbox/GYN Cases/Case  012/NRRD/Auto-Eval-LB/2013-04-22-Scene.mrml'
-      path[16] = '/home/mastmeyer/Dropbox/GYN Cases/Case  016/NRRD/Auto-Eval-LB/2013-04-21-Scene.mrml'
-      path[21] = '/home/mastmeyer/Dropbox/GYN Cases/Case  021/NRRD/Auto-Eval-LB/2013-04-21-Scene.mrml'
-      path[22] = '/home/mastmeyer/Dropbox/GYN Cases/Case  022/NRRD/Auto-Eval-LB/2013-04-21-Scene.mrml'
-      path[25] = '/home/mastmeyer/Dropbox/GYN Cases/Case  025/NRRD/Auto-Eval-LB/2013-04-21-Scene.mrml'
-      path[26] = '/home/mastmeyer/Dropbox/GYN Cases/Case  026/NRRD/Auto-Eval-LB/2013-04-17-Scene.mrml'
-      path[27] = '/home/mastmeyer/Dropbox/GYN Cases/Case  027/NRRD/Auto-Eval-LB/2013-04-17-Scene.mrml'
-    #stripped MICCAI13 cases (just manual seg. by LB/AM)
-    if 1:
-      path[24] = '/home/mastmeyer/Dropbox/GYN Cases/Case  024/NRRD/Auto-Eval-LB/2013-02-28-Scene.mrml'
-      path[28] = '/home/mastmeyer/Dropbox/GYN Cases/Case  028/NRRD/Auto-Eval-LB/2013-02-28-Scene.mrml'
-      path[29] = '/home/mastmeyer/Dropbox/GYN Cases/Case  029/NRRD/Auto-Eval-LB/2013-02-26-Scene.mrml'
-      path[30] = '/home/mastmeyer/Dropbox/GYN Cases/Case  030/NRRD/Auto-Eval-LB/2013-02-26-Scene.mrml'
-      path[31] = '/home/mastmeyer/Dropbox/GYN Cases/Case  031/NRRD/Auto-Eval-LB/2013-02-27-Scene.mrml'
-      path[33] = '/home/mastmeyer/Dropbox/GYN Cases/Case  033/NRRD/Auto-Eval-LB/2013-02-27-Scene.mrml'
-      path[34] = '/home/mastmeyer/Dropbox/GYN Cases/Case  034/NRRD/Auto-Eval-LB/2013-02-27-Scene.mrml'
-      path[37] = '/home/mastmeyer/Dropbox/GYN Cases/Case  037/NRRD/Manual Alireza/2013-02-27-Scene.mrml'
-      path[38] = '/home/mastmeyer/Dropbox/GYN Cases/Case  038/NRRD/Manual Alireza/2013-02-27-Scene.mrml'
-      path[40] = '/home/mastmeyer/Dropbox/GYN Cases/Case  040/NRRD/Manual Alireza/2013-02-27-Scene.mrml'
-    #show a directory selector for saving the results
     self.dirDialog = qt.QFileDialog(w.parent)
     self.dirDialog.setDirectory('/tmp')
     self.dirDialog.options = self.dirDialog.ShowDirsOnly
     self.dirDialog.acceptMode = self.dirDialog.AcceptSave
-    #self.dirDialog.show()
-    dir=self.dirDialog.getExistingDirectory()
-    w.logDir=dir
-    print("saving results to ", dir)
-    try: shutil.copyfile('/home/amast/WualaDrive/mastmeyer/Homes/NeedleFinder/NeedleFinder/NeedleFinder.py',dir+'/NeedleFinder_ref.py')
-    except: breakbox("/!\\ reference source NeedleFinder.py not found!")
+    out_dir = self.dirDialog.getExistingDirectory()
+    w.logDir = out_dir
+    print("saving results to ", out_dir)
+    try:
+      shutil.copyfile(slicer.modules.needlefinder.path, out_dir + '/NeedleFinder_ref.py')
+    except Exception:
+      breakbox("/!\\ reference source NeedleFinder.py not found!")
+    user = 0
     if mode == 0:
-      #save a copy of the source file as reference
-      # simple run with current parameters/algo over several patients
-      self.writeTableHeader(dir+'/AP-All_stats.csv')
-      filLog=open(dir+'/allog.tsv', 'w')
-      #filLog.write("case\tman.-seg_\tiStep\tcrit\treject\tvalue\tlimit\n")
-      filLog.close()
-      nUsers=1 #CONST
-      for user in range(nUsers): 
-        w.userNr=user
-        print("simulated user (offset): ",user)
-        for id in range(100): #<o> range(100)
-          if path[id]:
-            w.caseNr=id
-            print("processing ", path[id])
-            self.writeTableHeader(dir+'/User-'+str(user)+'_AP-' + str(id) + '.csv', 1)
+      self.writeTableHeader(out_dir + '/AP-All_stats.csv')
+      open(out_dir + '/allog.tsv', 'w').close()
+      nUsers = 1
+      for user in range(nUsers):
+        w.userNr = user
+        print("simulated user (offset): ", user)
+        for case_id in range(100):
+          if path[case_id]:
+            w.caseNr = case_id
+            print("processing ", path[case_id])
+            self.writeTableHeader(out_dir + '/User-' + str(user) + '_AP-' + str(case_id) + '.csv', 1)
             slicer.mrmlScene.Clear(0)
-            slicer.util.loadScene(path[id])
-            #TODO implement random tips in  a sphere (d=2mm) from tube center 
-            l.startValidation(script=True, offset=user*50/nUsers)
-            results, outliers = l.evaluate(script=True)  # calculate HD distances
+            slicer.util.loadScene(path[case_id])
+            l.startValidation(script=True, offset=user * 50 / nUsers)
+            results, outliers = l.evaluate(script=True)
             for result in results:
-              result[0:0]=[user,id]
-            l.exportEvaluation(results, dir+'/User-'+str(user)+'_AP-' + str(id) + '.csv')
-            #slicer.util.saveScene(dir+'/AP-' + str(id) + '.mrb') # may use lots of disk space
-            # stats
+              result[0:0] = [user, case_id]
+            l.exportEvaluation(results, out_dir + '/User-' + str(user) + '_AP-' + str(case_id) + '.csv')
             HD = np.array(results)
-            # HD.shape = (int(len(results)/float(3)),3)
             maxTipHD = HD[:, 2].max()
             maxHD = HD[:, 3].max()
             avgHD = HD[:, 3].mean()
             stdHD = HD[:, 3].std()
             sl = np.sort(HD[:, 3])
             medHD = sl[sl.size // 2]
-            resultsEval = [user,id,maxTipHD, maxHD, avgHD, stdHD, medHD]+[len(results)]+[len(outliers)] +[str(outliers)]+ l.valuesExperience + [id]
-            l.exportEvaluation(resultsEval, dir+'/AP-All_stats.csv')
-            #pause()
-      msgbox("parSearch mode 0 done, results in "+dir)
+            resultsEval = [user, case_id, maxTipHD, maxHD, avgHD, stdHD, medHD, len(results), len(outliers), str(outliers)] + l.valuesExperience + [case_id]
+            l.exportEvaluation(resultsEval, out_dir + '/AP-All_stats.csv')
+      msgbox("parSearch mode 0 done, results in " + out_dir)
     elif mode == 1:
-      id = 'Current'
-      # simple brute force search in the dimensions (Guillaumes parameterSearch.py)
-      self.writeTableHeader(dir+'/BF-' + str(id) + '.csv', 1)
-      self.writeTableHeader(dir+'/BF-' + str(id) + '_stats.csv')
+      case_id = 'Current'
+      self.writeTableHeader(out_dir + '/BF-' + str(case_id) + '.csv', 1)
+      self.writeTableHeader(out_dir + '/BF-' + str(case_id) + '_stats.csv')
       for i in range(3, 12):
-        # l.resetNeedleDetection(script=True) # ??? this resets the parameters to default
-        w.numberOfPointsPerNeedle.setValue(i)  # change parameter control points
+        w.numberOfPointsPerNeedle.setValue(i)
         l.startValidation(script=True)
-        results, outliers = l.evaluate(script=True)  # calculate HD distances
+        results, outliers = l.evaluate(script=True)
         for result in results:
-          result[0:0]=[user,id]
-        l.exportEvaluation(results, dir+'/BF-' + str(id) + '.csv')
-        slicer.util.saveScene(dir+'/BF-' + str(id) + '.mrb') # may use lots of disk space
-        # stats
+          result[0:0] = [user, case_id]
+        l.exportEvaluation(results, out_dir + '/BF-' + str(case_id) + '.csv')
+        slicer.util.saveScene(out_dir + '/BF-' + str(case_id) + '.mrb')
         HD = np.array(results)
-        # HD.shape = (int(len(results)/float(3)),3)
         maxTipHD = HD[:, 2].max()
         maxHD = HD[:, 3].max()
         avgHD = HD[:, 3].mean()
         stdHD = HD[:, 3].std()
         sl = np.sort(HD[:, 3])
         medHD = sl[sl.size // 2]
-        resultsEval = [user,id,maxTipHD,maxHD, avgHD, stdHD, medHD] +[len(results)]+[len(outliers)] +[str(outliers)]+ l.valuesExperience + [id]
-        l.exportEvaluation(resultsEval, dir+'/BF-' + str(id) + '_stats.csv')
-        #pause()
-      msgbox("parSearch mode 1 done, results in "+dir)
+        resultsEval = [user, case_id, maxTipHD, maxHD, avgHD, stdHD, medHD, len(results), len(outliers), str(outliers)] + l.valuesExperience + [case_id]
+        l.exportEvaluation(resultsEval, out_dir + '/BF-' + str(case_id) + '_stats.csv')
+      msgbox("parSearch mode 1 done, results in " + out_dir)
     elif mode == 2:
-      # code piece from Guillaumes (bruteForce.py) multi patient mode search
-      for id in range(100):
-        if path[id]:
-          w.caseNr=id
-          print("processing ", path[id])
+      for case_id in range(100):
+        if path[case_id]:
+          w.caseNr = case_id
+          print("processing ", path[case_id])
           slicer.mrmlScene.Clear(0)
-          slicer.util.loadScene(path[id])
-          self.writeTableHeader(dir+'/RS-' + str(id) + '.csv', 1)
-          self.writeTableHeader(dir+'/RS-' + str(id) + '_stats.csv')
-          for i in range(1, 10000):
-            # l.resetNeedleDetection(script=True) # ??? this resets the parameters to default
+          slicer.util.loadScene(path[case_id])
+          self.writeTableHeader(out_dir + '/RS-' + str(case_id) + '.csv', 1)
+          self.writeTableHeader(out_dir + '/RS-' + str(case_id) + '_stats.csv')
+          for _ in range(1, 10000):
             w.radiusNeedleParameter.setValue(np.random.randint(1, 6))
             w.stepsize.setValue(np.random.randint(1, 40))
-            w.sigmaValue.setValue(np.random.randint(1, 40))  # change parameter sigma
+            w.sigmaValue.setValue(np.random.randint(1, 40))
             w.gradientPonderation.setValue(np.random.randint(1, 20))
             w.exponent.setValue(np.random.randint(1, 20))
             w.numberOfPointsPerNeedle.setValue(np.random.randint(3, 11))
             l.startValidation(script=True)
-            results, outliers = l.evaluate(script=True)  # calculate HD distances
+            results, outliers = l.evaluate(script=True)
             for result in results:
-              result[0:0]=[user,id]
-            l.exportEvaluation(results, dir+'/RS-' + str(id) + '.csv')
-            slicer.util.saveScene(dir+'/RS-' + str(id) + '.mrb') # may use lots of disk space
-            # stats
+              result[0:0] = [user, case_id]
+            l.exportEvaluation(results, out_dir + '/RS-' + str(case_id) + '.csv')
+            slicer.util.saveScene(out_dir + '/RS-' + str(case_id) + '.mrb')
             HD = np.array(results)
             maxTipHD = HD[:, 2].max()
             maxHD = HD[:, 3].max()
@@ -680,16 +522,10 @@ class SceneAndEvaluationMixin(object):
             stdHD = HD[:, 3].std()
             sl = np.sort(HD[:, 3])
             medHD = sl[sl.size // 2]
-            resultsEval = [user,id,maxTipHD,maxHD, avgHD, stdHD, medHD] +[len(results)]+[len(outliers)] +[str(outliers)]+ l.valuesExperience + [id]
-            l.exportEvaluation(resultsEval, dir+'/RS-' + str(id) + '_stats.csv')
-            # end = time.time()
-            # print 'processing time: ', end-start
-            # start = time.time()
-            #pause()
-        msgbox("parSearch mode 2 done, results in "+dir)
-      #rof id
-    #file mode 2
-    slicer.mrmlScene.Clear(0) #clean up to save memory
+            resultsEval = [user, case_id, maxTipHD, maxHD, avgHD, stdHD, medHD, len(results), len(outliers), str(outliers)] + l.valuesExperience + [case_id]
+            l.exportEvaluation(resultsEval, out_dir + '/RS-' + str(case_id) + '_stats.csv')
+        msgbox("parSearch mode 2 done, results in " + out_dir)
+    slicer.mrmlScene.Clear(0)
 
   #----------------------------------------------------------------------------------------------
   """ Needle segmentation report"""
@@ -700,25 +536,19 @@ class SceneAndEvaluationMixin(object):
     Add last segmented needle to the table
     The color icon corresponds to the color of the needle, which corresponds to its label (color code)
     """
-    # productive
     profprint()
     widget = slicer.modules.NeedleFinderWidget
     widget.initTableViewControlPoints()
     widget.initTableView()
-    if label != None:
+    if label is not None:
       ref = int(label[0]) % MAXNEEDLES
       needleLabel = self.option[ref]
-      # reliability = label[1]
     else:
       needleLabel = str(ID)
       ref = ID % MAXNEEDLES
-      # reliability = '-'
-    # ref = int(modelNode.GetAttribute("nth"))
 
     widget.labelStats["Labels"].append(ref)
     widget.labelStats[ref, "#"] = needleLabel
-    # self.labelStats[ref,"Round"] = str(self.round)
-    # self.labelStats[ref,"Reliability"] = str(reliability)
 
     ################################################
     # Column 0
@@ -726,7 +556,6 @@ class SceneAndEvaluationMixin(object):
     color.setRgb(self.color255[ref][0], self.color255[ref][1], self.color255[ref][2])
     item = qt.QStandardItem()
     item.setData(color, 1)
-    # self.model.appendRow(item)
     widget.model.setItem(widget.row, 0, item)
     widget.items.append(item)
     ################################################
@@ -745,7 +574,7 @@ class SceneAndEvaluationMixin(object):
     displayButton.checkable = True
     if needleType == 'Validation':
       ID = int(getNode('manual-seg_' + str(ID)).GetID().strip('vtkMRMLModelNode'))
-    displayButton.connect("clicked()", lambda who=ID: self.displayNeedleTube(who))
+    displayButton.clicked.connect(lambda _=False, who=ID: self.displayNeedleTube(who))
     index = widget.model.index(widget.row, 2)
 
     widget.items.append(displayButton)
@@ -754,7 +583,7 @@ class SceneAndEvaluationMixin(object):
     ################################################
     # Column 3
     reformatButton = qt.QPushButton("Reformat")
-    reformatButton.connect("clicked()", lambda who=ID: self.reformatSagittalView4Needle(who))
+    reformatButton.clicked.connect(lambda _=False, who=ID: self.reformatSagittalView4Needle(who))
     index = widget.model.index(widget.row, 3)
     widget.items.append(reformatButton)
     widget.col += 1
@@ -774,7 +603,6 @@ class SceneAndEvaluationMixin(object):
     Delete last needle from model
     """
     profprint()
-    # productive #onButton
     widget = slicer.modules.NeedleFinderWidget
     print("len(items): ", len(widget.items))
     if widget.row and ID in widget.labelStats.get("Labels", []):
@@ -792,19 +620,17 @@ class SceneAndEvaluationMixin(object):
       widget.model.removeRow(pos)
       widget.row -= 1
 
-  def addPointToTable(self, ID, needleNumber, pointNumber, label=None, needleType=None, sortTable = 1):
+  def addPointToTable(self, ID, needleNumber, pointNumber, label=None, needleType=None, sortTable=1):
     """
     Add control point to the table
     The color icon corresponds to the color of the needle, which corresponds to its label (color code)
     """
-    # productive
     profprint()
     widget = slicer.modules.NeedleFinderWidget
     widget.initTableViewControlPoints()
 
     widget.labelStatsCTL["Labels"].append(ID)
-    widget.labelStatsCTL["ID"].append(1000*needleNumber + pointNumber)
-    # self.labelStatsCTL[needleNumber, "#"] = needleLabel
+    widget.labelStatsCTL["ID"].append(1000 * needleNumber + pointNumber)
 
     ################################################
     # Column 0
@@ -822,13 +648,13 @@ class SceneAndEvaluationMixin(object):
     widget.modelCTL.setItem(widget.rowCTL, colCTL, item)
     widget.itemsCTL.append(item)
     ################################################
-    # Column 1
+    # Column 2
     colCTL = 2
     item = qt.QStandardItem()
     item.setText(str(pointNumber).zfill(2))
     widget.modelCTL.setItem(widget.rowCTL, colCTL, item)
     widget.itemsCTL.append(item)
-    # ################################################
+    ################################################
     # Column 3
     displayButton = qt.QPushButton("Delete")
     displayButton.checked = True
@@ -836,47 +662,33 @@ class SceneAndEvaluationMixin(object):
     if needleType == 'Validation':
       ID = int(getNode('.' + str(ID)).GetID().strip('vtkMRMLModelNode'))
     listArgs = [ID, needleNumber, pointNumber]
-    displayButton.connect("clicked()", lambda who=listArgs: self.removeNeedleShaftEvalMarker(who))
+    displayButton.clicked.connect(lambda _=False, who=listArgs: self.removeNeedleShaftEvalMarker(who))
     index = widget.modelCTL.index(widget.rowCTL, 3)
     widget.itemsCTL.append(displayButton)
     widget.viewCTL.setIndexWidget(index, displayButton)
-    # ################################################
-    # Column 3
+    ################################################
+    # Column 4
     reformatButton = qt.QPushButton("Focus")
-    reformatButton.connect("clicked()", lambda who=ID: self.goToPoint(who))
+    reformatButton.clicked.connect(lambda _=False, who=ID: self.goToPoint(who))
     index = widget.modelCTL.index(widget.rowCTL, 4)
     widget.itemsCTL.append(reformatButton)
     widget.viewCTL.setIndexWidget(index, reformatButton)
-    # ################################################
-    # # Column 4
-    # editField = qt.QTextEdit("")
-
-    # self.items.append(editField)
-    # self.col += 1
-    # self.view.setIndexWidget(index, editField)
     widget.rowCTL += 1
     if sortTable:
-      widget.viewCTL.sortByColumn(2)
-      widget.viewCTL.sortByColumn(1)
+      widget.viewCTL.sortByColumn(2, qt.Qt.AscendingOrder)
+      widget.viewCTL.sortByColumn(1, qt.Qt.AscendingOrder)
 
   def deletePointFromTable(self, ID):
     """
     Delete point from table
     """
     profprint()
-    # productive #onButton
     widget = slicer.modules.NeedleFinderWidget
     sortedIndex = widget.labelStatsCTL['ID']
-    sortedIndex.sort()
-    sortedIndex.reverse()
-    # print sortedIndex
-    # print ID
+    sortedIndex.sort(reverse=True)
     label = ID.split('.')
     labelval = label[1].split('-')
-    # print labelval
     val = 1000 * int(labelval[0]) + int(labelval[1])
-    # print "val: ", val
-    # print "len(items): ", len(widget.itemsCTL)
     if widget.rowCTL:
       pos = sortedIndex.index(val)
       widget.labelStatsCTL["Labels"].pop(pos)
@@ -894,151 +706,47 @@ class SceneAndEvaluationMixin(object):
   def cleanTable(self):
     '''
     Clean report table and internal variables
-    :return:
     '''
     profprint()
-    # productive #onButton
     widget = slicer.modules.NeedleFinderWidget
     widget.labelStatsCTL = {}
     widget.labelStats = {}
 
-    # table report
     widget.table = None
     widget.tableCTL = None
     if widget.modelCTL:
       widget.modelCTL.clear()
     if widget.model:
       widget.model.clear()
-    # widget.view = None
-    # widget.viewCTL = None
-    # widget.model = None
-    # widget.modelCTL = None
-    # look for duplicate list and delete it if necessary
-    nodes = slicer.mrmlScene.GetNodesByClassByName('vtkMRMLAnnotationHierarchyNode','Fiducials List')
-    for i in range(nodes.GetNumberOfItems()):
-      slicer.mrmlScene.RemoveNode(nodes.GetItemAsObject(i))
-
-    nodes = slicer.mrmlScene.GetNodesByClassByName('vtkMRMLAnnotationHierarchyNode','All Annotations')
-    for i in range(nodes.GetNumberOfItems()):
-      slicer.mrmlScene.RemoveNode(nodes.GetItemAsObject(i))
+    for list_name in ('Fiducials List', 'All Annotations'):
+      nodes = slicer.mrmlScene.GetNodesByClassByName('vtkMRMLAnnotationHierarchyNode', list_name)
+      for i in range(nodes.GetNumberOfItems()):
+        slicer.mrmlScene.RemoveNode(nodes.GetItemAsObject(i))
 
     self.observeManualNeedles()
 
-  #-----------------------------------------------------------
-  # Radiation
-
   def AddRadiation(self, i, needleID):
     """
-    Goal of this function is to draw quadrics simulating the dose radiation.
-    Currently, ellipse is a too naive model.
-    This project might be continued later
+    Placeholder for radiation quadrics model.
     """
-    # obsolete
     profbox()
-    pass
-    # needleNode = slicer.mrmlScene.GetNodeByID(needleID)
-    # polyData = needleNode.GetPolyData()
-    # nb = polyData.GetNumberOfPoints()
-    # base = [0,0,0]
-    # tip = [[0,0,0] for k in range(11)]
-    # if nb>100:
-
-      # polyData.GetPoint(nb-1,tip[10])
-      # polyData.GetPoint(0,base)
-
-    # a = tip[10][0]-base[0]
-    # b = tip[10][1]-base[1]
-    # c = tip[10][2]-base[2]
-
-    # for l in range(7):
-      # tip[9-l][0] = tip[10][0]-0.1*a*(l+1)
-      # tip[9-l][1] = tip[10][1]-0.1*b*(l+1)
-      # tip[9-l][2] = tip[10][2]-0.1*c*(l+1)
-    # for l in range(1,3):
-      # tip[l][0] = tip[10][0]+0.1*a*l
-      # tip[l][1] = tip[10][1]+0.1*b*l
-      # tip[l][2] = tip[10][2]+0.1*c*l
-
-    # rad = vtk.vtkAppendPolyData()
-
-    # for l in range(1,11):
-      # TransformPolyDataFilter=vtk.vtkTransformPolyDataFilter()
-      # Transform=vtk.vtkTransform()
-      # TransformPolyDataFilter.SetInput(self.m_polyRadiation)
-
-      # vtkmat = Transform.GetMatrix()
-      # vtkmat.SetElement(0,3,tip[l][0])
-      # vtkmat.SetElement(1,3,tip[l][1])
-      # vtkmat.SetElement(2,3,tip[l][2])
-      # TransformPolyDataFilter.SetTransform(Transform)
-      # TransformPolyDataFilter.Update()
-
-      # rad.AddInput(TransformPolyDataFilter.GetOutput())
-
-    # modelNode = slicer.vtkMRMLModelNode()
-    # displayNode = slicer.vtkMRMLModelDisplayNode()
-    # storageNode = slicer.vtkMRMLModelStorageNode()
-
-    # fileName = 'Rad'+self.option[i]+'.vtk'
-
-    # mrmlScene = slicer.mrmlScene
-    # modelNode.SetName(fileName)
-    # modelNode.SetAttribute("radiation","segmented")
-    # modelNode.SetAttribute("needleID",str(needleID))
-    # modelNode.SetAndObservePolyData(rad.GetOutput())
-
-    # modelNode.SetScene(mrmlScene)
-    # storageNode.SetScene(mrmlScene)
-    # storageNode.SetFileName(fileName)
-    # displayNode.SetScene(mrmlScene)
-    # displayNode.SetVisibility(0)
-    # mrmlScene.AddNode(storageNode)
-    # mrmlScene.AddNode(displayNode)
-    # mrmlScene.AddNode(modelNode)
-    # modelNode.SetAndObserveStorageNodeID(storageNode.GetID())
-    # modelNode.SetAndObserveDisplayNodeID(displayNode.GetID())
-
-    # displayNode.SetPolyData(modelNode.GetPolyData())
-
-    # displayNode.SetVisibility2D(0)
-    # displayNode.SetScalarVisibility(1)
-    # displayNode.SetActiveScalarName('scalars')
-    # displayNode.SetScalarRange(0,230)
-    # displayNode.SetOpacity(0.06)
-    # displayNode.SetAndObserveColorNodeID('vtkMRMLColorTableNodeFileHotToColdRainbow.txt')
-    # displayNode.SetBackfaceCulling(0)
-    # pNode= self.parameterNode()
-    # pNode.SetParameter(fileName,modelNode.GetID())
-    # mrmlScene.AddNode(modelNode)
-
-  #----------------------------------------------------------------------------------------------
-  """
-  The purpose of the following functions is to process the results of the needle segmentation from
-  Yi Gao's CLI module.
-  Currently, another solution has been chosen but this could be usefull again later.
-  To use it, simply uncommented the corresponding buttons in "createUserInterface"
-  """
-  #----------------------------------------------------------------------------------------------
 
   def needleSegmentationCLIDEMO(self):
     """
     Function used for the CLI module from Yi Gao using hessian filter (C++)
     """
-    # research
     profbox()
     widget = slicer.modules.NeedleFinderWidget
-    scene = slicer.mrmlScene
     pNode = self.parameterNode()
-    if slicer.mrmlScene.GetNodeByID(pNode.GetParameter("baselineVolumeID")) == None:
+    if slicer.mrmlScene.GetNodeByID(pNode.GetParameter("baselineVolumeID")) is None:
       inputVolume = self.__volumeSelector.currentNode()
       inputVolumeID = self.__volumeSelector.currentNode().GetID()
     else:
       inputVolume = slicer.mrmlScene.GetNodeByID(pNode.GetParameter("baselineVolumeID"))
-      inputVolumeID = slicer.mrmlScene.GetNodeByID(pNode.GetParameter("baselineVolumeID")).GetID()
+      inputVolumeID = inputVolume.GetID()
     inputLabelID = self.__needleLabelSelector.currentNode().GetID()
 
     datetime = time.strftime("%Y-%m-%d-%H_%M_%S", time.localtime())
-
     inputVolume.SetAttribute("foldername", datetime)
     self.outputVolumeNode = slicer.mrmlScene.CreateNodeByClass('vtkMRMLModelNode')
     self.outputVolumeNode.SetName("Output Needle Model")
@@ -1049,70 +757,48 @@ class SceneAndEvaluationMixin(object):
     outputVolumeStorageNode.WriteData(self.outputVolumeNode)
 
     outputID = self.outputVolumeNode.GetID()
-
     self.foldername = '/NeedleModels/' + datetime
 
-    # Set the parameters for the CLI module
-    parameters = {}
-    parameters['inputVolume'] = inputVolumeID
-    parameters['inputLabel'] = inputLabelID
-    parameters['outputVtk'] = outputID
-    parameters['outputFolderName'] = self.foldername
-    parameters['nbPointsPerLine'] = self.nbPointsPerLine.value
-    parameters['nbRadiusIterations'] = self.nbRadiusIterations.value
-    parameters['radiusMax'] = self.radiusMax.value
-    parameters['numberOfPointsPerNeedle'] = self.numberOfPointsPerNeedle.value
-    parameters['nbRotatingIterations'] = self.nbRotatingIterations.value
+    parameters = {
+        'inputVolume': inputVolumeID,
+        'inputLabel': inputLabelID,
+        'outputVtk': outputID,
+        'outputFolderName': self.foldername,
+        'nbPointsPerLine': self.nbPointsPerLine.value,
+        'nbRadiusIterations': self.nbRadiusIterations.value,
+        'radiusMax': self.radiusMax.value,
+        'numberOfPointsPerNeedle': self.numberOfPointsPerNeedle.value,
+        'nbRotatingIterations': self.nbRotatingIterations.value,
+    }
 
     module = slicer.modules.mainlabelneedletrackingcli
-    self.__cliNode = None
     self.__cliNode = slicer.cli.run(module, None, parameters, wait_for_completion=True)
-
-    ##### match the needles ######
 
     self.setNeedleCoordinates()
     self.computerPolydataAndMatrix()
-    xmin = min(self.p[0])
-    xmax = max(self.p[0])
-    ymin = min(self.p[1])
-    ymax = max(self.p[1])
-    xdelta = xmax - xmin
-    ydelta = ymax - ymin
     k = 0
 
-    self.base = [[0 for j in range(3)] for j in range(63)]
-    self.tip = [[0 for j in range(3)] for j in range(63)]
-    self.needlenode = [[0 for j in range(2)] for j in range(63)]
-    self.bentNeedleNode = [[0 for j in range(2)] for j in range(63)]
-    self.displaynode = [0 for j in range(63)]
-    self.displaynodeB = [0 for j in range(63)]
-    self.fiducialnode = [0 for j in range(63)]
+    self.base = [[0 for _ in range(3)] for _ in range(63)]
+    self.tip = [[0 for _ in range(3)] for _ in range(63)]
+    self.needlenode = [[0 for _ in range(2)] for _ in range(63)]
+    self.bentNeedleNode = [[0 for _ in range(2)] for _ in range(63)]
+    self.displaynode = [0 for _ in range(63)]
+    self.displaynodeB = [0 for _ in range(63)]
+    self.fiducialnode = [0 for _ in range(63)]
 
     for i in range(63):
-
       pathneedle = self.foldername + '/' + str(i) + '.vtp'
       pathBentNeedle = self.foldername + '/' + str(i) + '_bent.vtp'
       self.needlenode[i] = slicer.util.loadModel(pathneedle, True)
       self.bentNeedleNode[i] = slicer.util.loadModel(pathBentNeedle, True)
 
-      if self.needlenode[i][0] == True and self.needlenode[i][1] != None:
+      if self.needlenode[i][0] and self.needlenode[i][1] is not None:
         self.displaynode[i] = self.needlenode[i][1].GetDisplayNode()
         self.displaynodeB[i] = self.bentNeedleNode[i][1].GetDisplayNode()
-
-
         polydata = self.needlenode[i][1].GetPolyData()
         polydata.GetPoint(0, self.base[i])
-
         self.displaynode[i].Visibility2DOn()
         self.displaynodeB[i].Visibility2DOn()
-        bestmatch = None
-        mindist = None
-        for j in range(63):
-          delta = ((self.p[0][j] - (self.base[i][0])) ** 2 + (self.p[1][j] - self.base[i][1]) ** 2) ** (0.5)
-          if delta < mindist or mindist == None:
-            bestmatch = j
-            mindist = delta
-
         bestmatch = k
         k += 1
         self.displaynode[i].SetColor(self.color[bestmatch])
@@ -1131,17 +817,13 @@ class SceneAndEvaluationMixin(object):
 
     d = slicer.mrmlScene.GetNodeByID(outputID).GetDisplayNode()
     d.SetVisibility(0)
-
     self.__editorFrame.collapsed = 1
-
     self.addButtons()
 
   def addButtons(self):
-    """Buttons for the reporting widget, displaying information of the segmented needles.
-    Used in conjunction with Yi Gaos CLI stuff.
-    """
+    """Buttons for the reporting widget, displaying information of the segmented needles."""
     profbox()
-    if self.buttonsGroupBox != None:
+    if self.buttonsGroupBox is not None:
       self.layout.removeWidget(self.buttonsGroupBox)
       self.buttonsGroupBox.deleteLater()
       self.buttonsGroupBox = None
@@ -1162,10 +844,10 @@ class SceneAndEvaluationMixin(object):
         if modelNode.GetDisplayVisibility() == 0:
           buttonDisplay.setChecked(1)
 
-        buttonDisplay.connect("clicked()", lambda who=i: self.displayNeedle(who))
-        buttonBentDisplay.connect("clicked()", lambda who=i: self.displayBentNeedle(who))
+        buttonDisplay.clicked.connect(lambda _=False, who=i: self.displayNeedle(who))
+        buttonBentDisplay.clicked.connect(lambda _=False, who=i: self.displayBentNeedle(who))
         buttonReformat = qt.QPushButton("Reformat " + self.option[i])
-        buttonReformat.connect("clicked()", lambda who=i: self.reformatSagittalView4Needle(who))
+        buttonReformat.clicked.connect(lambda _=False, who=i: self.reformatSagittalView4Needle(who))
         widgets = qt.QWidget()
         hlay = qt.QHBoxLayout(widgets)
         hlay.addWidget(buttonDisplay)
@@ -1174,18 +856,13 @@ class SceneAndEvaluationMixin(object):
         self.buttonsGroupBoxLayout.addRow(widgets)
 
   def displayBentNeedle(self, i):
-    """
-    not actively used anymore. works with Yi Gao CLI module for straight needle detection + bending post-computed
-    """
+    """Toggle visibility of bent needle model."""
     profbox()
-    # obsolete
     modelNodes = slicer.util.getNodes('vtkMRMLModelNode*')
     for modelNode in list(modelNodes.values()):
-      if modelNode.GetAttribute("nth") == str(i) and modelNode.GetAttribute("optimized") == '1' :
+      if modelNode.GetAttribute("nth") == str(i) and modelNode.GetAttribute("optimized") == '1':
         displayNode = modelNode.GetModelDisplayNode()
-        nVisibility = displayNode.GetVisibility()
-        # print nVisibility
-        if nVisibility:
+        if displayNode.GetVisibility():
           displayNode.Visibility2DOff()
           displayNode.SetVisibility(0)
         else:
@@ -1193,18 +870,13 @@ class SceneAndEvaluationMixin(object):
           displayNode.SetVisibility(1)
 
   def displayNeedle(self, i):
-    """
-    ??? not used anymore. works with Yi Gao CLI module for straight needle detection + bending post-computed
-    """
-    # obsolete
+    """Toggle visibility of straight needle model."""
     profbox()
     modelNodes = slicer.util.getNodes('vtkMRMLModelNode*')
     for modelNode in list(modelNodes.values()):
-      if modelNode.GetAttribute("nth") == str(i) and modelNode.GetAttribute("segmented") == '1' :
+      if modelNode.GetAttribute("nth") == str(i) and modelNode.GetAttribute("segmented") == '1':
         displayNode = modelNode.GetModelDisplayNode()
-        nVisibility = displayNode.GetVisibility()
-
-        if nVisibility:
+        if displayNode.GetVisibility():
           displayNode.Visibility2DOff()
           displayNode.SetVisibility(0)
         else:
@@ -1212,10 +884,7 @@ class SceneAndEvaluationMixin(object):
           displayNode.SetVisibility(1)
 
   def showOneNeedle(self, i, visibility):
-    """
-    ??? Not used anymore. But can be usefull later
-    """
-    # obsolete
+    """Show or hide a single needle and its label fiducial."""
     profbox()
     fidname = "fid" + self.option[i]
     pNode = self.parameterNode()
@@ -1224,49 +893,33 @@ class SceneAndEvaluationMixin(object):
     NeedleNode = slicer.mrmlScene.GetNodeByID(needleID)
     fiducialNode = slicer.mrmlScene.GetNodeByID(fidID)
 
-    if NeedleNode != None:
+    if NeedleNode is not None:
       displayNode = NeedleNode.GetModelDisplayNode()
-      nVisibility = displayNode.GetVisibility()
-
-      if fiducialNode == None:
+      if fiducialNode is None:
         displayNode.SetVisibility(1)
         displayNode.SetOpacity(0.9)
         polyData = NeedleNode.GetPolyData()
-        polyData.Update()
         nb = int(polyData.GetNumberOfPoints() - 1)
-        coord = [0, 0, 0]
+        coord = [0.0, 0.0, 0.0]
         if nb > 100:
-          fiducialNode = slicer.vtkMRMLAnnotationFiducialNode()
           polyData.GetPoint(nb, coord)
-          fiducialNode.SetName(self.option[i])
-          fiducialNode.SetFiducialCoordinates(coord)
-          fiducialNode.Initialize(slicer.mrmlScene)
-          fiducialNode.SetLocked(1)
-          fiducialNode.SetSelectable(0)
-          fidDN = fiducialNode.GetDisplayNode()
-          fidDN.SetColor(NeedleNode.GetDisplayNode().GetColor())
-          fidDN.SetGlyphScale(0)
-          fidTN = fiducialNode.GetAnnotationTextDisplayNode()
-          fidTN.SetTextScale(3)
-          fidTN.SetColor(NeedleNode.GetDisplayNode().GetColor())
-          fiducialNode.SetDisplayVisibility(0)
+          fiducialNode = create_fiducial_node(
+              name=self.option[i],
+              ras=coord,
+              color=NeedleNode.GetDisplayNode().GetColor(),
+              glyph_scale=0.0,
+              text_scale=3.0,
+              locked=True,
+              selectable=False,
+              visibility=True,
+          )
           pNode.SetParameter(fidname, fiducialNode.GetID())
-          fiducialNode.SetDisplayVisibility(1)
 
-      if visibility == 0:
-
-        displayNode.SetVisibility(0)
-        displayNode.SetVisibility2D(0)
-        if fiducialNode != None:
-          fiducialNode.SetDisplayVisibility(0)
-
-      else:
-
-        displayNode.SetVisibility(1)
-        displayNode.SetVisibility2D(1)
-        if fiducialNode != None:
-          fiducialNode.SetDisplayVisibility(1)
-
+      vis_flag = 1 if visibility else 0
+      displayNode.SetVisibility(vis_flag)
+      displayNode.SetVisibility2D(vis_flag)
+      if fiducialNode is not None:
+        fiducialNode.SetDisplayVisibility(vis_flag)
     else:
       vtkmat = vtk.vtkMatrix4x4()
       vtkmat.DeepCopy(self.m_vtkmat)
@@ -1287,17 +940,13 @@ class SceneAndEvaluationMixin(object):
       self.showOneNeedle(i, visibility)
 
   def AddModel(self, i, polyData):
-    """
-    Not used. Check if can be removed
-    """
-    # obsolete
+    """Add planned needle model to scene."""
     profbox()
     modelNode = slicer.vtkMRMLModelNode()
     displayNode = slicer.vtkMRMLModelDisplayNode()
     storageNode = slicer.vtkMRMLModelStorageNode()
 
     fileName = self.option[i] + '.vtp'
-
     mrmlScene = slicer.mrmlScene
     modelNode.SetName(fileName)
     modelNode.SetAndObservePolyData(polyData)
@@ -1319,116 +968,83 @@ class SceneAndEvaluationMixin(object):
     displayNode.SetVisibility2D(0)
     pNode = self.parameterNode()
     pNode.SetParameter(fileName, modelNode.GetID())
-    mrmlScene.AddNode(modelNode)
     displayNode.SetVisibility(1)
 
   def displayRadPlanned(self):
-    """
-    Display 'radiation' of planned needle -> cf iGyne / not used anymore
-    """
-    # obsolete?
+    """Display 'radiation' of planned needle."""
     profbox()
     modelNodes = slicer.util.getNodes('vtkMRMLModelNode*')
     for modelNode in list(modelNodes.values()):
-      displayNode = modelNode.GetDisplayNode()
       if modelNode.GetAttribute("radiation") == "planned":
         needleNode = slicer.mrmlScene.GetNodeByID(modelNode.GetAttribute("needleID"))
-        if needleNode.GetDisplayVisibility() == 1:
+        if needleNode and needleNode.GetDisplayVisibility() == 1:
           modelNode.SetDisplayVisibility(abs(int(slicer.modules.NeedleFinderWidget.displayRadPlannedButton.checked) - 1))
 
   def displayRadSegmented(self):
-    """
-    Display 'radiation' of segmented needles
-    ??? used?
-    """
-    # obsolete?
+    """Display 'radiation' of segmented needles."""
     profbox()
     modelNodes = slicer.util.getNodes('vtkMRMLModelNode*')
     for modelNode in list(modelNodes.values()):
       if modelNode.GetAttribute("radiation") == "segmented":
         needleNode = slicer.mrmlScene.GetNodeByID(modelNode.GetAttribute("needleID"))
-        if needleNode != None:
-          if needleNode.GetDisplayVisibility() == 1:
-            modelNode.SetDisplayVisibility(abs(int(slicer.modules.NeedleFinderWidget.displayRadSegmentedButton.checked) - 1))
-            d = modelNode.GetDisplayNode()
-            d.SetVisibility2D(abs(int(slicer.modules.NeedleFinderWidget.displayRadSegmentedButton.checked) - 1))
+        if needleNode is not None and needleNode.GetDisplayVisibility() == 1:
+          vis = abs(int(slicer.modules.NeedleFinderWidget.displayRadSegmentedButton.checked) - 1)
+          modelNode.SetDisplayVisibility(vis)
+          modelNode.GetDisplayNode().SetVisibility2D(vis)
 
   def displayContour(self, i, visibility):
-    """
-    Display the iso-contour of needle i
-
-    :param i: nth value of needle
-    :param visibility: boolean to set the visibility state of the needle
-    ??? used?
-    """
-    # obsolete?
+    """Display the iso-contour of needle i."""
     profbox()
     modelNodes = slicer.util.getNodes('vtkMRMLModelNode*')
     for modelNode in list(modelNodes.values()):
-      if modelNode.GetAttribute("contour") == "1" and modelNode.GetAttribute("nth") == str(i) :
+      if modelNode.GetAttribute("contour") == "1" and modelNode.GetAttribute("nth") == str(i):
         needleNode = slicer.mrmlScene.GetNodeByID(modelNode.GetAttribute("needleID"))
-        if needleNode != None:
-          if needleNode.GetDisplayVisibility() == 1:
-            modelNode.SetDisplayVisibility(visibility)
-            d = modelNode.GetDisplayNode()
-            d.SetVisibility2D(visibility)
+        if needleNode is not None and needleNode.GetDisplayVisibility() == 1:
+          modelNode.SetDisplayVisibility(visibility)
+          modelNode.GetDisplayNode().SetVisibility2D(visibility)
 
   def displayContours(self):
-    """
-    Display or hide the iso-contours of every needles
-    ??? used?
-    """
-    # obsolete?
+    """Display or hide the iso-contours of every needle."""
     profbox()
     modelNodes = slicer.util.getNodes('vtkMRMLModelNode*')
     for modelNode in list(modelNodes.values()):
       if modelNode.GetAttribute("contour") == "1":
         needleNode = slicer.mrmlScene.GetNodeByID(modelNode.GetAttribute("needleID"))
-        if needleNode != None:
-          if needleNode.GetDisplayVisibility() == 1:
-            modelNode.SetDisplayVisibility(abs(int(slicer.modules.NeedleFinderWidget.displayContourButton.checked) - 1))
-            d = modelNode.GetDisplayNode()
-            d.SetVisibility2D(abs(int(slicer.modules.NeedleFinderWidget.displayContourButton.checked) - 1))
+        if needleNode is not None and needleNode.GetDisplayVisibility() == 1:
+          vis = abs(int(slicer.modules.NeedleFinderWidget.displayContourButton.checked) - 1)
+          modelNode.SetDisplayVisibility(vis)
+          modelNode.GetDisplayNode().SetVisibility2D(vis)
 
   def displayFiducial(self):
-    """
-    ??? used? show labels of the needles by adding a fiducial point at the tip
-    """
-    # obsolete?
+    """Show labels of the needles by adding a fiducial point at the tip."""
     profbox()
     modelNodes = slicer.util.getNodes('vtkMRMLModelNode*')
     for modelNode in list(modelNodes.values()):
-      displayNode = modelNode.GetDisplayNode()
-      if modelNode.GetAttribute("segmented") == "1" and modelNode.GetAttribute("nth") != None:
-        if 1:
-          i = int(modelNode.GetAttribute("nth"))
-          if self.fiducialnode[i] == 0:
-            polyData = modelNode.GetPolyData()
-            nb = int(polyData.GetNumberOfPoints() - 1)
-            coord = [0, 0, 0]
-            if nb > 10:
-              self.fiducialnode[i] = slicer.vtkMRMLAnnotationFiducialNode()
-              polyData.GetPoint(nb, coord)
-              self.fiducialnode[i].SetName(self.option[i])
-              self.fiducialnode[i].SetFiducialCoordinates(coord)
-              self.fiducialnode[i].Initialize(slicer.mrmlScene)
-              self.fiducialnode[i].SetLocked(1)
-              self.fiducialnode[i].SetSelectable(0)
-              fidDN = self.fiducialnode[i].GetDisplayNode()
-              fidDN.SetColor(modelNode.GetDisplayNode().GetColor())
-              fidDN.SetGlyphScale(0)
-              fidTN = self.fiducialnode[i].GetAnnotationTextDisplayNode()
-              fidTN.SetTextScale(3)
-              fidTN.SetColor(modelNode.GetDisplayNode().GetColor())
-
-              self.fiducialnode[i].SetDisplayVisibility(modelNode.GetDisplayNode().GetVisibility())
+      if modelNode.GetAttribute("segmented") == "1" and modelNode.GetAttribute("nth") is not None:
+        i = int(modelNode.GetAttribute("nth"))
+        if self.fiducialnode[i] == 0:
+          polyData = modelNode.GetPolyData()
+          nb = int(polyData.GetNumberOfPoints() - 1)
+          coord = [0.0, 0.0, 0.0]
+          if nb > 10:
+            polyData.GetPoint(nb, coord)
+            self.fiducialnode[i] = create_fiducial_node(
+                name=self.option[i],
+                ras=coord,
+                color=modelNode.GetDisplayNode().GetColor(),
+                glyph_scale=0.0,
+                text_scale=3.0,
+                locked=True,
+                selectable=False,
+                visibility=bool(modelNode.GetDisplayNode().GetVisibility()),
+            )
+        else:
+          if modelNode.GetDisplayNode().GetVisibility():
+            self.fiducialnode[i].SetDisplayVisibility(abs(self.fiducialnode[i].GetDisplayVisibility() - 1))
+          if self.fiducialnode[i].GetDisplayVisibility() == 1:
+            self.displayFiducialButton.text = "Hide Labels on Needles"
           else:
-            if modelNode.GetDisplayNode().GetVisibility():
-               self.fiducialnode[i].SetDisplayVisibility(abs(self.fiducialnode[i].GetDisplayVisibility() - 1))
-            if self.fiducialnode[i].GetDisplayVisibility() == 1:
-              self.displayFiducialButton.text = "Hide Labels on Needles"
-            else:
-              self.displayFiducialButton.text = "Display Labels on Needles"
+            self.displayFiducialButton.text = "Display Labels on Needles"
 
   def resetCoronalSegment(self):
     """
@@ -1700,11 +1316,9 @@ class SceneAndEvaluationMixin(object):
     Get the K (of IJK) value of the current axial slice.
     Used to define the slice containing the template
     """
-    # productive #onButton
     profprint()
     widget = slicer.modules.NeedleFinderWidget
     if assign:
-      # remove old nodes from scene
       while slicer.util.getNodes('template slice position*') != {}:
         nodes = slicer.util.getNodes('template slice position*')
         for node in list(nodes.values()):
@@ -1717,194 +1331,47 @@ class SceneAndEvaluationMixin(object):
 
       widget.axialSegmentationLimit = int(round(self.ras2ijk(rasVector)[2]))
 
-      self.fiducialNode = slicer.mrmlScene.CreateNodeByClass('vtkMRMLAnnotationFiducialNode')
-      self.fiducialNode.Initialize(slicer.mrmlScene)
-      self.fiducialNode.SetName('template slice position')
-      self.fiducialNode.SetFiducialCoordinates(rasVector)
-      fd = self.fiducialNode.GetDisplayNode()
-      fd.SetVisibility(1)
-      fd.SetColor([0, 1, 0])
+      self.fiducialNode = create_fiducial_node(
+          name='template slice position',
+          ras=rasVector,
+          color=(0.0, 1.0, 0.0),
+          visibility=True,
+      )
     widget.fiducialButton.setEnabled(1)
-    # here we are set and can create a first label volume from volume data
     widget.createAddOrSelectLabelMapNode()
 
-    # ## Add crosshair
     crosshairNode = getNode("Crosshair")
     crosshairNode.SetCrosshairMode(slicer.vtkMRMLCrosshairNode().ShowIntersection)
 
   def exportEvaluation(self, results, url):
-    """ Export evaluation results to a CSV file (e.g. when doing parameter optimizations)
-
-    :param results: array containing the results of the evaluation
-    :param url: url for saving the file
-    """
-    # research
+    """Export evaluation results to a CSV file (e.g. when doing parameter optimizations)."""
     profprint()
     if not os.path.exists(url):
-      print("creating new results file: ",url)
+      print("creating new results file: ", url)
       open(url, 'w').close()
-    myfile = open(url, 'a')
-
-    wr = csv.writer(myfile)
-    r = numpy.array(results)
-    if len(r.shape) == 1:
-      wr.writerow(results)
-    else:
-      wr.writerows(results)
+    with open(url, 'a', newline='') as myfile:
+      wr = csv.writer(myfile)
+      r = np.array(results)
+      if len(r.shape) == 1:
+        wr.writerow(results)
+      else:
+        wr.writerows(results)
 
   def hausdorffDistance(self, id1, id2):
-    r"""
-    Calculates the Hausdorff's distance [HD]_ of two needles. Both needles are truncated to start and end at the same slices.
-
-    :param id1: vtkMRMLModelNodeID of Needle 1
-    :param id2: vtkMRMLModelNodeID of Needle 2
-    :return: Hausdorff's distance in millimeters
-
-    .. math::  d_{\mathrm H}(X,Y) = \max\{\,\sup_{x \in X} \inf_{y \in Y} d(x,y),\, \sup_{y \in Y} \inf_{x \in X} d(x,y)\,\}
-
-    .. image:: http://upload.wikimedia.org/wikipedia/commons/2/21/Hausdorff_distance_sample.svg
-           :height: 300px
-           :width: 500 px
-           :scale: 100 %
-           :alt: alternate text
-           :align: center
-
-    .. [HD] http://en.wikipedia.org/wiki/Hausdorff_distance
-    """
-    # productive #math
-    if frequent: profprint()
+    r"""Calculates the Hausdorff's distance [HD]_ of two needles."""
+    if frequent:
+      profprint()
     node1 = slicer.mrmlScene.GetNodeByID(id1)
-    polydata1 = node1.GetPolyData()
     node2 = slicer.mrmlScene.GetNodeByID(id2)
-    polydata2 = node2.GetPolyData()
-    nb1 = polydata1.GetNumberOfPoints()
-    nb2 = polydata2.GetNumberOfPoints()
-    minimum = None
-    maximum = None
-    JJ, jj = None, None
-    II, ii = None, None
-    pt1 = [0, 0, 0]
-    pt2 = [0, 0, 0]
-    polydata1.GetPoint(1, pt1)
-    polydata1.GetPoint(nb1 - 1, pt2)
-    minVal1 = min(pt1[2], pt2[2])
-    maxVal1 = max(pt1[2], pt2[2])
-    pt1 = [0, 0, 0]
-    pt2 = [0, 0, 0]
-    pt1b, pt2b = None, None
-    polydata2.GetPoint(1, pt1)
-    polydata2.GetPoint(nb2 - 1, pt2)
-    minVal2 = min(pt1[2], pt2[2])
-    maxVal2 = max(pt1[2], pt2[2])
-    valueBase = max(minVal1, minVal2)
-    valueTip = min(maxVal1, maxVal2)
-
-    # truncate polydatas
-    truncatedPolydata1 = self.clipPolyData(node1, valueBase)
-    truncatedPolydata2 = self.clipPolyData(node2, valueBase)
-
-    cellId = vtk.mutable(1)
-    subid = vtk.mutable(1)
-    dist = vtk.mutable(1)
-    cl2 = vtk.vtkCellLocator()
-    cl2.SetDataSet(truncatedPolydata2)
-    cl2.BuildLocator()
-    # Hausforff 1 -> 2
-    minima = []
-    for i in range(int(nb1 / float(10))):
-      pt = [0, 0, 0]
-      polydata1.GetPoint(10 * i, pt)
-      closest = [0, 0, 0]
-      cl2.FindClosestPoint(pt, closest, cellId, subid, dist)
-      if abs(closest[2] - pt[2]) <= 1:
-        minima.append(self.distance(pt, closest))
-      else:
-          minima.append(0)
-    hausdorff12 = max(minima)
-
-    # Hausforff 2 -> 1
-    minima = []
-    cl1 = vtk.vtkCellLocator()
-    cl1.SetDataSet(truncatedPolydata1)
-    cl1.BuildLocator()
-    for i in range(int(nb2 / float(10))):
-      pt = [0, 0, 0]
-      polydata2.GetPoint(10 * i, pt)
-      closest = [0, 0, 0]
-      cl1.FindClosestPoint(pt, closest, cellId, subid, dist)
-      if abs(closest[2] - pt[2]) <= 1:
-        minima.append(self.distance(pt, closest))
-      else:
-          minima.append(0)
-    hausdorff21 = max(minima)
-    return max(hausdorff12, hausdorff21)
+    return compute_hausdorff_distance(node1.GetPolyData(), node2.GetPolyData(), step1=10, step2=10, truncate=True)
 
   def hausdorffDistance13(self, id1, id2):
-    """MICCAI13 Version
-    iGyne_old 4450bbcb543e7432122f06c1905aab4eb8b446e6
-    """
-    # productive #math
-    if frequent: profprint()
+    """MICCAI13 Version."""
+    if frequent:
+      profprint()
     node1 = slicer.mrmlScene.GetNodeByID(id1)
-    polydata1 = node1.GetPolyData()
     node2 = slicer.mrmlScene.GetNodeByID(id2)
-    polydata2 = node2.GetPolyData()
-    nb1 = polydata1.GetNumberOfPoints()
-    nb2 = polydata2.GetNumberOfPoints()
-    minimum = None
-    maximum = None
-    JJ, jj = None, None
-    II, ii = None, None
-    pt1 = [0, 0, 0]
-    pt2 = [0, 0, 0]
-    polydata1.GetPoint(1, pt1)
-    polydata1.GetPoint(nb1 - 1, pt2)
-    minVal1 = min(pt1[2], pt2[2])
-    maxVal1 = max(pt1[2], pt2[2])
-    pt1 = [0, 0, 0]
-    pt2 = [0, 0, 0]
-    pt1b, pt2b = None, None
-    polydata2.GetPoint(1, pt1)
-    polydata2.GetPoint(nb2 - 1, pt2)
-    minVal2 = min(pt1[2], pt2[2])
-    maxVal2 = max(pt1[2], pt2[2])
-    valueBase = max(minVal1, minVal2)
-    valueTip = min(maxVal1, maxVal2)
-    cellId = vtk.mutable(1)
-    subid = vtk.mutable(1)
-    dist = vtk.mutable(1)
-    cl2 = vtk.vtkCellLocator()
-    cl2.SetDataSet(polydata2)
-    cl2.BuildLocator()
-    # Hausforff 1 -> 2
-    minima = []
-    for i in range(int(nb1 / float(100))):
-      pt = [0, 0, 0]
-      polydata1.GetPoint(100 * i, pt)
-      closest = [0, 0, 0]
-      cl2.FindClosestPoint(pt, closest, cellId, subid, dist)
-      if abs(closest[2] - pt[2]) <= 1:
-        minima.append(self.distance(pt, closest))
-      else:
-          minima.append(0)
-    hausdorff12 = max(minima)
-
-    # Hausforff 2 -> 1
-    minima = []
-    cl1 = vtk.vtkCellLocator()
-    cl1.SetDataSet(polydata1)
-    cl1.BuildLocator()
-    for i in range(int(nb2 / float(10))):
-      pt = [0, 0, 0]
-      polydata2.GetPoint(10 * i, pt)
-      closest = [0, 0, 0]
-      cl1.FindClosestPoint(pt, closest, cellId, subid, dist)
-      if abs(closest[2] - pt[2]) <= 1:
-        minima.append(self.distance(pt, closest))
-      else:
-          minima.append(0)
-    hausdorff21 = max(minima)
-    return max(hausdorff12, hausdorff21)
+    return compute_hausdorff_distance(node1.GetPolyData(), node2.GetPolyData(), step1=100, step2=10, truncate=False)
 
   def evaluate(self, script=False, needleNr=None):
     """
@@ -1914,150 +1381,112 @@ class SceneAndEvaluationMixin(object):
 
     :return numpy array of [ value , ID needle 1, ID needle 2 ]
     """
-    # productive
     profprint()
     result = self.needleMatching()
     HD = []
-    outliers=[]
+    outliers = []
     widget = slicer.modules.NeedleFinderWidget
-    self.valuesExperience = [ widget.radiusNeedleParameter.value,
-                            widget.lenghtNeedleParameter.value,
-                            widget.radiusMax.value,
-                            widget.numberOfPointsPerNeedle.value,
-                            widget.nbRotatingIterations.value,
-                            widget.stepsize.value,
-                            widget.gradientPonderation.value,
-                            widget.exponent.value,
-                            widget.gaussianAttenuationButton.isChecked() * 1,
-                            widget.sigmaValue.value,
-                            widget.algoVersParameter.value]
+    self.valuesExperience = [
+        widget.radiusNeedleParameter.value,
+        widget.lenghtNeedleParameter.value,
+        widget.radiusMax.value,
+        widget.numberOfPointsPerNeedle.value,
+        widget.nbRotatingIterations.value,
+        widget.stepsize.value,
+        widget.gradientPonderation.value,
+        widget.exponent.value,
+        widget.gaussianAttenuationButton.isChecked() * 1,
+        widget.sigmaValue.value,
+        widget.algoVersParameter.value,
+    ]
 
     for i in range(len(result)):
       if widget.algoVersParameter.value == 0:
         val = self.hausdorffDistance(result[i][1], result[i][2])
       else:
         val = self.hausdorffDistance13(result[i][1], result[i][2])
-      try: needleNrFromFilename=int(result[i][3].strip('manual-seg_'))
-      except: needleNrFromFilename=-1
-      if needleNr!=None and needleNr!=needleNrFromFilename:
+      try:
+        needleNrFromFilename = int(result[i][3].strip('manual-seg_'))
+      except Exception:
+        needleNrFromFilename = -1
+      if needleNr is not None and needleNr != needleNrFromFilename:
         continue
-      if script == True:
-        results = [result[i][0], float(val), int(needleNrFromFilename), int(result[i][1].strip('vtkMRMLModelNode')), int(result[i][2].strip('vtkMRMLModelNode'))]+[val>outlierThresh_mm] + self.valuesExperience
+      base_row = [
+          result[i][0],
+          float(val),
+          int(needleNrFromFilename),
+          extract_model_id_number(result[i][1]),
+          extract_model_id_number(result[i][2]),
+          val > outlierThresh_mm,
+      ]
+      if script:
+        results = base_row + self.valuesExperience
       else:
-        results = [result[i][0], float(val), int(needleNrFromFilename), int(result[i][1].strip('vtkMRMLModelNode')), int(result[i][2].strip('vtkMRMLModelNode'))]+[val>outlierThresh_mm]
+        results = base_row
       HD.append(results)
-      if val>outlierThresh_mm: outliers.append(needleNrFromFilename) #CONST
-    if script == False:
-      return numpy.array(HD).astype(numpy.double)
+      if val > outlierThresh_mm:
+        outliers.append(needleNrFromFilename)
+    if not script:
+      return np.array(HD).astype(np.double)
     else:
       return HD, outliers
 
   def distTip(self, id1, id2):
-    """ Returns the distance between the tip of two needles
-
-    :param id1: ID number for the needle 1 (vtkMRMLModelNode)
-    :param id2: ID number for the needle 2 (vtkMRMLModelNode)
-    :return: distance in millimeters between the tip of both needles
-    """
-    # productive #math
-    if frequent: profprint()
+    """Returns the distance between the tip of two needles."""
+    if frequent:
+      profprint()
     node = slicer.mrmlScene.GetNodeByID('vtkMRMLModelNode' + str(id1))
-    polydata = node.GetPolyData()
     node2 = slicer.mrmlScene.GetNodeByID('vtkMRMLModelNode' + str(id2))
-    polydata2 = node2.GetPolyData()
-    p, pbis = [0, 0, 0], [0, 0, 0]
-    p2 = [0, 0, 0]
-    p2bis = [0, 0, 0]
-    tipDistance = []
-    for i in range(100):
-        polydata.GetPoint(i, p)
-        polydata.GetPoint(polydata.GetNumberOfPoints()-1 - i, pbis)
-        if pbis[2] > p[2]:
-          p = pbis
-        polydata2.GetPoint(i, p2)
-        polydata2.GetPoint(polydata2.GetNumberOfPoints()-1 - i, p2bis)
-        if p2bis[2] > p2[2]:
-          p2 = p2bis
-        tipDistance.append(((p2[0] - p[0]) ** 2 + (p2[1] - p[1]) ** 2 + (p2[2] - p[2]) ** 2) ** 0.5)
-    return min(tipDistance)
-  
+    return compute_tip_distance(node.GetPolyData(), node2.GetPolyData())
+
   def distBase(self, id1, id2):
-    """ Returns the distance between the base of two needles
-
-    :param id1: ID number for the needle 1 (vtkMRMLModelNode)
-    :param id2: ID number for the needle 2 (vtkMRMLModelNode)
-    :return: distance in millimeters between the tip of both needles
-    """
-    # productive #math
-    if frequent: profprint()
+    """Returns the distance between the base of two needles."""
+    if frequent:
+      profprint()
     node = slicer.mrmlScene.GetNodeByID('vtkMRMLModelNode' + str(id1))
-    polydata = node.GetPolyData()
     node2 = slicer.mrmlScene.GetNodeByID('vtkMRMLModelNode' + str(id2))
-    polydata2 = node2.GetPolyData()
-    p, pbis = [0, 0, 0], [0, 0, 0]
-    p2 = [0, 0, 0]
-    p2bis = [0, 0, 0]
-    baseDistance = []
-    for i in range(100):
-        polydata.GetPoint(i, p)
-        polydata.GetPoint(polydata.GetNumberOfPoints()-1 - i, pbis)
-        if pbis[2] > p[2]:
-          pbis = p
-        polydata2.GetPoint(i, p2)
-        polydata2.GetPoint(polydata2.GetNumberOfPoints()-1 - i, p2bis)
-        if p2bis[2] > p2[2]:
-          p2bis = p2
-        baseDistance.append(((p2bis[0] - pbis[0]) ** 2 + (p2bis[1] - pbis[1]) ** 2 + (p2bis[2] - pbis[2]) ** 2) ** 0.5)
-    return min(baseDistance)
+    return compute_base_distance(node.GetPolyData(), node2.GetPolyData())
 
   def needleMatching(self):
-    """This functions associates manually segmented needles to their automatically segmented version. To do so,
-    each manually segmented needle has a 'type' attribute named 'validation'. For each manually segmented needle, an axial
-    distance between the tip of this needle, and the tip of every auto segmented needle is computed. The auto needle that
-    offers the minimal tip axial distance is considered as corresponding needle
-
-    :return: array of tuple of corresponding needles
-    """
-    # productive
+    """Associates manually segmented needles to their automatically segmented version."""
     profprint()
     modelNodes = slicer.mrmlScene.GetNodesByClass('vtkMRMLModelNode')
     nbNode = modelNodes.GetNumberOfItems()
     result = []
     found = []
-    # print nbNode
     for nthNode in range(nbNode):
       node = slicer.mrmlScene.GetNthNodeByClass(nthNode, 'vtkMRMLModelNode')
       if node.GetID() not in found and node.GetAttribute('type') != 'Validation':
         dist = []
         polydata = node.GetPolyData()
-        if polydata != None:
-          bounds = polydata.GetBounds()
+        if polydata is not None:
           for nthNode2 in range(nbNode):
             node2 = slicer.mrmlScene.GetNthNodeByClass(nthNode2, 'vtkMRMLModelNode')
             if node2.GetID() not in found and node2.GetAttribute('type') == 'Validation':
               polydata2 = node2.GetPolyData()
-              if polydata2 != None and polydata2.GetNumberOfPoints() > 100 and polydata.GetNumberOfPoints() > 100:
-                tipDistance = self.distTip(int(node.GetID().strip('vtkMRMLModelNode')) , int(node2.GetID().strip('vtkMRMLModelNode')))
-                baseDistance = self.distBase(int(node.GetID().strip('vtkMRMLModelNode')) , int(node2.GetID().strip('vtkMRMLModelNode')))
+              if polydata2 is not None and polydata2.GetNumberOfPoints() > 100 and polydata.GetNumberOfPoints() > 100:
+                tipDistance = self.distTip(extract_model_id_number(node.GetID()), extract_model_id_number(node2.GetID()))
                 name = node.GetName()
-                manualName = name.lstrip('auto-seg_').lstrip('manual-seg_').lstrip('obturator-seg_').lstrip('0123456789').lstrip('-ID-vtkMRMLModelNode').lstrip('0123456789-')
-                if manualName==node2.GetName(): dist.append([tipDistance, node2.GetID(), node2.GetName()])
-                # print tipDistance
+                manualName = (
+                    name.lstrip('auto-seg_')
+                    .lstrip('manual-seg_')
+                    .lstrip('obturator-seg_')
+                    .lstrip('0123456789')
+                    .lstrip('-ID-vtkMRMLModelNode')
+                    .lstrip('0123456789-')
+                )
+                if manualName == node2.GetName():
+                  dist.append([tipDistance, node2.GetID(), node2.GetName()])
           if dist != []:
             match = [min(dist)[0], min(dist)[1], node.GetID(), min(dist)[2]]
             result.append(match)
             found.append(min(dist)[1])
             found.append(node.GetID())
             node.GetDisplayNode().SetVisibility2D(1)
-    # print result
     return result
 
   def setAllNeedleTubesAsValidationNeedles(self):
-    """
-    This is used for testing, R&D. It sets the needles to validation type.
-    E.g. you load vtk needle models and want to use them as validation needles...
-    """
-    # #test #research #button
+    """Set all non-validation needle models to validation type."""
     profprint()
     modelNodes = slicer.mrmlScene.GetNodesByClass('vtkMRMLModelNode')
     nbNode = modelNodes.GetNumberOfItems()
@@ -2066,95 +1495,49 @@ class SceneAndEvaluationMixin(object):
       if node.GetID() and node.GetAttribute('type') != 'Validation':
         node.SetAttribute('type', 'Validation')
         displayNode = node.GetDisplayNode()
-        colorVar = random.randrange(50, 100, 1)  # ??? /(100.)
+        colorVar = random.randrange(50, 100, 1)
         nth = int(colorVar) % MAXCOL
         displayNode.SetColor(self.color[int(nth)][0], self.color[int(nth)][1], self.color[int(nth)][2])
         displayNode.SetVisibility2D(True)
         displayNode.SetSliceIntersectionThickness(2)
-        #displayNode.SetOpacity(0.7)
 
   def distance(self, pt1, pt2):
-    """3D distance between two points
-
-    :param pt1: point 1 [x,y,z]
-    :param pt2: point 2 [x,y,z
-    :return: Euclidian's distance
-    """
-    # productive #frequent
-    if frequent: profprint()
-    d = ((float(pt1[0]) - float(pt2[0])) ** 2 + (float(pt1[1]) - float(pt2[1])) ** 2 + (float(pt1[2]) - float(pt2[2])) ** 2) ** 0.5
-    return d
+    """3D distance between two points."""
+    if frequent:
+      profprint()
+    return distance_3d(pt1, pt2)
 
   def addManualTip(self, A):
-    """Add fiducial node to the scene (called by processEventAddManualTips). Used as starting point for needle segmentation
-
-    :param A: RAS coordinates
-    """
-    # obsolete?
+    """Add fiducial node to the scene as starting point for needle segmentation."""
     profbox()
-    self.fiducialNode = slicer.mrmlScene.CreateNodeByClass('vtkMRMLAnnotationFiducialNode')
-    self.fiducialNode.Initialize(slicer.mrmlScene)
-    self.fiducialNode.SetName('tip')
-    self.fiducialNode.SetFiducialCoordinates(A)
-    fd = self.fiducialNode.GetDisplayNode()
-    fd.SetVisibility(1)
-    fd.SetColor([0, 1, 0])
+    self.fiducialNode = create_fiducial_node(
+        name='tip',
+        ras=A,
+        color=(0.0, 1.0, 0.0),
+        visibility=True,
+    )
 
   def distanceTwoPoints(self, A, B):
-    """3D distance between two points
-
-    :param pt1: point 1 [x,y,z]
-    :param pt2: point 2 [x,y,z
-    :return: Euclidian's distance
-    """
-    # productive
-    # used by addNeedleToScene
-    if frequent: profprint()
-    length = ((A[0] - B[0]) ** 2 + (A[1] - B[1]) ** 2 + (A[2] - B[2]) ** 2) ** 0.5
-    return length
+    """3D distance between two points."""
+    if frequent:
+      profprint()
+    return distance_3d(A, B)
 
   def clipPolyData(self, node, value, visible=0):
-    """ Function used to truncate needle models to evaluate the Hausdorff's distance.
-
-    :param node: vtkMRMLModelNode
-    :param value: axial slice where to cut the model
-    :return: vtkPolyData of the cutted model
-    """
-    # productive
+    """Function used to truncate needle models to evaluate the Hausdorff's distance."""
     profprint()
-    # We clip with an implicit function. Here we use a plane positioned near
-    # the center of the cow model and oriented at an arbitrary angle.
-    plane = vtk.vtkPlane()
-    plane.SetOrigin(0, 0, 0)
-    plane.SetNormal(0, 0, 1)
-    # vtkClipPolyData requires an implicit function to define what it is to
-    # clip with. Any implicit function, including complex boolean combinations
-    # can be used. Notice that we can specify the value of the implicit function
-    # with the SetValue method.
-    clipper = vtk.vtkClipPolyData()
-    clipper.SetInputData(node.GetPolyData())
-    clipper.SetClipFunction(plane)
-    clipper.GenerateClipScalarsOn()
-    clipper.GenerateClippedOutputOn()
-    clipper.SetValue(value)
-    clipper.Update()
-    polyData = clipper.GetOutput()
-    if 1 == 1:
-        scene = slicer.mrmlScene
-        model = slicer.vtkMRMLModelNode()
-        model.SetScene(scene)
-        model.SetAndObservePolyData(polyData)
-        # ## Create display node
-        modelDisplay = slicer.vtkMRMLModelDisplayNode()
-        modelDisplay.SetScene(scene)
-        scene.AddNode(modelDisplay)
-        model.SetAndObserveDisplayNodeID(modelDisplay.GetID())
-        # ## Add to scene
-        modelDisplay.SetInputPolyDataConnection(model.GetPolyDataConnection())
-        scene.AddNode(model)
-    if visible != 1:
-        scene.RemoveNode(model)
-
+    polyData = clip_polydata_axial(node.GetPolyData(), value)
+    if visible == 1:
+      scene = slicer.mrmlScene
+      model = slicer.vtkMRMLModelNode()
+      model.SetScene(scene)
+      model.SetAndObservePolyData(polyData)
+      modelDisplay = slicer.vtkMRMLModelDisplayNode()
+      modelDisplay.SetScene(scene)
+      scene.AddNode(modelDisplay)
+      model.SetAndObserveDisplayNodeID(modelDisplay.GetID())
+      modelDisplay.SetInputPolyDataConnection(model.GetPolyDataConnection())
+      scene.AddNode(model)
     return polyData
 
   def setWL(self, dn, w, l):
