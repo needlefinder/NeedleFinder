@@ -170,6 +170,9 @@ def evaluate_method_unified(preds_per_case, gts_per_case, aux_short_gts_per_case
                     pair_metrics[(gi, pi)] = pm
 
         closest_m = int(np.sum(np.min(cost_m, axis=1) <= thresh)) if (n_gt > 0 and n_pred > 0) else 0
+        # Thresholded assignment: pairs above the matching threshold are forbidden before solving, so the
+        # assignment maximises the number of valid (<= thresh) pairs and only then minimises their cost.
+        cost_m = np.where(cost_m > thresh, 1e6, cost_m)
         hung_pairs = []
         matched_pred_indices = set()
         if n_gt > 0 and n_pred > 0:
@@ -193,6 +196,7 @@ def evaluate_method_unified(preds_per_case, gts_per_case, aux_short_gts_per_case
                         pm_s = compute_unified_pair_metrics(up_pts, sg_pts)
                         if pm_s is not None:
                             c_s[sgi, upi] = pm_s["mean_shaft_xy"]
+                c_s = np.where(c_s > thresh, 1e6, c_s)
                 rs, cs = linear_sum_assignment(c_s)
                 aux_short_matched = sum(1 for r, c in zip(rs, cs) if c_s[r, c] <= thresh)
 

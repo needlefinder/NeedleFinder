@@ -395,9 +395,9 @@ through thin plastic tubes placed inside the tumor. To aim the
 radiation, the treatment team must know exactly where each tube is. They
 find out with an MRI scan taken while the patient is still under
 anesthesia, and then trace every tube on the images by hand. With 15 to
-30 tubes per patient this takes tens of minutes, and a position error of
-one or two millimeters can change the dose to the tumor or to nearby
-organs by about ten percent.
+30 tubes per patient this takes tens of minutes, and a small tracing
+error can change the planned dose, especially near organs where the dose
+changes quickly with position.
 
 On an MRI scan a tube does not glow. It is a small dark dot, a few
 pixels wide, on each image slice. Blood vessels, air pockets, and the
@@ -405,23 +405,29 @@ edges of muscles are also dark, so a computer can easily confuse them
 with tubes.
 
 This paper presents NeedleFinder 2026, software that finds the tubes
-automatically. It works in three steps. First, a simple filter keeps
-only dark spots that are dark all the way around, the way a tube
-cross-section looks, and discards one-sided edges. Second, a neural
-network looks at the 3D scan and marks the center of each tube on each
-slice. Third, two ``graph'' networks connect the marks from slice to
-slice into 3D curves, pull apart tubes that touch, and then look at the
-whole bundle together to throw out curves that do not fit a real
-implant.
+automatically. It works in three steps. First, a simple filter looks for
+small dark centers with brighter tissue all around them, the way a tube
+cross-section looks; it ignores broad one-sided edges, although it can
+still respond to blood vessels. Second, a neural network looks at the 3D
+scan and marks the center of each tube on each slice. Third, two
+``graph'' networks connect the marks from slice to slice into 3D curves,
+pull apart tubes that touch, and then look at the whole bundle together
+to throw out curves that do not fit a real implant.
 
-We tested it on 54 patients with 1,063 tubes. It found 91 percent of
-them and was right 85 percent of the time when it reported one. Its
-traced positions were, on average, half a millimeter from the expert's,
-which is closer than two experts are to each other. It runs in under
-three seconds on an ordinary computer (about one second on
-standard-resolution scans) and needs no graphics card. In practice, the
-physicist clicks one button, checks the result, and fixes the rare miss,
-instead of tracing everything from scratch.
+We tested it on 54 patients with 1,063 tubes. It found about 91 percent
+of them, and about 85 percent of the tubes it reported matched an expert
+trace. For the matched tubes, the typical sideways difference from the
+expert's line was under half a millimeter (the median, or middle value,
+was 0.46 mm), which is similar to the disagreement between two expert
+teams; the deepest end of each tube was less reliable, with a median
+difference of 2.6 mm and some much larger misses. On average the
+software missed about two tubes per scan and reported about three extra
+tracks that had to be removed. It runs in a few seconds on an ordinary
+computer (larger scans take longer) and needs no graphics card. In
+practice, the physicist clicks one button and then checks the result,
+removes extra tracks, adds missing ones, and adjusts tube ends. How much
+time this saves, and what it does to the treatment plan, has not yet
+been measured.
 
 \section{Introduction}\label{introduction}
 
@@ -529,8 +535,10 @@ useful.
 \item
   \textbf{Recall, precision, F1.} Recall is the fraction of true
   catheters the method found. Precision is the fraction of reported
-  catheters that were real. F1 is their harmonic mean, a single score
-  that penalizes both misses and false alarms.
+  catheters that were real. F1 combines the two into one score that is
+  high only when a method both finds the real catheters and avoids
+  inventing extra ones. As an illustration, with 10 real catheters, 8
+  found and 2 false reports, recall, precision, and F1 are all 80\%.
 \item
   \textbf{Shaft error and tip error.} The distance, in millimeters,
   between the automatic trajectory and the expert's trajectory, measured
@@ -538,12 +546,15 @@ useful.
 \item
   \textbf{Cross-validation, out-of-fold.} The 54 patients were split
   into 5 groups. Each group was tested by a model trained on the other
-  four, so no patient was ever tested by a model that had seen them. All
-  reported results are \emph{out-of-fold} in this sense.
+  four, so no patient's traces were used to train the model that was
+  tested on that patient. All reported results are \emph{out-of-fold} in
+  this sense; the Experimental Setup lists two qualifications to this
+  rule.
 \item
   \textbf{Inter-observer variability.} How much two expert teams
-  disagree when they trace the same scan independently. It is the
-  practical floor for how accurately any method can be measured.
+  disagree when they trace the same scan independently. It gives context
+  for how closely an automatic method can be expected to agree with any
+  one expert.
 \end{itemize}
 
 \subsection{Previous Work}\label{previous-work}
@@ -753,13 +764,14 @@ polynomial.}\label{fig:arch}
 Gating}\label{stage-1-multi-head-3d-u-net-with-implant-region-gating}
 
 Resampling the scan to 1 mm isotropic voxels, as most pipelines do,
-blurs a 0.3 mm in-plane catheter hole by a factor of three and destroys
-its boundary. Working on the native grid instead, a standard
-\(3 \times 3 \times 3\) convolution mixes information over up to ten
-times more distance along \(z\) than in-plane. Stage 1 (NeedleUNet3D,
-Figure \ref{fig:arch}a) therefore operates on the native grid, starts
-with a \(1 \times 3 \times 3\) in-plane residual block, and continues
-with \(3 \times 3 \times 3\) residual blocks with squeeze-and-excitation
+discards the fine in-plane detail that separates a 2 mm catheter void
+from its surroundings when the native pixels are 0.3 to 0.9 mm. Working
+on the native grid instead, a standard \(3 \times 3 \times 3\)
+convolution mixes information over up to ten times more distance along
+\(z\) than in-plane. Stage 1 (NeedleUNet3D, Figure \ref{fig:arch}a)
+therefore operates on the native grid, starts with a
+\(1 \times 3 \times 3\) in-plane residual block, and continues with
+\(3 \times 3 \times 3\) residual blocks with squeeze-and-excitation
 attention (24, 48, 96, and 144 channels). Its input has six channels:
 the normalized intensity, the Stage 0 dark-core response and
 ring-symmetry contrast, the smoothed intensity, and the normalized slice
@@ -817,9 +829,10 @@ direction field, or within \(3.5 + 0.22\,\Delta z\) mm outright. Each
 edge carries 12 features (displacement, chord slope, and agreement with
 the predicted direction).
 
-A single pairwise message cannot see a kink, because a kink involves
-three nodes, although stacked layers accumulate wider context.
-NeedleSliceMPNN is a 4-layer triplet-collinearity message-passing
+Two consecutive links can each look plausible on their own yet form an
+abrupt bend when considered together; the network therefore scores each
+link using information from the links entering and leaving its two
+nodes. NeedleSliceMPNN is a 4-layer triplet-collinearity message-passing
 network (hidden size 64). Each layer updates an edge from its own
 features, the embeddings of its two nodes, and attention-aggregated
 messages from the edges entering and leaving each of those nodes, so
@@ -848,31 +861,31 @@ template or corridor, run roughly parallel to the obturator axis, keep
 at least 2 mm apart, and their tips form a coherent surface over the
 target.
 
-Each candidate trajectory becomes a 26-dimensional token (length,
-linear-fit residual, 75th-percentile \(S_0\) and \(P_{\text{mask}}\),
-\(P_{\text{peak}}\), \(P_{\text{obt}}\), the three message-passing
-probabilities, agreement between models, the deviation of its entry
-position and slope from the bundle median, and the contrast gradient at
-its cranial end), together with 8 pairwise features between trajectories
-(minimum 3D clearance, mean in-plane separation, angular divergence,
-\(z\)-overlap, and duplicate indicators). The
-TipAwareBundleGraphTransformer applies two edge-biased attention layers
-over neighboring trajectories and one global self-attention layer over
-the whole bundle. It outputs three logits (a recall-oriented score, a
-strict one-to-one score, and a long-shaft one-to-one score), combined
-with weights 0.45 and 0.55 into a confidence \(p_m\), and one cranial
-tip offset \(\Delta z_m\) that trims or extends the deep end. An
-implant-region gate inspired by the IRGM of Xiao \emph{et al.} {[}74{]}
-is applied at this point: whereas they train a separate region branch,
-ours is geometric. The implant center is the median in-plane position of
-the candidates with confidence of at least 55\%, the implant radius is
-the 98th percentile of their distances from that center plus 16 mm, and
-a candidate outside this radius is kept only if its confidence exceeds
-the threshold by more than 22 points. Trajectories with \(p_m \ge \tau\)
-(default \(\tau = 50\%\)) are kept, their cranial tips refined with the
-predicted offset and the local contrast drop-off, and each is smoothed
-with a cubic polynomial in \(z\) (Poly3) to remove the voxel staircase
-across thick slices.
+Each candidate trajectory is summarized by a list of 26 measurements,
+its \emph{token} (length, linear-fit residual, 75th-percentile \(S_0\)
+and \(P_{\text{mask}}\), \(P_{\text{peak}}\), \(P_{\text{obt}}\), the
+three message-passing probabilities, agreement between models, the
+deviation of its entry position and slope from the bundle median, and
+the contrast gradient at its cranial end), together with 8 pairwise
+features between trajectories (minimum 3D clearance, mean in-plane
+separation, angular divergence, \(z\)-overlap, and duplicate
+indicators). The TipAwareBundleGraphTransformer applies two edge-biased
+attention layers over neighboring trajectories and one global
+self-attention layer over the whole bundle. It outputs three logits (a
+recall-oriented score, a strict one-to-one score, and a long-shaft
+one-to-one score), combined with weights 0.45 and 0.55 into a confidence
+\(p_m\), and one cranial tip offset \(\Delta z_m\) that trims or extends
+the deep end. An implant-region gate inspired by the IRGM of Xiao
+\emph{et al.} {[}74{]} is applied at this point: whereas they train a
+separate region branch, ours is geometric. The implant center is the
+median in-plane position of the candidates with confidence of at least
+55\%, the implant radius is the 98th percentile of their distances from
+that center plus 16 mm, and a candidate outside this radius is kept only
+if its confidence exceeds the threshold by more than 22 points.
+Trajectories with \(p_m \ge \tau\) (default \(\tau = 50\%\)) are kept,
+their cranial tips refined with the predicted offset and the local
+contrast drop-off, and each is smoothed with a cubic curve fit in \(z\)
+(Poly3) to remove the voxel staircase across thick slices.
 
 Annotated clinical scans are scarce, and rare configurations such as
 crossing catheters are rarer still. We therefore built
@@ -882,15 +895,16 @@ Each of the 300 bundles contains 12 to 23 true long shafts arranged
 around a common axis, of which 30\% receive an adhering twin 1.65 to
 2.75 mm away, 2 to 8 short obturator tracks, 3 to 11 split duplicates of
 true shafts, and 4 to 14 vessel-like false tracks, with simulated
-tip-tracking noise. SynthBrachy3T does not simulate MRI voxels; it
-supplies the bundle-level reasoning task with far more adhesion and tip
-configurations than any clinical dataset contains. Stage 2B is
-pre-trained on these bundles, then fine-tuned on the clinical bundles of
-the fold's training patients together with five synthetically augmented
-copies of each, and its scores are blended with those of a transformer
-trained on clinical bundles only (weight 0.60 on the synthetic model).
-For the long-shaft rows the confidence threshold is lowered to 42.5\%
-and the long-shaft logit is weighted more heavily.
+tip-tracking noise. SynthBrachy3T does not simulate MRI images; it
+generates lists of candidate-curve measurements, so it can only teach
+the bundle-level scoring stage, and it supplies that stage with more
+adhesion and tip configurations than our clinical training set contains.
+Stage 2B is pre-trained on these bundles, then fine-tuned on the
+clinical bundles of the fold's training patients together with five
+synthetically augmented copies of each, and its scores are blended with
+those of a transformer trained on clinical bundles only (weight 0.60 on
+the synthetic model). For the long-shaft rows the confidence threshold
+is lowered to 42.5\% and the long-shaft logit is weighted more heavily.
 
 \FloatBarrier
 
@@ -933,8 +947,14 @@ approaches on the same splits:
 \subsection{Metrics and Statistics}\label{metrics-and-statistics}
 
 Predicted and reference trajectories are matched one-to-one with the
-Hungarian algorithm (SciPy \texttt{linear\_sum\_assignment}) using a 3.5
-mm in-plane cutoff over the slices they share. We report:
+Hungarian algorithm (SciPy \texttt{linear\_sum\_assignment}): pairs
+whose mean in-plane distance over the shared slices exceeds 3.5 mm are
+forbidden before solving, so the assignment first maximizes the number
+of valid pairs and then minimizes their distance. Error distributions
+are computed over matched pairs; a patient with no matched pair
+contributes fixed penalty values (3.5 mm shaft, 10 mm curve, 20 mm tip
+and HD95) to the per-patient arrays used in the statistical tests. We
+report:
 
 \begin{enumerate}
 \def\labelenumi{\arabic{enumi}.}
@@ -1023,11 +1043,12 @@ distribution of per-catheter errors.
 and (b) 3D tip error. Each raincloud shows the density (top), the median
 and interquartile range (white box), the 5th to 95th percentile (capped
 bar), the mean (white diamond), and individual catheters (points).
-Numbers at the right give median / 95th percentile in mm. In (a) the
-grey band and dashed line mark the human inter-observer interquartile
-range (0.34 to 0.85 mm) and 95th percentile (2.05 mm); in (b) the dashed
-line marks the human inter-observer median tip discrepancy (3.20
-mm).}\label{fig:raincloud}
+Numbers at the right give median / 95th percentile in mm, computed on
+the full distribution, and the number of catheters beyond the plotted
+range. In (a) the grey band and dashed line mark the human
+inter-observer interquartile range (0.34 to 0.85 mm) and 95th percentile
+(2.05 mm); in (b) the dashed line marks the human inter-observer median
+tip discrepancy (3.20 mm).}\label{fig:raincloud}
 \end{figure}
 
 Four findings stand out.
@@ -1036,17 +1057,17 @@ Four findings stand out.
 baseline finds almost every catheter (90.4\% recall) and is accurate
 where it matches (0.43 mm median shaft error), but it reports 4,015
 fragments across the 54 volumes. Its precision is 23.9\% and its F1
-37.9\%. Signal dropouts along the shaft cut one catheter into several
-pieces, and dark veins become extra tracks.
+37.9\%. In this implementation, signal dropouts along the shaft cut one
+catheter into several pieces, and dark veins become extra tracks.
 
 \textbf{Structure-aware tracking needs a clean mask.} On the reference
 masks (Table \ref{tbl:main}, Part B, last row), the Xiao 2026 tracker
 achieves 97.4\% recall, 89.7\% F1, and 0.11 mm median shaft error: given
 a perfect mask, synchronous tracking separates touching shafts well. On
 our out-of-fold masks its F1 drops to 53.7\% (precision 38.9\%), because
-vessels inside the implant region still become tracks and nothing
-rejects them. Tracking alone does improve on skeletonization, by 15.9 F1
-points on the whole cohort.
+vessels inside the implant region still become tracks and the adapted
+pipeline has no step that rejects them. Tracking alone does improve on
+skeletonization, by 15.9 F1 points on the whole cohort.
 
 \textbf{NeedleFinder 2026 has the highest F1 of the evaluated
 configurations.} At the pre-specified threshold \(\tau = 50\%\) it
@@ -1059,15 +1080,18 @@ and 50.3 points over ResUNet + clDice (both \(p < 10^{-9}\)). Median tip
 error falls to 2.61 mm, from 3.35 mm (PMB 2019), 6.02 mm (Xiao 2026),
 and 2.78 mm (our pipeline without synthetic pre-training;
 \(p = 5 \times 10^{-4}\)). Median 3D curve distance is 1.03 mm and
-median \(\text{HD}_{95}\) is 3.44 mm. The tip distribution has a heavy
-tail that the median hides: 20\% of matched catheters have a tip error
-above 10 mm and the 95th percentile is 36 mm, almost always where a
-track stops early or runs on past the true end along the catheter axis.
-Across the cohort the method misses 93 reference trajectories and
-reports 167 unmatched ones, about 1.7 misses and 3.1 extra tracks per
-patient. The median shaft error is 0.46 mm on all matched catheters and
-0.45 mm on the 759 long shafts, on which recall is 92.5\% at the default
-threshold and 96.4\% at \(\tau = 25\%\).
+median \(\text{HD}_{95}\) is 3.44 mm. These three quantities measure
+different things: a track can follow the middle of a catheter closely
+(small shaft error) yet stop short of its end (large tip and curve
+distance). The tip distribution has a heavy tail that the median hides:
+20\% of matched catheters have a tip error above 10 mm and the 95th
+percentile is 36 mm, almost always where a track stops early or runs on
+past the true end along the catheter axis. Across the cohort the method
+misses 93 reference trajectories and reports 167 unmatched ones, about
+1.7 misses and 3.1 extra tracks per patient. The median shaft error is
+0.46 mm on all matched catheters and 0.45 mm on the 759 long shafts, on
+which recall is 92.5\% at the default threshold and 96.4\% at
+\(\tau = 25\%\).
 
 \textbf{The advantage holds when catheters touch.} On the 23
 severe-adhesion patients (571 catheters), NeedleFinder 2026 reaches
@@ -1174,8 +1198,8 @@ same order as the differences between manual planning-system
 reconstruction and electromagnetic tracking measured in gynecologic
 implants (0.41 mm for shafts, 0.76 mm for tips) {[}86{]}.
 
-\subsection{False Alarms on Scans Without Catheters, and
-Speed}\label{false-alarms-on-scans-without-catheters-and-speed}
+\subsection{False Tracks on Scans Without Catheters, and
+Speed}\label{false-tracks-on-scans-without-catheters-and-speed}
 
 \input{tables/tab4_specificity.tex}
 
@@ -1280,12 +1304,12 @@ millimeter of along-axis displacement changes the target D90 by 1 to
 2.5\% {[}88{]}. Thin-slice isotropic T2W sequences (SPACE or VISTA, 1 mm
 or less), zero-echo-time sequences that show empty catheters with
 sub-millimeter agreement to CT {[}14,17{]}, or combined T1W and T2W
-input should bring tip error below 1.5 mm. Second, all clinical scans
-come from one institution and one 3T scanner; geometric distortion of
-plastic applicators at 3T is small (0.2 to 0.75 mm) {[}89{]}, so
-accuracy is dominated by catheter identification rather than by the
-scanner. The 48 external MSD scans show that the method does not
-hallucinate on other scanners, but a prospective multi-center study
+input are the natural next experiments for the tips. Second, all
+clinical scans come from one institution and one 3T scanner; geometric
+distortion of plastic applicators at 3T is small (0.2 to 0.75 mm)
+{[}89{]}, so accuracy is dominated by catheter identification rather
+than by the scanner. The 48 external MSD scans show that the method does
+not hallucinate on other scanners, but a prospective multi-center study
 across 1.5T, 3T, and low-field systems {[}90{]} from several vendors is
 still needed to establish generalization. Third, the reference traces
 come from one annotation convention, so agreement with them is not the

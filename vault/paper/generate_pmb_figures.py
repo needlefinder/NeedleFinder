@@ -493,7 +493,7 @@ def draw_raincloud_panel(ax, dist_list, colors, labels, xlim, show_ylabels, huma
         ax.scatter(sub, y_base + jit, s=1.8, color=col, alpha=0.25, edgecolors="none", zorder=2)
 
         # 5. Right-aligned median / P95 label
-        stat_txt = f"{med:.2f} / {p95:.2f}"
+        stat_txt = f"{med:.2f} / {p95:.2f}" + (f"  (+{n_over} off-scale)" if n_over > 0 else "")
         ax.text(xlim[1] * 0.985, y_base + 0.24, stat_txt, ha="right", va="center",
                 fontsize=6.0, color="#222222",
                 bbox=dict(boxstyle="round,pad=0.12", fc="white", ec="none", alpha=0.78), zorder=7)

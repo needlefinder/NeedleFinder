@@ -421,7 +421,7 @@ class TexTableError(RuntimeError):
 
 # Macros the converter understands, by where they may appear.
 STRUCTURAL_MACROS = {
-    "begin", "end", "centering", "caption", "label", "footnotesize", "small",
+    "begin", "end", "centering", "caption", "label", "footnotesize", "scriptsize", "small",
     "setlength", "tabcolsep", "toprule", "midrule", "bottomrule", "cmidrule",
     "addlinespace", "multicolumn", "oursrow", "ctrow", "rowcolor", "item",
 }
@@ -646,7 +646,7 @@ def parse_tex_table(path, refmap):
     notes = []
     mn = re.search(r"\\begin\{tablenotes\}(?:\[[^\]]*\])?(.*?)\\end\{tablenotes\}", raw, re.S)
     if mn:
-        txt = re.sub(r"^\s*\\footnotesize", "", mn.group(1).strip())
+        txt = re.sub(r"^\s*\\(?:footnotesize|scriptsize)", "", mn.group(1).strip())
         for item in re.split(r"\\item(?![A-Za-z])", txt)[1:]:
             item = item.strip()
             mark = None
