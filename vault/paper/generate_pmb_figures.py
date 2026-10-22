@@ -36,7 +36,7 @@ os.makedirs(DATA_DIR, exist_ok=True)
 
 
 def load_all_sources():
-    with open(os.path.join(SOURCES_DIR, "2026-10-22-unified-apples-to-apples-benchmark.json")) as f:
+    with open(os.path.join(SOURCES_DIR, "2026-10-23-unified-rerun-benchmark.json")) as f:
         bench = json.load(f)
     with open(os.path.join(SOURCES_DIR, "2026-10-22-interobserver-543-benchmark.json")) as f:
         inter = json.load(f)
@@ -528,7 +528,7 @@ def make_fig3_raincloud_distributions(bench, inter):
         ("Baseline 1: PMB 2019 Isotropic 1mm³ 3D U-Net + DBSCAN/Skeleton", "PMB 2019 3D U-Net", C["b_pmb19"]),
     ]
     # Human reference statistics from the single-loader Table 3 export (same scenes, matching rule and metrics as the NF rows)
-    with open(os.path.join(SOURCES_DIR, "2026-10-22-table3-observers-and-nf.json")) as f:
+    with open(os.path.join(SOURCES_DIR, "2026-10-23-table3-observers-and-nf-rerun.json")) as f:
         t3 = json.load(f)["rows"]["CY_vs_LBAMe_ref_3.5mm"]
     h_sh = t3["shaft_mm"]
     h_tip = t3["tip_3d_mm"]
@@ -587,9 +587,7 @@ def make_fig4_pareto_and_fewshot(bench):
 
     # Also plot NeedleFinder 2026 + IRGM + Poly3 (tau=50%, no SynthBrachy3T)
     # IRGM + Poly3 operating point: reproducible recomputation from the current cached bundles
-    with open(os.path.join(SOURCES_DIR, "2026-10-22-irgm-poly3-rows-recheck.json")) as f:
-        _rc = json.load(f)["rows"]["irgm_whole_cohort"]
-    up = {"hungarian_1to1_recall_pct": _rc["rec"], "precision_1to1_pct": _rc["prec"], "f1_1to1_pct": _rc["f1"]}
+    up = c_all["Unified NeedleFinder 2026 + IRGM + SyncTrack + Poly3 (tau=50%)"]
     ax1.scatter([up["hungarian_1to1_recall_pct"]], [up["precision_1to1_pct"]], marker="o", s=34,
                 facecolor=C["nf"], edgecolor="#000000", linewidth=0.7, alpha=0.75, zorder=6)
 
@@ -604,24 +602,20 @@ def make_fig4_pareto_and_fewshot(bench):
             ax1.annotate(txt, xy=(rx, py), xytext=(dx, dy), textcoords="offset points",
                          fontsize=5.8, color=C["nf"])
 
-    ax1.annotate("NF 2026 + SynthBrachy3T (88.2% F1)",
+    ax1.annotate(f"NF 2026 + SynthBrachy3T ({c_all['NeedleFinder 2026 + SynthBrachy3T + Tip-Aware (tau=50%)']['f1_1to1_pct']:.1f}% F1)",
                  xy=(rs_nf[idx50], ps_nf[idx50]),
                  xytext=(-18, -3), textcoords="offset points", ha="right",
                  fontsize=5.8, fontweight="bold", color=C["nf"],
                  arrowprops=dict(arrowstyle="->", color=C["nf"], lw=0.6))
 
-    ax1.annotate(f"NF 2026 + IRGM ({up['f1_1to1_pct']:.1f}% F1)",
-                 xy=(up["hungarian_1to1_recall_pct"], up["precision_1to1_pct"]),
-                 xytext=(-18, -3), textcoords="offset points", ha="right",
-                 fontsize=5.6, color="#555555",
-                 arrowprops=dict(arrowstyle="->", color="#777777", lw=0.5))
+    # NF 2026 + IRGM + Poly3 marker is drawn without a text label (named in the caption) because it coincides with the headline point
 
     # Ablation & Baseline points
     other_pts = [
         ("Stage 0/1A: Pure Physics 3D CV + HybridNeedleNet", "Physics + HybridNet", C["st0"], "s", (-10, -10)),
         ("Stage 1B: Multi-Head NeedleUNet3D + Tangent Tube Tracking", "NeedleUNet3D + tubes", C["st1"], "^", (-48, 5)),
         ("Stage 1B: Hybrid AxialTransUNet3D + Tangent Tube Tracking", "AxialTransUNet3D", C["st1"], "v", (-48, -9)),
-        ("Stage 2A: Pure NeedleSliceMPNN (4-Layer Triplet GraphNet)", "Triplet MPNN only", C["st2"], "D", (-54, 1)),
+        ("Stage 2A: Pure NeedleSliceMPNN (4-Layer Triplet GraphNet)", "Triplet MPNN only", C["st2"], "D", (-98, 13)),
         ("Baseline 1: PMB 2019 Isotropic 1mm³ 3D U-Net + DBSCAN/Skeleton", "PMB 2019 3D U-Net", C["b_pmb19"], "o", (-54, -7)),
     ]
     for key, lbl, col, mk, (dx, dy) in other_pts:
@@ -634,7 +628,8 @@ def make_fig4_pareto_and_fewshot(bench):
                      arrowprops=dict(arrowstyle="-", color="#999999", lw=0.4) if abs(dx) > 25 else None)
 
     # Overflow annotation for low-precision mask-only baselines (clDice 23.9% Prec, Xiao 2026 38.9% Prec)
-    ax1.text(74.8, 69.0, "▾ Mask-only trackers (<55% Prec.):\n   Xiao 2026: 86.9% R, 38.9% P\n   clDice+Skel: 90.4% R, 23.9% P",
+    _bx = c_all["Baseline 3: Xiao 2026 IRGM + 3D Hough + Sync Inward Tracking + Poly3"]; _bc = c_all["Baseline 2: Native-Resolution 3D ResUNet + clDice + Skeleton (Mask-Only)"]
+    ax1.text(74.8, 69.0, f"▾ Mask-only trackers (<55% Prec.):\n   Xiao 2026: {_bx['hungarian_1to1_recall_pct']:.1f}% R, {_bx['precision_1to1_pct']:.1f}% P\n   clDice+Skel: {_bc['hungarian_1to1_recall_pct']:.1f}% R, {_bc['precision_1to1_pct']:.1f}% P",
              fontsize=5.5, color="#4D4D4D", bbox=dict(boxstyle="round,pad=0.25", fc="#F7F7F7", ec="#CCCCCC", lw=0.5))
 
     ax1.set_xlim(74, 96.5)
@@ -670,7 +665,7 @@ def make_fig4_pareto_and_fewshot(bench):
 
 
     # Direct labels on curves
-    ax2.text(x_pos[-1] - 0.05, f1_syn_all[-1] + 2.6, "NF 2026 + SynthBrachy3T (88.2%)", fontsize=5.6, fontweight="bold", color=C["nf"], ha="right")
+    ax2.text(x_pos[-1] - 0.05, f1_syn_all[-1] + 2.6, f"NF 2026 + SynthBrachy3T ({f1_syn_all[-1]:.1f}%)", fontsize=5.6, fontweight="bold", color=C["nf"], ha="right")
 
     # Highlight k=1 shot Sim-to-Real jump
     ax2.annotate(f"1-shot: {f1_syn_all[0]:.1f}%",

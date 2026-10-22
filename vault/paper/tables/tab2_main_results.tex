@@ -18,32 +18,32 @@ Method & {Rec.} & {Prec.} & {F1} & {Mean} & {Median} & {P95} & {Median} & {CPU}\
 \multicolumn{9}{@{}l}{\textit{Part A — End-to-end comparison}}\\
 \addlinespace[1pt]
 \multicolumn{9}{@{}l}{\quad\textit{Whole cohort (54 patients, 1\,063 catheters)}}\\
-\quad PMB 2019 3D U-Net\tnote{a} & 86.9 & 76.4 & 81.3 & \best{0.52} & \best{0.42} & \best{1.11} & 3.35 & 14.80\\
-\quad ResUNet + clDice + Skel.\tnote{b} & 90.4 & 23.9 & 37.9 & \second{0.56} & \second{0.43} & 1.38 & 3.08 & 3.85\\
-\quad Xiao 2026 Sync-Track\tnote{c} & 86.9 & 38.9 & 53.7 & 0.66 & 0.48 & 1.83 & 6.02 & 3.42\\
-\oursrow \quad \NF{} + IRGM + Poly3\tnote{d} & \second{90.8} & \second{80.4} & \second{85.3} & 0.57 & 0.46 & \second{1.27} & \second{2.78} & \best{2.68}\\
-\oursrow \quad \NF{} + SynthBrachy3T + Tip\tnote{e} & \best{91.3} & \best{85.3} & \best{88.2} & 0.58 & 0.46 & 1.31 & \best{2.61} & \second{2.74}\\
+\quad PMB 2019 3D U-Net\tnote{a} & 88.8 & 78.0 & 83.1 & \best{0.52} & \best{0.42} & \best{1.11} & 3.39 & 14.80\\
+\quad ResUNet + clDice + Skel.\tnote{b} & \best{92.4} & 24.5 & 38.7 & \second{0.55} & \second{0.43} & 1.36 & 3.10 & 3.85\\
+\quad Xiao 2026 Sync-Track\tnote{c} & 87.7 & 39.2 & 54.2 & 0.66 & 0.47 & 1.82 & 6.04 & 3.42\\
+\oursrow \quad \NF{} + IRGM + Poly3\tnote{d} & \second{90.3} & \second{84.9} & \second{87.5} & 0.56 & 0.46 & \second{1.24} & \second{2.91} & \best{2.68}\\
+\oursrow \quad \NF{} + SynthBrachy3T + Tip\tnote{e} & 89.8 & \best{85.6} & \best{87.7} & 0.57 & 0.46 & 1.27 & \best{2.77} & \second{2.74}\\
 \addlinespace[2pt]
 \multicolumn{9}{@{}l}{\quad\textit{Severe catheter-adhesion subgroup (23 patients, 571 catheters)}\tnote{f}}\\
-\quad PMB 2019 3D U-Net & \second{94.2} & 79.0 & 85.9 & \second{0.54} & \second{0.43} & \second{1.22} & 3.68 & {--}\\
-\quad ResUNet + clDice + Skel. & \best{94.9} & 32.0 & 47.8 & \best{0.52} & \best{0.42} & \best{1.19} & 3.37 & {--}\\
-\quad Xiao 2026 Sync-Track & 90.5 & 48.5 & 63.1 & 0.64 & 0.47 & 1.84 & 7.25 & {--}\\
-\oursrow \quad \NF{} + IRGM + Poly3 & 92.5 & \second{81.2} & \second{86.5} & 0.55 & 0.45 & 1.24 & \second{3.25} & {--}\\
-\oursrow \quad \NF{} + SynthBrachy3T + Tip & 93.4 & \best{86.3} & \best{89.7} & 0.56 & 0.45 & 1.27 & \best{2.98} & {--}\\
+\quad PMB 2019 3D U-Net & \second{94.6} & 79.3 & 86.3 & \second{0.54} & \second{0.43} & 1.22 & 3.70 & {--}\\
+\quad ResUNet + clDice + Skel. & \best{96.0} & 32.3 & 48.4 & \best{0.52} & \best{0.42} & \second{1.18} & 3.37 & {--}\\
+\quad Xiao 2026 Sync-Track & 91.6 & 49.0 & 63.9 & 0.64 & 0.47 & 1.83 & 7.52 & {--}\\
+\oursrow \quad \NF{} + IRGM + Poly3 & 94.2 & \second{84.7} & \second{89.2} & 0.54 & 0.45 & \best{1.18} & \second{3.36} & {--}\\
+\oursrow \quad \NF{} + SynthBrachy3T + Tip & 94.2 & \best{86.5} & \best{90.2} & 0.55 & 0.45 & 1.23 & \best{3.10} & {--}\\
 \midrule
 \multicolumn{9}{@{}l}{\textit{Part B — Controlled ablation \& oracle-mask benchmark (whole cohort, identical folds)}}\\
 \addlinespace[1pt]
-\quad Physics + HybridNeedleNet & 76.8 & 64.0 & 69.8 & 0.62 & 0.48 & 1.54 & 3.04 & \second{1.77}\\
-\quad NeedleUNet3D + tubes & \second{92.8} & 62.6 & 74.7 & 0.58 & 0.47 & 1.31 & 2.91 & \best{1.62}\\
-\quad AxialTransUNet3D + tubes & 92.5 & 60.3 & 73.0 & 0.58 & 0.47 & 1.30 & 2.98 & 1.84\\
-\quad Triplet MPNN only & 88.3 & 77.7 & 82.7 & \best{0.53} & \best{0.41} & \second{1.29} & 3.31 & 1.95\\
-\oursrow \quad \NF{} ($\tau=50\,\%$) & 88.0 & 81.8 & 84.8 & \second{0.57} & \second{0.46} & 1.31 & 2.72 & 2.65\\
-\oursrow \quad \NF{} + IRGM + Poly3 ($\tau=50\,\%$) & 90.8 & 80.4 & 85.3 & \second{0.57} & \second{0.46} & \second{1.27} & 2.78 & 2.68\\
-\oursrow \quad \NF{} + SynthBrachy3T ($\tau=25\,\%$) & \best{94.7} & 76.8 & 84.8 & 0.58 & 0.47 & 1.32 & 2.69 & 2.74\\
-\oursrow \quad \NF{} + SynthBrachy3T ($\tau=50\,\%$) & 91.3 & \second{85.3} & \second{88.2} & 0.58 & \second{0.46} & 1.31 & \best{2.61} & 2.74\\
-\oursrow \quad \NF{} + SynthBrachy3T ($\tau=55\,\%$) & 90.5 & \best{86.4} & \best{88.4} & \second{0.57} & \second{0.46} & \best{1.28} & \best{2.61} & 2.74\\
+\quad Physics + HybridNeedleNet & 82.9 & 69.2 & 75.4 & 0.60 & 0.47 & 1.42 & 3.06 & \second{1.77}\\
+\quad NeedleUNet3D + tubes & \second{94.2} & 63.3 & 75.7 & 0.58 & 0.47 & 1.30 & 2.92 & \best{1.62}\\
+\quad AxialTransUNet3D + tubes & \best{94.4} & 61.5 & 74.5 & 0.57 & 0.47 & 1.28 & 2.98 & 1.84\\
+\quad Triplet MPNN only & 91.2 & 80.3 & 85.4 & \best{0.52} & \best{0.40} & 1.29 & 3.35 & 1.95\\
+\oursrow \quad \NF{} ($\tau=50\,\%$) & 88.9 & 84.6 & 86.7 & 0.57 & 0.46 & 1.27 & 2.81 & 2.65\\
+\oursrow \quad \NF{} + IRGM + Poly3 ($\tau=50\,\%$) & 90.3 & 84.9 & 87.5 & \second{0.56} & 0.46 & \best{1.24} & 2.91 & 2.68\\
+\oursrow \quad \NF{} + SynthBrachy3T ($\tau=25\,\%$) & 93.9 & 78.3 & 85.4 & 0.57 & 0.47 & \second{1.26} & 2.81 & 2.74\\
+\oursrow \quad \NF{} + SynthBrachy3T ($\tau=50\,\%$) & 89.8 & \second{85.6} & \second{87.7} & 0.57 & \second{0.46} & 1.27 & \best{2.77} & 2.74\\
+\oursrow \quad \NF{} + SynthBrachy3T ($\tau=55\,\%$) & 89.5 & \best{86.5} & \best{88.0} & 0.57 & 0.46 & 1.27 & \second{2.77} & 2.74\\
 \addlinespace[2pt]
-\quad \textit{Xiao 2026 on GT masks}\tnote{g} & {97.4\rep} & {83.1\rep} & {89.7\rep} & {0.21\rep} & {0.11\rep} & {0.86\rep} & {1.69\rep} & {0.12\rep}\\
+\quad \textit{Xiao 2026 on GT masks}\tnote{g} & {97.7\rep} & {83.5\rep} & {90.0\rep} & {0.20\rep} & {0.11\rep} & {0.83\rep} & {1.68\rep} & {0.12\rep}\\
 \bottomrule
 \end{tabular}
 \begin{tablenotes}[flushleft]\footnotesize
@@ -51,10 +51,10 @@ Method & {Rec.} & {Prec.} & {F1} & {Mean} & {Median} & {P95} & {Median} & {CPU}\
 \item[a] Our adaptation of Zaffino \emph{et al.}\ (2019): $1\times1\times1$\,mm$^3$ isotropic 3D U-Net, retrained on our 5-fold splits, followed by slice-peak extraction, nearest-neighbour collinear chaining in the spirit of their DBSCAN clustering, and polynomial fitting.
 \item[b] Native-resolution 3D ResUNet trained with Dice + focal + soft-skeleton clDice loss (2021), followed by distance-transform ridge extraction on each slice and chaining across slices (our adaptation of mask skeletonization).
 \item[c] Our adaptation of Xiao \emph{et al.}\ (2026): geometric implant-region gate, connected-component and distance-transform candidates with local PCA direction initialisation (in place of their direction-constrained 3D Hough transform), synchronous cost-matrix inward tracking and 3rd-order polynomial fitting, evaluated on 5-fold OOF masks; the authors' CT model was not run on MRI.
-\item[d] \NF{} with the geometric implant-region gate, adhesion-aware duplicate merging, and 3rd-order polynomial regularization ($p = 3.97\times10^{-10}$ vs.\ Xiao 2026 on F1; the variant without gate and Poly3 differs from PMB 2019 at $p = 0.0085$).
-\item[e] \NF{} with Stage 2B pre-trained on \texttt{SynthBrachy3T} synthetic bundles, fine-tuned on clinical plus synthetically augmented bundles, and cranial tip refinement ($p = 6.42\times10^{-5}$ vs.\ \NF{} + IRGM + Poly3; $p = 1.15\times10^{-5}$ vs.\ PMB 2019; $p = 2.28\times10^{-10}$ vs.\ Xiao 2026 on F1; $p = 4.96\times10^{-4}$ vs.\ \NF{} + IRGM + Poly3 and $p = 1.06\times10^{-5}$ vs.\ PMB 2019 on \Etip{}).
+\item[d] \NF{} with the geometric implant-region gate, adhesion-aware duplicate merging, and 3rd-order polynomial regularization ($p = 4.2\times10^{-10}$ vs.\ Xiao 2026 on F1).
+\item[e] \NF{} with Stage 2B pre-trained on \texttt{SynthBrachy3T} synthetic bundles, fine-tuned on clinical plus synthetically augmented bundles, and cranial tip refinement (F1: $p = 2.3\times10^{-4}$ vs.\ PMB 2019, $p = 8.5\times10^{-10}$ vs.\ clDice, $p = 3.0\times10^{-10}$ vs.\ Xiao 2026, $p = 0.11$ vs.\ \NF{} + IRGM + Poly3; \Etip{}: $p = 2.9\times10^{-3}$ vs.\ \NF{} + IRGM + Poly3, $p = 1.6\times10^{-5}$ vs.\ PMB 2019).
 \item[f] The 23/54 patients in which $\ge 4$ long or $\ge 6$ total catheters pass within $\le 3.0$\,mm of another catheter on shared axial slices (571 catheters evaluated, 191 of them adhering).
-\item All \NF{} rows are decoded from the same cached out-of-fold bundles (\texttt{2026-10-22-irgm-poly3-rows-recheck.json}); the IRGM + Poly3 row therefore differs slightly from the earlier summary (86.0\,\% F1) stored in the unified benchmark file. \item[g] Oracle upper-bound check following Xiao \emph{et al.}\ (2026b) Table~2 Part~B (tracker run directly on ground-truth binary masks).
+\item All rows come from one evaluation run on the corrected out-of-fold maps (\texttt{2026-10-23-unified-rerun-benchmark.json}). \item[g] Oracle upper-bound check following Xiao \emph{et al.}\ (2026b) Table~2 Part~B (tracker run directly on ground-truth binary masks).
 \end{tablenotes}
 \end{threeparttable}
 \end{table}

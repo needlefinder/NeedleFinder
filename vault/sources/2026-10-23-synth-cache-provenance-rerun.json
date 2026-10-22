@@ -1,0 +1,11 @@
+{
+ "ensemble_seeds": [
+  100,
+  200,
+  300
+ ],
+ "pretrain_seed": 2026,
+ "n_synthetic_bundles": 300,
+ "finetune_epochs": 45,
+ "augmented_copies": 5
+}
