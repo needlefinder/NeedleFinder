@@ -13,3 +13,9 @@ Unified NeedleFinder 2026 (tau=60%),60,87.02,83.41,85.17,0.570,0.459,2.678
 Baseline 3: Xiao 2026 IRGM + 3D Hough + Sync Inward Tracking + Poly3,,86.92,38.87,53.72,0.659,0.475,6.025
 "Xiao 2026 3D Hough + Sync Inward Tracking + Poly3 (on Ground-Truth Masks, Table 2B)",,97.37,83.13,89.69,0.207,0.106,1.690
 Unified NeedleFinder 2026 + IRGM + SyncTrack + Poly3 (tau=50%),50,89.75,82.45,85.95,0.575,0.460,2.819
+NeedleFinder 2026 + SynthBrachy3T + Tip-Aware (tau=50%),50,91.25,85.31,88.18,0.576,0.463,2.615
+NeedleFinder 2026 + SynthBrachy3T + Tip-Aware (tau=25%),25,94.73,76.81,84.84,0.579,0.467,2.694
+NeedleFinder 2026 + SynthBrachy3T + Tip-Aware (tau=35%),35,93.70,79.05,85.75,0.570,0.464,2.646
+NeedleFinder 2026 + SynthBrachy3T + Tip-Aware (tau=45%),45,92.47,83.80,87.92,0.576,0.464,2.614
+NeedleFinder 2026 + SynthBrachy3T + Tip-Aware (tau=55%),55,90.50,86.36,88.38,0.572,0.460,2.606
+NeedleFinder 2026 + SynthBrachy3T + Tip-Aware (tau=60%),60,88.52,86.73,87.62,0.566,0.459,2.604

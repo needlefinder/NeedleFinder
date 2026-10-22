@@ -5,7 +5,7 @@
 Shaded grey rows denote CT-based studies (where metallic markers or air lumens provide high Hounsfield contrast); unshaded rows denote clinical T2W MRI studies; vermillion-tinted rows denote \NF{}.}
 \label{tbl:literature}
 \footnotesize
-\setlength{\tabcolsep}{3.2pt}
+\setlength{\tabcolsep}{2.4pt}
 \begin{tabular}{@{}L L L R R L R R R@{}}
 \toprule
 Study & Modality & Site & {Pts} & {Cath.} & {Rec.\ / Prec.\ (\%)} & {\Eshaft{} (mm)} & {\Etip{} (mm)} & {Time (s)}\\
@@ -24,14 +24,14 @@ Xie \emph{et al.}\ 2023 & 3T MRI & GYN IC/IS & 45 & 540 & $95.2\rep$ / {--} & {0
 Wang \emph{et al.}\ 2024 & 3T MRI & GYN IC/IS & 38 & 490 & $94.6\rep$ / $93.8\rep$ & {0.79\rep} & {1.85\rep} & {15.00\rep}\\
 Kostoulas \emph{et al.}\ 2025 & 1.5T MRI & Prostate & 19 & 310 & $93.5\rep$ / $94.1\rep$ & {0.72\rep} & {1.62\rep} & {45.00\rep}\\
 \midrule
-\oursrow \NF{} (1\,063 cath.) & 3T MRI & GYN IC/IS & 54 & 1063 & 92.8 / 83.6\tnote{a} & 0.53\tnote{b} & 3.45\tnote{b} & \best{0.35}\\
-\oursrow \NF{} (759 long) & 3T MRI & GYN IC/IS & 54 & 759 & 95.3 / 84.1 & \best{0.43}\tnote{b} & \best{2.72}\tnote{b} & \best{0.35}\\
+\oursrow \NF{} (1\,063 cath.) & 3T MRI & GYN IC/IS & 54 & 1063 & 94.7 / 86.4\tnote{a} & 0.45\tnote{b} & 2.61\tnote{b} & \best{0.35}\\
+\oursrow \NF{} (759 long) & 3T MRI & GYN IC/IS & 54 & 759 & \best{96.4} / 86.4 & \best{0.45}\tnote{b} & \best{2.61}\tnote{b} & \best{0.35}\\
 \bottomrule
 \end{tabular}
 \begin{tablenotes}[flushleft]\footnotesize
 \item $\rep$ Reported values from original publications on private institutional cohorts; not directly comparable across modalities or matching criteria. Table~\ref{tbl:main} reports head-to-head re-implementations on identical 5-fold BWH splits.
-\item[a] Strict 1-to-1 Hungarian recall at $\tau=25\,\%$ ($92.8\,\%$; closest-match recall $95.6\,\%$) and precision at $\tau=60\,\%$ ($83.6\,\%$).
-\item[b] Median shaft and 3D tip errors across matched catheters ($0.61$\,s on 8-core CPU; $0.35$\,s on single GPU).
+\item[a] Strict 1-to-1 Hungarian recall at $\tau=25\,\%$ ($94.7\,\%$ all; $96.4\,\%$ long) and precision at $\tau=55\,\%$ ($86.4\,\%$; $88.4\,\%$ F1).
+\item[b] Median shaft and 3D tip errors across matched catheters ($0.64$\,s on 8-core CPU; $0.35$\,s on single GPU).
 \end{tablenotes}
 \end{threeparttable}
 \end{table}

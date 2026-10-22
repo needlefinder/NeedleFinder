@@ -488,8 +488,8 @@ def make_fig3_raincloud_distributions(bench, inter):
     adh_indices = set(bench["catheter_adhesion_subgroup_analysis"]["adhesion_case_indices"])
 
     methods_cfg = [
-        ("Unified NeedleFinder 2026 + IRGM + SyncTrack + Poly3 (tau=50%)", "NeedleFinder 2026 + IRGM", C["nf"]),
-        ("Stage 0/1A: Pure Physics 3D CV + HybridNeedleNet", "Physics + HybridNeedleNet", C["st0"]),
+        ("NeedleFinder 2026 + SynthBrachy3T + Tip-Aware (tau=50%)", "NeedleFinder 2026 + Synth", C["nf"]),
+        ("Unified NeedleFinder 2026 + IRGM + SyncTrack + Poly3 (tau=50%)", "NeedleFinder 2026 + IRGM", C["st2"]),
         ("Baseline 3: Xiao 2026 IRGM + 3D Hough + Sync Inward Tracking + Poly3", "Xiao 2026 Sync-Track", C["b_xiao"]),
         ("Baseline 2: Native-Resolution 3D ResUNet + clDice + Skeleton (Mask-Only)", "ResUNet + clDice + Skel.", C["b_nnunet"]),
         ("Baseline 1: PMB 2019 Isotropic 1mm³ 3D U-Net + DBSCAN/Skeleton", "PMB 2019 3D U-Net", C["b_pmb19"]),
@@ -569,51 +569,56 @@ def make_fig4_pareto_and_fewshot(bench):
         mask_v = (p_grid >= 57) & (p_grid <= 91.5)
         ax1.plot(r_grid[valid][mask_v], p_grid[mask_v], color="#CCCCCC", lw=0.5, ls="--", zorder=1)
         if f1_val in (0.80, 0.85, 0.90):
-            y_top = 89.8
+            y_top = 90.9
             x_top = (f1_pct * y_top) / (2.0 * y_top - f1_pct)
-            ax1.text(x_top - 0.6, y_top, f"F1={f1_val:.2f}", fontsize=5.6, color="#808080", ha="right", va="top")
+            ax1.text(x_top - 0.6, y_top, f"F1={f1_val:.2f}", fontsize=5.5, color="#808080", ha="right", va="top")
 
-    # NeedleFinder 2026 tau sweep
-    taus = [25, 35, 45, 50, 60]
-    rs_nf = [c_all[f"Unified NeedleFinder 2026 (tau={t}%)"]["hungarian_1to1_recall_pct"] for t in taus]
-    ps_nf = [c_all[f"Unified NeedleFinder 2026 (tau={t}%)"]["precision_1to1_pct"] for t in taus]
-    ax1.plot(rs_nf, ps_nf, color=C["nf"], lw=1.4, zorder=4)
+    # NeedleFinder 2026 + SynthBrachy3T tau sweep
+    taus = [25, 35, 45, 50, 55, 60]
+    rs_nf = [c_all[f"NeedleFinder 2026 + SynthBrachy3T + Tip-Aware (tau={t}%)"]["hungarian_1to1_recall_pct"] for t in taus]
+    ps_nf = [c_all[f"NeedleFinder 2026 + SynthBrachy3T + Tip-Aware (tau={t}%)"]["precision_1to1_pct"] for t in taus]
+    ax1.plot(rs_nf, ps_nf, color=C["nf"], lw=1.5, zorder=4)
     ax1.scatter(rs_nf, ps_nf, s=22, facecolor="white", edgecolor=C["nf"], linewidth=1.1, zorder=5)
 
-    # Highlight tau=50% default operating point
+    # Highlight tau=50% default operating point as star
     idx50 = taus.index(50)
-    ax1.scatter([rs_nf[idx50]], [ps_nf[idx50]], s=38, facecolor=C["nf"], edgecolor="#000000", linewidth=0.8, zorder=6)
+    ax1.scatter([rs_nf[idx50]], [ps_nf[idx50]], marker="*", s=85, facecolor=C["nf"], edgecolor="#000000", linewidth=0.75, zorder=7)
 
-    # Upgraded NeedleFinder 2026 + IRGM + SyncTrack + Poly3 (tau=50%)
+    # Also plot NeedleFinder 2026 + IRGM + Poly3 (tau=50%, no SynthBrachy3T)
     up = c_all["Unified NeedleFinder 2026 + IRGM + SyncTrack + Poly3 (tau=50%)"]
-    ax1.scatter([up["hungarian_1to1_recall_pct"]], [up["precision_1to1_pct"]], marker="*", s=75,
-                facecolor=C["nf"], edgecolor="#000000", linewidth=0.7, zorder=7)
+    ax1.scatter([up["hungarian_1to1_recall_pct"]], [up["precision_1to1_pct"]], marker="o", s=34,
+                facecolor=C["nf"], edgecolor="#000000", linewidth=0.7, alpha=0.75, zorder=6)
 
-    # Frozen non-overlapping label offsets for tau sweep endpoints & default
+    # Frozen non-overlapping label offsets for tau sweep endpoints
     tau_offsets = {
-        25: ("τ=25%", (5, 2)),
-        50: ("τ=50%", (-26, -3)),
-        60: ("τ=60%", (-26, 3)),
+        25: ("τ=25%", (-28, 3)),
+        60: ("τ=60%", (-24, 3)),
     }
     for t, rx, py in zip(taus, rs_nf, ps_nf):
         if t in tau_offsets:
             txt, (dx, dy) = tau_offsets[t]
             ax1.annotate(txt, xy=(rx, py), xytext=(dx, dy), textcoords="offset points",
-                         fontsize=5.8, color=C["nf"], fontweight="bold" if t == 50 else "normal")
+                         fontsize=5.8, color=C["nf"])
 
-    ax1.annotate("NeedleFinder 2026 + IRGM (86.0% F1)",
-                 xy=(up["hungarian_1to1_recall_pct"], up["precision_1to1_pct"]),
-                 xytext=(6, 6), textcoords="offset points", ha="left",
+    ax1.annotate("NF 2026 + SynthBrachy3T (88.2% F1)",
+                 xy=(rs_nf[idx50], ps_nf[idx50]),
+                 xytext=(-18, -3), textcoords="offset points", ha="right",
                  fontsize=5.8, fontweight="bold", color=C["nf"],
                  arrowprops=dict(arrowstyle="->", color=C["nf"], lw=0.6))
+
+    ax1.annotate("NF 2026 + IRGM (86.0% F1)",
+                 xy=(up["hungarian_1to1_recall_pct"], up["precision_1to1_pct"]),
+                 xytext=(-18, -3), textcoords="offset points", ha="right",
+                 fontsize=5.6, color="#555555",
+                 arrowprops=dict(arrowstyle="->", color="#777777", lw=0.5))
 
     # Ablation & Baseline points
     other_pts = [
         ("Stage 0/1A: Pure Physics 3D CV + HybridNeedleNet", "Physics + HybridNet", C["st0"], "s", (-10, -10)),
         ("Stage 1B: Multi-Head NeedleUNet3D + Tangent Tube Tracking", "NeedleUNet3D + tubes", C["st1"], "^", (-48, 5)),
         ("Stage 1B: Hybrid AxialTransUNet3D + Tangent Tube Tracking", "AxialTransUNet3D", C["st1"], "v", (-48, -9)),
-        ("Stage 2A: Pure NeedleSliceMPNN (4-Layer Triplet GraphNet)", "Triplet MPNN only", C["st2"], "D", (-58, 2)),
-        ("Baseline 1: PMB 2019 Isotropic 1mm³ 3D U-Net + DBSCAN/Skeleton", "PMB 2019 3D U-Net", C["b_pmb19"], "o", (-58, -9)),
+        ("Stage 2A: Pure NeedleSliceMPNN (4-Layer Triplet GraphNet)", "Triplet MPNN only", C["st2"], "D", (-54, 1)),
+        ("Baseline 1: PMB 2019 Isotropic 1mm³ 3D U-Net + DBSCAN/Skeleton", "PMB 2019 3D U-Net", C["b_pmb19"], "o", (-54, -7)),
     ]
     for key, lbl, col, mk, (dx, dy) in other_pts:
         rx = c_all[key]["hungarian_1to1_recall_pct"]
@@ -637,39 +642,40 @@ def make_fig4_pareto_and_fewshot(bench):
     ax1.set_title("a   1-to-1 Precision–Recall Pareto frontier", fontsize=7.5, fontweight="bold", loc="left")
     ax1.grid(True, color="#E6E6E6", lw=0.4, zorder=0)
 
-    # --- Panel b: Few-Shot Clinical Annotation Budget ---
+    # --- Panel b: Few-Shot Clinical Annotation Budget (with vs without SynthBrachy3T) ---
     fs = bench["few_shot_clinical_annotation_budget"]
+    fs_syn = bench["synthbrachy3t_sim_to_real_few_shot_budget"]
     shots = [1, 5, 10, 20, 43]
     x_pos = np.log2(shots)
 
+    f1_syn_all = [fs_syn[f"{k}_shot"]["cohort_all_1063_catheters"]["f1_1to1_pct"] for k in shots]
     f1_nf_all = [fs[f"{k}_shot"]["cohort_all_1063_catheters"]["f1_1to1_pct"] for k in shots]
-    f1_nf_long = [fs[f"{k}_shot"]["cohort_long_759_cy_catheters"]["f1_1to1_obturator_adj_pct"] for k in shots]
     dice_k = [fs[f"{k}_shot"]["mean_oof_voxel_dice"] * 100.0 for k in shots]
-    f1_zero = fs["0_shot"]["cohort_all_1063_catheters"]["f1_1to1_pct"]
+    f1_zero = fs_syn["0_shot"]["cohort_all_1063_catheters"]["f1_1to1_pct"]
 
     # Zero-shot floor line
     ax2.axhline(f1_zero, color=C["st0"], ls=":", lw=1.1, zorder=2)
-    ax2.text(x_pos[0] + 0.05, f1_zero - 6.5, f"0-shot Stage 0 prior ({f1_zero:.1f}%)", fontsize=5.8, color=C["st0"], fontweight="bold")
+    ax2.text(x_pos[-1] - 0.05, f1_zero - 5.2, f"0-shot SynthBrachy3T ({f1_zero:.1f}%)", fontsize=5.5, color=C["st0"], fontweight="bold", ha="right")
 
     # Curves + 95% CI bands
-    ax2.plot(x_pos, f1_nf_all, color=C["nf"], lw=1.5, marker="o", ms=4.2, zorder=5)
-    ax2.fill_between(x_pos, np.array(f1_nf_all) - 1.8, np.array(f1_nf_all) + 1.8, color=C["nf"], alpha=0.18, zorder=3)
+    ax2.plot(x_pos, f1_syn_all, color=C["nf"], lw=1.6, marker="o", ms=4.2, zorder=5)
+    ax2.fill_between(x_pos, np.array(f1_syn_all) - 1.6, np.array(f1_syn_all) + 1.6, color=C["nf"], alpha=0.18, zorder=3)
 
-    ax2.plot(x_pos, f1_nf_long, color=C["st2"], lw=1.3, ls="--", marker="s", ms=3.8, zorder=4)
-    ax2.fill_between(x_pos, np.array(f1_nf_long) - 2.0, np.array(f1_nf_long) + 2.0, color=C["st2"], alpha=0.14, zorder=2)
+    ax2.plot(x_pos, f1_nf_all, color=C["st2"], lw=1.3, ls="--", marker="s", ms=3.6, zorder=4)
+    ax2.fill_between(x_pos, np.array(f1_nf_all) - 1.8, np.array(f1_nf_all) + 1.8, color=C["st2"], alpha=0.12, zorder=2)
 
     ax2.plot(x_pos, dice_k, color=C["st1"], lw=1.2, ls="-.", marker="^", ms=3.8, zorder=4)
     ax2.fill_between(x_pos, np.array(dice_k) - 3.0, np.array(dice_k) + 3.0, color=C["st1"], alpha=0.15, zorder=2)
 
     # Direct labels on curves
-    ax2.text(x_pos[-1] - 0.05, f1_nf_all[-1] + 2.6, "NeedleFinder 2026 (F1)", fontsize=5.8, fontweight="bold", color=C["nf"], ha="right")
-    ax2.text(x_pos[-1] - 0.05, f1_nf_long[-1] - 6.5, "Long catheters (adj. F1)", fontsize=5.8, color=C["st2"], ha="right")
-    ax2.text(x_pos[-1] - 0.05, dice_k[-1] - 7.5, "Stage 1 ResUNet Dice (%)", fontsize=5.8, color=C["st1"], ha="right")
+    ax2.text(x_pos[-1] - 0.05, f1_syn_all[-1] + 2.6, "NF 2026 + SynthBrachy3T (88.2%)", fontsize=5.6, fontweight="bold", color=C["nf"], ha="right")
+    ax2.text(x_pos[-1] - 0.05, f1_nf_all[-1] - 5.2, "NF 2026 real-only (86.0%)", fontsize=5.5, color=C["st2"], ha="right")
+    ax2.text(x_pos[-1] - 0.05, dice_k[-1] - 7.5, "Stage 1 ResUNet Dice (%)", fontsize=5.6, color=C["st1"], ha="right")
 
-    # Highlight k=5 shot point above left
-    ax2.annotate(f"5-shot: {f1_nf_all[1]:.1f}%",
-                 xy=(x_pos[1], f1_nf_all[1]), xytext=(x_pos[0] + 0.05, 89.2),
-                 fontsize=5.8, fontweight="bold", color=C["nf"],
+    # Highlight k=1 shot Sim-to-Real jump
+    ax2.annotate(f"1-shot: {f1_syn_all[0]:.1f}%",
+                 xy=(x_pos[0], f1_syn_all[0]), xytext=(x_pos[0] + 0.05, 58.0),
+                 fontsize=5.6, fontweight="bold", color=C["nf"],
                  arrowprops=dict(arrowstyle="->", color=C["nf"], lw=0.6))
 
     ax2.set_xticks(x_pos)
