@@ -790,4 +790,496 @@ int32_t nf_compute_3d_sym_response(
     return 0;
 }
 
+int32_t nf_find_2d_nms_peaks(
+    const float* slice_ptr,
+    size_t dim_x,
+    size_t dim_y,
+    size_t nms_px,
+    float thresh,
+    int* out_i,
+    int* out_j,
+    float* out_val,
+    size_t max_out,
+    size_t* out_count
+) {
+    if (!slice_ptr || !out_i || !out_j || !out_val || !out_count || dim_x == 0 || dim_y == 0) {
+        return -1;
+    }
+    size_t count = 0;
+    for (size_t j = 0; j < dim_y; ++j) {
+        const size_t j_lo = (j > nms_px) ? (j - nms_px) : 0;
+        const size_t j_hi = std::min(dim_y - 1, j + nms_px);
+        const float* row_ptr = slice_ptr + j * dim_x;
+        for (size_t i = 0; i < dim_x; ++i) {
+            const float val = row_ptr[i];
+            if (!(val >= thresh)) {
+                continue;
+            }
+            const size_t i_lo = (i > nms_px) ? (i - nms_px) : 0;
+            const size_t i_hi = std::min(dim_x - 1, i + nms_px);
+            bool is_max = true;
+            for (size_t jj = j_lo; jj <= j_hi && is_max; ++jj) {
+                const float* w_row = slice_ptr + jj * dim_x;
+                for (size_t ii = i_lo; ii <= i_hi; ++ii) {
+                    if (w_row[ii] > val) {
+                        is_max = false;
+                        break;
+                    }
+                }
+            }
+            if (is_max) {
+                if (count < max_out) {
+                    out_i[count] = static_cast<int>(i);
+                    out_j[count] = static_cast<int>(j);
+                    out_val[count] = val;
+                    ++count;
+                }
+            }
+        }
+    }
+    *out_count = count;
+    return 0;
+}
+
+int32_t nf_trace_seed_3d(
+    const float* resp_sub,
+    const float* c_smooth,
+    const float* ring_sym,
+    size_t dim_x,
+    size_t dim_y,
+    size_t dim_z,
+    size_t k_start,
+    double i_start,
+    double j_start,
+    double s_val,
+    double cand_thresh,
+    double max_step_px,
+    size_t search_r_px,
+    size_t max_gap_slices,
+    size_t min_pts_slices,
+    int pass_idx,
+    int has_prior_slope,
+    double prior_slope_i,
+    double prior_slope_j,
+    const double* gauss_base,
+    int* out_ks,
+    double* out_i,
+    double* out_j,
+    double* out_r,
+    size_t* out_n,
+    double* out_shaft_p75
+) {
+    if (!resp_sub || !c_smooth || !ring_sym || !gauss_base || !out_ks || !out_i || !out_j || !out_r || !out_n || !out_shaft_p75) {
+        return -1;
+    }
+    if (k_start >= dim_z || dim_x <= 2 * search_r_px || dim_y <= 2 * search_r_px) {
+        *out_n = 0;
+        return 0;
+    }
+
+    const size_t patch_w = 2 * search_r_px + 1;
+    const size_t slice_stride = dim_y * dim_x;
+    double peak_r = std::min(s_val, cand_thresh * 40.0);
+    const double base_min_r = cand_thresh * (pass_idx == 1 ? 0.28 : 0.20);
+
+    std::vector<int> fwd_k;
+    std::vector<double> fwd_i, fwd_j, fwd_r;
+    std::vector<int> bwd_k;
+    std::vector<double> bwd_i, bwd_j, bwd_r;
+    fwd_k.reserve(dim_z);
+    fwd_i.reserve(dim_z);
+    fwd_j.reserve(dim_z);
+    fwd_r.reserve(dim_z);
+    bwd_k.reserve(dim_z);
+    bwd_i.reserve(dim_z);
+    bwd_j.reserve(dim_z);
+    bwd_r.reserve(dim_z);
+
+    const int dirs[2] = {1, -1};
+    for (int d_idx = 0; d_idx < 2; ++d_idx) {
+        const int direction = dirs[d_idx];
+        double curr_i = i_start;
+        double curr_j = j_start;
+        double vel_i = has_prior_slope ? (prior_slope_i * direction) : 0.0;
+        double vel_j = has_prior_slope ? (prior_slope_j * direction) : 0.0;
+        size_t gap = 0;
+        ptrdiff_t k_cur = static_cast<ptrdiff_t>(k_start) + direction;
+
+        while (k_cur >= 0 && static_cast<size_t>(k_cur) < dim_z) {
+            const double pred_i = curr_i + vel_i;
+            const double pred_j = curr_j + vel_j;
+            const ptrdiff_t ic = static_cast<ptrdiff_t>(std::rint(pred_i));
+            const ptrdiff_t jc = static_cast<ptrdiff_t>(std::rint(pred_j));
+            if (ic < static_cast<ptrdiff_t>(search_r_px) ||
+                ic >= static_cast<ptrdiff_t>(dim_x - search_r_px) ||
+                jc < static_cast<ptrdiff_t>(search_r_px) ||
+                jc >= static_cast<ptrdiff_t>(dim_y - search_r_px)) {
+                break;
+            }
+
+            const size_t k_idx = static_cast<size_t>(k_cur);
+            const float* resp_sl = resp_sub + k_idx * slice_stride;
+            const float* cs_sl = c_smooth + k_idx * slice_stride;
+            const float* sym_sl = ring_sym + k_idx * slice_stride;
+
+            double best_eff = -1.0e300;
+            size_t best_dy = 0;
+            size_t best_dx = 0;
+            const size_t j0_p = static_cast<size_t>(jc) - search_r_px;
+            const size_t i0_p = static_cast<size_t>(ic) - search_r_px;
+
+            for (size_t dy = 0; dy < patch_w; ++dy) {
+                const float* r_row = resp_sl + (j0_p + dy) * dim_x + i0_p;
+                const double* g_row = gauss_base + dy * patch_w;
+                for (size_t dx = 0; dx < patch_w; ++dx) {
+                    const double eff = static_cast<double>(r_row[dx]) * g_row[dx];
+                    if (eff > best_eff) {
+                        best_eff = eff;
+                        best_dy = dy;
+                        best_dx = dx;
+                    }
+                }
+            }
+
+            const size_t best_j_idx = j0_p + best_dy;
+            const size_t best_i_idx = i0_p + best_dx;
+            const double best_r = static_cast<double>(resp_sl[best_j_idx * dim_x + best_i_idx]);
+            const double best_c = static_cast<double>(cs_sl[best_j_idx * dim_x + best_i_idx]);
+            const double best_sym = static_cast<double>(sym_sl[best_j_idx * dim_x + best_i_idx]);
+
+            double ni = static_cast<double>(best_i_idx);
+            double nj = static_cast<double>(best_j_idx);
+            const size_t ii0 = best_i_idx;
+            const size_t jj0 = best_j_idx;
+
+            if (ii0 >= 1 && ii0 + 1 < dim_x && jj0 >= 1 && jj0 + 1 < dim_y && best_r > 0.5) {
+                double w_sum = 0.0;
+                double wx_sum = 0.0;
+                double wy_sum = 0.0;
+                for (int dj = -1; dj <= 1; ++dj) {
+                    const float* w_row = resp_sl + static_cast<size_t>(static_cast<ptrdiff_t>(jj0) + dj) * dim_x;
+                    for (int di = -1; di <= 1; ++di) {
+                        const float rv = w_row[static_cast<size_t>(static_cast<ptrdiff_t>(ii0) + di)];
+                        if (rv > 0.0f) {
+                            const double w = static_cast<double>(rv);
+                            w_sum += w;
+                            wx_sum += static_cast<double>(di) * w;
+                            wy_sum += static_cast<double>(dj) * w;
+                        }
+                    }
+                }
+                if (w_sum > 0.0) {
+                    ni = static_cast<double>(ii0) + wx_sum / w_sum;
+                    nj = static_cast<double>(jj0) + wy_sum / w_sum;
+                }
+            }
+
+            const double min_step_r = std::max(base_min_r, 0.045 * peak_r);
+            const bool is_dark = (best_r >= min_step_r) ||
+                                 (best_sym > 14.0 && best_c < 0.56 * best_sym && best_r >= 0.25 * min_step_r);
+            if (is_dark) {
+                if (direction == 1) {
+                    fwd_k.push_back(static_cast<int>(k_cur));
+                    fwd_i.push_back(ni);
+                    fwd_j.push_back(nj);
+                    fwd_r.push_back(best_r);
+                } else {
+                    bwd_k.push_back(static_cast<int>(k_cur));
+                    bwd_i.push_back(ni);
+                    bwd_j.push_back(nj);
+                    bwd_r.push_back(best_r);
+                }
+                peak_r = std::max(peak_r, std::min(best_r, cand_thresh * 42.0));
+                const double step_i = std::max(-max_step_px, std::min(max_step_px, ni - curr_i));
+                const double step_j = std::max(-max_step_px, std::min(max_step_px, nj - curr_j));
+                vel_i = 0.65 * vel_i + 0.35 * step_i;
+                vel_j = 0.65 * vel_j + 0.35 * step_j;
+                curr_i = ni;
+                curr_j = nj;
+                gap = 0;
+            } else {
+                ++gap;
+                if (gap > max_gap_slices) {
+                    break;
+                }
+                curr_i = pred_i;
+                curr_j = pred_j;
+            }
+            k_cur += direction;
+        }
+    }
+
+    const size_t total_raw = bwd_k.size() + 1 + fwd_k.size();
+    if (total_raw < min_pts_slices) {
+        *out_n = 0;
+        *out_shaft_p75 = 0.0;
+        return 0;
+    }
+
+    size_t idx = 0;
+    for (size_t b = bwd_k.size(); b > 0; --b) {
+        out_ks[idx] = bwd_k[b - 1];
+        out_i[idx] = bwd_i[b - 1];
+        out_j[idx] = bwd_j[b - 1];
+        out_r[idx] = bwd_r[b - 1];
+        ++idx;
+    }
+    out_ks[idx] = static_cast<int>(k_start);
+    out_i[idx] = i_start;
+    out_j[idx] = j_start;
+    out_r[idx] = s_val;
+    ++idx;
+    for (size_t f = 0; f < fwd_k.size(); ++f) {
+        out_ks[idx] = fwd_k[f];
+        out_i[idx] = fwd_i[f];
+        out_j[idx] = fwd_j[f];
+        out_r[idx] = fwd_r[f];
+        ++idx;
+    }
+
+    std::vector<double> r_sorted(out_r, out_r + idx);
+    std::sort(r_sorted.begin(), r_sorted.end());
+    const double pos = 0.75 * static_cast<double>(idx - 1);
+    const size_t lo = static_cast<size_t>(pos);
+    const size_t hi = std::min(idx - 1, lo + 1);
+    const double shaft_p75 = r_sorted[lo] + (pos - static_cast<double>(lo)) * (r_sorted[hi] - r_sorted[lo]);
+    *out_shaft_p75 = shaft_p75;
+
+    const double tip_cut = std::max(cand_thresh * 0.35, 0.08 * shaft_p75);
+    const double base_cut = std::max(cand_thresh * 0.22, 0.05 * shaft_p75);
+    size_t i_lo = 0;
+    size_t i_hi = idx;
+    while ((i_hi - i_lo) > 2 && out_r[i_hi - 1] < tip_cut) {
+        --i_hi;
+    }
+    while ((i_hi - i_lo) > 2 && out_r[i_lo] < base_cut) {
+        ++i_lo;
+    }
+    const size_t n_trim = i_hi - i_lo;
+    if (n_trim < min_pts_slices) {
+        *out_n = 0;
+        return 0;
+    }
+    if (i_lo > 0) {
+        for (size_t k = 0; k < n_trim; ++k) {
+            out_ks[k] = out_ks[i_lo + k];
+            out_i[k] = out_i[i_lo + k];
+            out_j[k] = out_j[i_lo + k];
+            out_r[k] = out_r[i_lo + k];
+        }
+    }
+    *out_n = n_trim;
+    return 0;
+}
+
+static inline void fast_line_fit_strided_c(
+    const double* ras_pts,
+    size_t n,
+    double& sx,
+    double& bx,
+    double& sy,
+    double& by
+) {
+    double zm = 0.0, xm = 0.0, ym = 0.0;
+    for (size_t i = 0; i < n; ++i) {
+        xm += ras_pts[3 * i + 0];
+        ym += ras_pts[3 * i + 1];
+        zm += ras_pts[3 * i + 2];
+    }
+    const double inv_n = 1.0 / static_cast<double>(n);
+    zm *= inv_n;
+    xm *= inv_n;
+    ym *= inv_n;
+    double denom = 0.0, num_x = 0.0, num_y = 0.0;
+    for (size_t i = 0; i < n; ++i) {
+        const double dz = ras_pts[3 * i + 2] - zm;
+        denom += dz * dz;
+        num_x += dz * (ras_pts[3 * i + 0] - xm);
+        num_y += dz * (ras_pts[3 * i + 1] - ym);
+    }
+    if (denom < 1e-6) {
+        sx = 0.0;
+        bx = xm;
+        sy = 0.0;
+        by = ym;
+    } else {
+        sx = num_x / denom;
+        bx = xm - sx * zm;
+        sy = num_y / denom;
+        by = ym - sy * zm;
+    }
+}
+
+int32_t nf_trim_trajectory_inside_out(
+    const double* ras_pts,
+    const double* arr_pts,
+    size_t n,
+    double shaft_p75,
+    int check_shallow,
+    size_t* out_start_idx,
+    size_t* out_end_idx
+) {
+    if (!ras_pts || !arr_pts || !out_start_idx || !out_end_idx) {
+        return -1;
+    }
+    if (n < 6) {
+        *out_start_idx = 0;
+        *out_end_idx = n;
+        return 0;
+    }
+    if (check_shallow != 0) {
+        const double inv_n = 1.0 / static_cast<double>(n);
+        double zm = 0.0, xm = 0.0, ym = 0.0;
+        for (size_t i = 0; i < n; ++i) {
+            xm += ras_pts[3 * i + 0];
+            ym += ras_pts[3 * i + 1];
+            zm += ras_pts[3 * i + 2];
+        }
+        zm *= inv_n;
+        xm *= inv_n;
+        ym *= inv_n;
+        double s2 = 0.0, s3 = 0.0, s4 = 0.0;
+        double rx1 = 0.0, rx2 = 0.0, ry1 = 0.0, ry2 = 0.0;
+        for (size_t i = 0; i < n; ++i) {
+            const double u = ras_pts[3 * i + 2] - zm;
+            const double u2 = u * u;
+            const double dx = ras_pts[3 * i + 0] - xm;
+            const double dy = ras_pts[3 * i + 1] - ym;
+            s2 += u2;
+            s3 += u2 * u;
+            s4 += u2 * u2;
+            rx1 += u2 * dx;
+            rx2 += u * dx;
+            ry1 += u2 * dy;
+            ry2 += u * dy;
+        }
+        double ax = 0.0, bx = 0.0, cx = 0.0;
+        double ay = 0.0, by = 0.0, cy = 0.0;
+        if (n >= 7 && s2 > 1e-12) {
+            const double a11 = s4 - (s2 * s2) * inv_n;
+            const double a12 = s3;
+            const double a22 = s2;
+            const double det = a11 * a22 - a12 * a12;
+            if (std::abs(det) > 1e-12) {
+                const double inv_det = 1.0 / det;
+                ax = (rx1 * a22 - rx2 * a12) * inv_det;
+                bx = (a11 * rx2 - a12 * rx1) * inv_det;
+                cx = -s2 * inv_n * ax;
+                ay = (ry1 * a22 - ry2 * a12) * inv_det;
+                by = (a11 * ry2 - a12 * ry1) * inv_det;
+                cy = -s2 * inv_n * ay;
+            } else {
+                bx = rx2 / s2;
+                by = ry2 / s2;
+            }
+        } else if (s2 > 1e-6) {
+            bx = rx2 / s2;
+            by = ry2 / s2;
+        }
+        double sq_err = 0.0;
+        for (size_t i = 0; i < n; ++i) {
+            const double u = ras_pts[3 * i + 2] - zm;
+            const double fx = xm + ax * u * u + bx * u + cx;
+            const double fy = ym + ay * u * u + by * u + cy;
+            const double dx = ras_pts[3 * i + 0] - fx;
+            const double dy = ras_pts[3 * i + 1] - fy;
+            sq_err += dx * dx + dy * dy;
+        }
+        if (std::sqrt(sq_err * inv_n) <= 1.30) {
+            *out_start_idx = 0;
+            *out_end_idx = n;
+            return 0;
+        }
+    }
+    const size_t win_n = std::min(n, std::max<size_t>(5, std::min<size_t>(16, static_cast<size_t>(std::rint(0.55 * static_cast<double>(n))))));
+    const size_t max_start = std::max<size_t>(1, static_cast<size_t>(std::rint(0.50 * static_cast<double>(n - win_n))) + 1);
+
+    double best_rmse = 1e9;
+    size_t best_i0 = 0;
+    double gsx = 0.0, gbx = 0.0, gsy = 0.0, gby = 0.0;
+    bool found_fit = false;
+
+    for (size_t s_i = 0; s_i < max_start; ++s_i) {
+        const size_t e_i = s_i + win_n;
+        if (std::abs(ras_pts[3 * (e_i - 1) + 2] - ras_pts[3 * s_i + 2]) < 3.5) {
+            continue;
+        }
+        double sx, bx, sy, by;
+        fast_line_fit_strided_c(ras_pts + 3 * s_i, win_n, sx, bx, sy, by);
+        double sq_sum = 0.0;
+        for (size_t k = s_i; k < e_i; ++k) {
+            const double zk = ras_pts[3 * k + 2];
+            const double dx = ras_pts[3 * k + 0] - (sx * zk + bx);
+            const double dy = ras_pts[3 * k + 1] - (sy * zk + by);
+            sq_sum += dx * dx + dy * dy;
+        }
+        const double err = std::sqrt(sq_sum / static_cast<double>(win_n));
+        if (err < best_rmse) {
+            best_rmse = err;
+            best_i0 = s_i;
+            gsx = sx;
+            gbx = bx;
+            gsy = sy;
+            gby = by;
+            found_fit = true;
+        }
+    }
+    if (!found_fit) {
+        *out_start_idx = 0;
+        *out_end_idx = n;
+        return 0;
+    }
+
+    size_t end_idx = n;
+    size_t bad_streak = 0;
+    for (size_t idx = best_i0 + win_n; idx < n; ++idx) {
+        const size_t r0 = (idx > 14 && (idx - 14) > best_i0) ? (idx - 14) : best_i0;
+        double lsx, lbx, lsy, lby;
+        fast_line_fit_strided_c(ras_pts + 3 * r0, idx - r0, lsx, lbx, lsy, lby);
+        const double xi = ras_pts[3 * idx + 0];
+        const double yi = ras_pts[3 * idx + 1];
+        const double zi = ras_pts[3 * idx + 2];
+        const double dev_loc = std::hypot(xi - (lsx * zi + lbx), yi - (lsy * zi + lby));
+        const double dev_glob = std::hypot(xi - (gsx * zi + gbx), yi - (gsy * zi + gby));
+        const double max_glob = std::max(3.25, 0.048 * std::abs(zi - ras_pts[3 * best_i0 + 2]));
+        if (dev_loc > 1.85 || dev_glob > max_glob || (dev_loc > 1.35 && arr_pts[4 * idx + 3] < 0.35 * shaft_p75)) {
+            ++bad_streak;
+            if (bad_streak >= 2 || dev_loc > 2.35 || idx == n - 1) {
+                end_idx = idx - bad_streak + 1;
+                break;
+            }
+        } else {
+            bad_streak = 0;
+        }
+    }
+
+    size_t start_idx = 0;
+    bad_streak = 0;
+    for (ptrdiff_t idx = static_cast<ptrdiff_t>(best_i0) - 1; idx >= 0; --idx) {
+        const size_t u_idx = static_cast<size_t>(idx);
+        const size_t r1 = std::min(end_idx, u_idx + 15);
+        double lsx, lbx, lsy, lby;
+        fast_line_fit_strided_c(ras_pts + 3 * (u_idx + 1), r1 - (u_idx + 1), lsx, lbx, lsy, lby);
+        const double xi = ras_pts[3 * u_idx + 0];
+        const double yi = ras_pts[3 * u_idx + 1];
+        const double zi = ras_pts[3 * u_idx + 2];
+        const double dev_loc = std::hypot(xi - (lsx * zi + lbx), yi - (lsy * zi + lby));
+        const double dev_glob = std::hypot(xi - (gsx * zi + gbx), yi - (gsy * zi + gby));
+        const double max_glob = std::max(3.25, 0.048 * std::abs(ras_pts[3 * (best_i0 + win_n - 1) + 2] - zi));
+        if (dev_loc > 1.95 || dev_glob > max_glob || (dev_loc > 1.45 && arr_pts[4 * u_idx + 3] < 0.30 * shaft_p75)) {
+            ++bad_streak;
+            if (bad_streak >= 2 || dev_loc > 2.45 || u_idx == 0) {
+                start_idx = u_idx + bad_streak;
+                break;
+            }
+        } else {
+            bad_streak = 0;
+        }
+    }
+
+    *out_start_idx = start_idx;
+    *out_end_idx = end_idx;
+    return 0;
+}
+
 } // extern "C"

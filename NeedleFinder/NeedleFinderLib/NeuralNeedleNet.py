@@ -37,8 +37,11 @@ def _get_ort_session():
     try:
         import onnxruntime as ort
         sess_opts = ort.SessionOptions()
-        sess_opts.intra_op_num_threads = max(1, min(8, (os.cpu_count() or 4)))
-        providers = ["CPUExecutionProvider"]
+        sess_opts.graph_optimization_level = ort.GraphOptimizationLevel.ORT_ENABLE_ALL
+        sess_opts.intra_op_num_threads = max(1, min(16, (os.cpu_count() or 8)))
+        avail = set(ort.get_available_providers()) if hasattr(ort, "get_available_providers") else set()
+        providers = [p for p in ("CUDAExecutionProvider", "CoreMLExecutionProvider") if p in avail]
+        providers.append("CPUExecutionProvider")
         _ORT_SESSION = ort.InferenceSession(model_path, sess_options=sess_opts, providers=providers)
         _ORT_MODEL_PATH = model_path
         return _ORT_SESSION
