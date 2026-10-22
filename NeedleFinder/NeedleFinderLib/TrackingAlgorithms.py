@@ -37,6 +37,7 @@ from .RustCore import (
 from .NeuralNeedleNet import (
     create_or_update_slicer_labelmap,
     extract_nn_labelmap_tubes,
+    run_mpnn_and_graph_transformer,
     run_nn_3d_segmentation,
 )
 from .LegacyEditorCompat import (
@@ -4203,12 +4204,12 @@ class TrackingAlgorithmsMixin:
             if mean_pm_v >= 0.58 and mean_pp_v >= 0.44 and conf >= 38.0:
               conf = max(conf, min(99.5, 58.0 + 38.0 * mean_pm_v))
 
-        if conf >= float(minConfidence):
+        if conf >= (25.0 if (nn_preds is not None and not script) else float(minConfidence)):
           t["nn_prob"] = nn_prob
           t["confidence"] = conf
           filtered.append(t)
 
-      # Stage 2 Direct 3D U-Net Labelmap + Tangent-Field Tube Reconstruction (recovers missed & obturator needles)
+      # Stage 2 Direct 3D U-Net Labelmap + Tangent-Field Tube Reconstruction + NeedleSliceMPNN + DenseGraphTransformer
       if nn_preds is not None and not script:
         try:
           nn_tubes = extract_nn_labelmap_tubes(
@@ -4216,11 +4217,17 @@ class TrackingAlgorithmsMixin:
               ijk_to_ras_mat, ras_to_ijk, filtered, include_obturator=True,
           )
           for nt in nn_tubes:
-            if nt["confidence"] >= float(minConfidence):
-              nt["ras"] = nt["points"]
-              filtered.append(nt)
+            nt["ras"] = nt["points"]
+            filtered.append(nt)
+          filtered = run_mpnn_and_graph_transformer(
+              vol_work, nn_preds, resp1, cs1, rsym1,
+              k0, i0, j0, sp_i, sp_j, sp_k,
+              ijk_to_ras_mat, ras_to_ijk, filtered,
+              min_confidence=float(minConfidence),
+              script=script,
+          )
         except Exception:
-          pass
+          filtered = [t for t in filtered if t.get("confidence", 0.0) >= float(minConfidence)]
 
       if renderNeedles and widget is not None:
         update_progress(88, f"Stage 6/6: Rendering {len(filtered)} detected needles in 3D scene...")
