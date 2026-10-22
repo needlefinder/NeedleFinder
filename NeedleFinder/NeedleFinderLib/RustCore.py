@@ -18,6 +18,7 @@ import vtk.util.numpy_support
 
 _DOUBLE_PTR = ctypes.POINTER(ctypes.c_double)
 _FLOAT_PTR = ctypes.POINTER(ctypes.c_float)
+_INT_PTR = ctypes.POINTER(ctypes.c_int32)
 _SIZE_PTR = ctypes.POINTER(ctypes.c_size_t)
 _SSIZE_PTR = ctypes.POINTER(ctypes.c_ssize_t)
 
@@ -353,6 +354,64 @@ def _bind_signatures(lib: ctypes.CDLL) -> None:
         _FLOAT_PTR,         # out_ringsym_ptr
     ]
     lib.nf_compute_3d_sym_response.restype = ctypes.c_int32
+
+    if hasattr(lib, "nf_find_2d_nms_peaks"):
+        lib.nf_find_2d_nms_peaks.argtypes = [
+            _FLOAT_PTR,         # slice_ptr
+            ctypes.c_size_t,    # dim_x
+            ctypes.c_size_t,    # dim_y
+            ctypes.c_size_t,    # nms_px
+            ctypes.c_float,     # thresh
+            _INT_PTR,           # out_i
+            _INT_PTR,           # out_j
+            _FLOAT_PTR,         # out_val
+            ctypes.c_size_t,    # max_out
+            _SIZE_PTR,          # out_count
+        ]
+        lib.nf_find_2d_nms_peaks.restype = ctypes.c_int32
+
+    if hasattr(lib, "nf_trace_seed_3d"):
+        lib.nf_trace_seed_3d.argtypes = [
+            _FLOAT_PTR,         # resp_sub
+            _FLOAT_PTR,         # c_smooth
+            _FLOAT_PTR,         # ring_sym
+            ctypes.c_size_t,    # dim_x
+            ctypes.c_size_t,    # dim_y
+            ctypes.c_size_t,    # dim_z
+            ctypes.c_size_t,    # k_start
+            ctypes.c_double,    # i_start
+            ctypes.c_double,    # j_start
+            ctypes.c_double,    # s_val
+            ctypes.c_double,    # cand_thresh
+            ctypes.c_double,    # max_step_px
+            ctypes.c_size_t,    # search_r_px
+            ctypes.c_size_t,    # max_gap_slices
+            ctypes.c_size_t,    # min_pts_slices
+            ctypes.c_int32,     # pass_idx
+            ctypes.c_int32,     # has_prior_slope
+            ctypes.c_double,    # prior_slope_i
+            ctypes.c_double,    # prior_slope_j
+            _DOUBLE_PTR,        # gauss_base
+            _INT_PTR,           # out_ks
+            _DOUBLE_PTR,        # out_i
+            _DOUBLE_PTR,        # out_j
+            _DOUBLE_PTR,        # out_r
+            _SIZE_PTR,          # out_n
+            _DOUBLE_PTR,        # out_shaft_p75
+        ]
+        lib.nf_trace_seed_3d.restype = ctypes.c_int32
+
+    if hasattr(lib, "nf_trim_trajectory_inside_out"):
+        lib.nf_trim_trajectory_inside_out.argtypes = [
+            _DOUBLE_PTR,        # ras_pts (n, 3)
+            _DOUBLE_PTR,        # arr_pts (n, 4)
+            ctypes.c_size_t,    # n
+            ctypes.c_double,    # shaft_p75
+            ctypes.c_int32,     # check_shallow
+            _SIZE_PTR,          # out_start_idx
+            _SIZE_PTR,          # out_end_idx
+        ]
+        lib.nf_trim_trajectory_inside_out.restype = ctypes.c_int32
 
 
 def get_rust_lib():
@@ -751,6 +810,9 @@ def rust_center_of_mass_ijk(image_data):
     return [float(out_com[0]), float(out_com[1]), float(out_com[2])]
 
 
+_SYM_BUF_CACHE = {}
+
+
 def rust_compute_3d_sym_response(
     vol_arr: np.ndarray,
     sp_x: float,
@@ -767,11 +829,23 @@ def rust_compute_3d_sym_response(
     lib = get_rust_lib()
     if lib is None or vol_arr is None or vol_arr.ndim != 3:
         return None
-    vol_f64 = np.ascontiguousarray(vol_arr, dtype=np.float64)
+    if vol_arr.dtype == np.float64 and vol_arr.flags.c_contiguous:
+        vol_f64 = vol_arr
+    else:
+        vol_f64 = np.ascontiguousarray(vol_arr, dtype=np.float64)
     dim_z, dim_y, dim_x = vol_f64.shape
-    out_resp = np.zeros((dim_z, dim_y, dim_x), dtype=np.float32)
-    out_cs = np.zeros((dim_z, dim_y, dim_x), dtype=np.float32)
-    out_rsym = np.zeros((dim_z, dim_y, dim_x), dtype=np.float32)
+    k_lo = max(0, int(k0))
+    k_hi = min(dim_z, int(k1))
+    shape_key = (dim_z, dim_y, dim_x)
+    bufs = _SYM_BUF_CACHE.get(shape_key)
+    if bufs is None:
+        out_resp = np.zeros(shape_key, dtype=np.float32)
+        out_cs = np.zeros(shape_key, dtype=np.float32)
+        out_rsym = np.zeros(shape_key, dtype=np.float32)
+        _SYM_BUF_CACHE.clear()
+        _SYM_BUF_CACHE[shape_key] = (out_resp, out_cs, out_rsym)
+    else:
+        out_resp, out_cs, out_rsym = bufs
     rc = lib.nf_compute_3d_sym_response(
         vol_f64.ctypes.data_as(_DOUBLE_PTR),
         int(dim_x),
@@ -783,8 +857,8 @@ def rust_compute_3d_sym_response(
         int(min(dim_x, i1)),
         int(max(0, j0)),
         int(min(dim_y, j1)),
-        int(max(0, k0)),
-        int(min(dim_z, k1)),
+        k_lo,
+        k_hi,
         float(body_thresh),
         out_resp.ctypes.data_as(_FLOAT_PTR),
         out_cs.ctypes.data_as(_FLOAT_PTR),
@@ -793,3 +867,147 @@ def rust_compute_3d_sym_response(
     if rc != 0:
         return None
     return out_resp, out_cs, out_rsym
+
+
+_NMS_MAX_OUT = 16384
+_NMS_OUT_I = np.empty(_NMS_MAX_OUT, dtype=np.int32)
+_NMS_OUT_J = np.empty(_NMS_MAX_OUT, dtype=np.int32)
+_NMS_OUT_VAL = np.empty(_NMS_MAX_OUT, dtype=np.float32)
+_NMS_I_PTR = _NMS_OUT_I.ctypes.data_as(_INT_PTR)
+_NMS_J_PTR = _NMS_OUT_J.ctypes.data_as(_INT_PTR)
+_NMS_VAL_PTR = _NMS_OUT_VAL.ctypes.data_as(_FLOAT_PTR)
+
+_TRACE_MAX_Z = 512
+_TRACE_OUT_KS = np.empty(_TRACE_MAX_Z, dtype=np.int32)
+_TRACE_OUT_I = np.empty(_TRACE_MAX_Z, dtype=np.float64)
+_TRACE_OUT_J = np.empty(_TRACE_MAX_Z, dtype=np.float64)
+_TRACE_OUT_R = np.empty(_TRACE_MAX_Z, dtype=np.float64)
+_TRACE_KS_PTR = _TRACE_OUT_KS.ctypes.data_as(_INT_PTR)
+_TRACE_I_PTR = _TRACE_OUT_I.ctypes.data_as(_DOUBLE_PTR)
+_TRACE_J_PTR = _TRACE_OUT_J.ctypes.data_as(_DOUBLE_PTR)
+_TRACE_R_PTR = _TRACE_OUT_R.ctypes.data_as(_DOUBLE_PTR)
+
+
+def rust_find_2d_nms_peaks(slice_arr: np.ndarray, nms_px: int, thresh: float):
+    """Find 2D local maxima >= `thresh` within a `(2*nms_px+1)^2` window in Rust/C++."""
+    lib = get_rust_lib()
+    if lib is None or not hasattr(lib, "nf_find_2d_nms_peaks"):
+        return None
+    if slice_arr.dtype == np.float32 and slice_arr.flags.c_contiguous:
+        sl = slice_arr
+    else:
+        sl = np.ascontiguousarray(slice_arr, dtype=np.float32)
+    dim_y, dim_x = sl.shape
+    out_count = ctypes.c_size_t(0)
+    rc = lib.nf_find_2d_nms_peaks(
+        sl.ctypes.data_as(_FLOAT_PTR),
+        int(dim_x),
+        int(dim_y),
+        int(nms_px),
+        float(thresh),
+        _NMS_I_PTR,
+        _NMS_J_PTR,
+        _NMS_VAL_PTR,
+        _NMS_MAX_OUT,
+        ctypes.byref(out_count),
+    )
+    if rc != 0:
+        return None
+    n = int(out_count.value)
+    return _NMS_OUT_J[:n], _NMS_OUT_I[:n], _NMS_OUT_VAL[:n]
+
+
+def rust_trace_seed_3d(
+    resp_ptr,
+    cs_ptr,
+    sym_ptr,
+    dim_x: int,
+    dim_y: int,
+    dim_z: int,
+    k_start: int,
+    i_start: float,
+    j_start: float,
+    s_val: float,
+    cand_thresh: float,
+    max_step_px: float,
+    search_r_px: int,
+    max_gap_slices: int,
+    min_pts_slices: int,
+    pass_idx: int,
+    has_prior_slope: int,
+    prior_slope_i: float,
+    prior_slope_j: float,
+    gauss_ptr,
+):
+    """Trace a 3D candidate seed bidirectionally along Z in Rust/C++."""
+    lib = get_rust_lib()
+    if lib is None or not hasattr(lib, "nf_trace_seed_3d") or dim_z > _TRACE_MAX_Z:
+        return None
+    out_n = ctypes.c_size_t(0)
+    out_p75 = ctypes.c_double(0.0)
+    rc = lib.nf_trace_seed_3d(
+        resp_ptr,
+        cs_ptr,
+        sym_ptr,
+        int(dim_x),
+        int(dim_y),
+        int(dim_z),
+        int(k_start),
+        float(i_start),
+        float(j_start),
+        float(s_val),
+        float(cand_thresh),
+        float(max_step_px),
+        int(search_r_px),
+        int(max_gap_slices),
+        int(min_pts_slices),
+        int(pass_idx),
+        int(has_prior_slope),
+        float(prior_slope_i),
+        float(prior_slope_j),
+        gauss_ptr,
+        _TRACE_KS_PTR,
+        _TRACE_I_PTR,
+        _TRACE_J_PTR,
+        _TRACE_R_PTR,
+        ctypes.byref(out_n),
+        ctypes.byref(out_p75),
+    )
+    if rc != 0:
+        return None
+    n = int(out_n.value)
+    if n == 0:
+        return (), (), (), (), 0.0
+    return _TRACE_OUT_KS[:n], _TRACE_OUT_I[:n], _TRACE_OUT_J[:n], _TRACE_OUT_R[:n], float(out_p75.value)
+
+
+def rust_trim_trajectory_inside_out(
+    ras_pts: np.ndarray,
+    arr_pts: np.ndarray,
+    shaft_p75: float,
+    check_shallow: int = 0,
+):
+    """Run inside-out trajectory trimming in Rust/C++, returning `(start_idx, end_idx)`."""
+    lib = get_rust_lib()
+    if lib is None or not hasattr(lib, "nf_trim_trajectory_inside_out"):
+        return None
+    if not (ras_pts.dtype == np.float64 and ras_pts.flags.c_contiguous):
+        ras_pts = np.ascontiguousarray(ras_pts, dtype=np.float64)
+    if not (arr_pts.dtype == np.float64 and arr_pts.flags.c_contiguous):
+        arr_pts = np.ascontiguousarray(arr_pts, dtype=np.float64)
+    n = len(ras_pts)
+    out_s = ctypes.c_size_t(0)
+    out_e = ctypes.c_size_t(n)
+    rc = lib.nf_trim_trajectory_inside_out(
+        ras_pts.ctypes.data_as(_DOUBLE_PTR),
+        arr_pts.ctypes.data_as(_DOUBLE_PTR),
+        int(n),
+        float(shaft_p75),
+        int(check_shallow),
+        ctypes.byref(out_s),
+        ctypes.byref(out_e),
+    )
+    if rc != 0:
+        return None
+    return int(out_s.value), int(out_e.value)
+

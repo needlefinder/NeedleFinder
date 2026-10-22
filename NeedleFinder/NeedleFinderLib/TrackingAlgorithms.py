@@ -27,12 +27,17 @@ from .GeometryUtils import (
     unique_points,
 )
 from .RustCore import (
+    _DOUBLE_PTR,
+    _FLOAT_PTR,
     get_volume_f64_buffer,
     rust_compute_3d_sym_response,
+    rust_find_2d_nms_peaks,
     rust_find_tip,
     rust_search_cone_13,
     rust_search_cone_15_1,
     rust_search_cone_current_dev,
+    rust_trace_seed_3d,
+    rust_trim_trajectory_inside_out,
 )
 from .NeuralNeedleNet import (
     create_or_update_slicer_labelmap,
@@ -3235,7 +3240,7 @@ class TrackingAlgorithmsMixin:
     prog_dialog = None
     n_slices_est = max(1, K - k0)
     vox_scale = float(n_slices_est * (i1 - i0) * (j1 - j0)) / float(max(1, 35 * 220 * 180))
-    est_total_sec = max(1.2, min(14.0, 0.8 + 1.35 * vox_scale))
+    est_total_sec = max(0.8, min(5.0, 0.5 + 0.45 * vox_scale))
     if not script and hasattr(slicer, "app") and slicer.app is not None:
       try:
         parent_win = slicer.util.mainWindow() if hasattr(slicer, "util") else None
@@ -3285,14 +3290,19 @@ class TrackingAlgorithmsMixin:
     try:
       roi_raw = vol_raw[k0:K, j0:j1, i0:i1]
       pos_raw = roi_raw[roi_raw > 5.0]
-      med_tissue = float(np.percentile(pos_raw, 55)) if len(pos_raw) else 85.0
+      if len(pos_raw):
+        p30_raw, med_tissue = [float(x) for x in np.percentile(pos_raw, [30.0, 55.0])]
+      else:
+        p30_raw, med_tissue = 25.0, 85.0
       if med_tissue > 450.0:
         scale_factor = 160.0 / med_tissue
         vol_work = np.ascontiguousarray(vol_raw * scale_factor, dtype=np.float64)
-        body_thresh = float(np.percentile(pos_raw * scale_factor, 30))
+        vol_work_owned = True
+        body_thresh = p30_raw * scale_factor
       else:
-        vol_work = vol_raw.copy()
-        body_thresh = float(np.percentile(pos_raw, 30)) if len(pos_raw) else 25.0
+        vol_work = vol_raw
+        vol_work_owned = False
+        body_thresh = p30_raw
 
       nms_px = max(2, int(round(1.25 / sp_i)))
       visit_r_px = max(1, int(round(1.10 / sp_i)))
@@ -3345,10 +3355,18 @@ class TrackingAlgorithmsMixin:
           return True
         return False
 
+      def fast_pct(a, q):
+        s = np.sort(a)
+        pos = (q * 0.01) * (len(s) - 1)
+        lo = int(pos)
+        hi = lo + 1 if lo + 1 < len(s) else lo
+        return float(s[lo] + (pos - lo) * (s[hi] - s[lo]))
+
       def fast_line_fit(z, x, y):
-        zm = float(np.mean(z))
-        xm = float(np.mean(x))
-        ym = float(np.mean(y))
+        n = len(z)
+        zm = float(np.sum(z)) / n
+        xm = float(np.sum(x)) / n
+        ym = float(np.sum(y)) / n
         dz = z - zm
         denom = float(np.dot(dz, dz))
         if denom < 1e-6:
@@ -3357,17 +3375,64 @@ class TrackingAlgorithmsMixin:
         sy = float(np.dot(dz, y - ym)) / denom
         return sx, xm - sx * zm, sy, ym - sy * zm
 
+      def fast_poly_xy(z, x, y, deg):
+        n = len(z)
+        zm = float(np.sum(z)) / n
+        xm = float(np.sum(x)) / n
+        ym = float(np.sum(y)) / n
+        u = z - zm
+        dx = x - xm
+        dy = y - ym
+        s2 = float(np.dot(u, u))
+        if deg == 1 or s2 < 1e-12:
+          if s2 < 1e-6:
+            return np.array([0.0, xm]), np.array([0.0, ym])
+          sx = float(np.dot(u, dx)) / s2
+          sy = float(np.dot(u, dy)) / s2
+          return np.array([sx, xm - sx * zm]), np.array([sy, ym - sy * zm])
+        u2 = u * u
+        s3 = float(np.dot(u2, u))
+        s4 = float(np.dot(u2, u2))
+        a11 = s4 - (s2 * s2) / n
+        a12 = s3
+        a22 = s2
+        det = a11 * a22 - a12 * a12
+        if abs(det) < 1e-12:
+          sx = float(np.dot(u, dx)) / s2
+          sy = float(np.dot(u, dy)) / s2
+          return np.array([0.0, sx, xm - sx * zm]), np.array([0.0, sy, ym - sy * zm])
+        inv_det = 1.0 / det
+        rx1 = float(np.dot(u2, dx))
+        rx2 = float(np.dot(u, dx))
+        ax = (rx1 * a22 - rx2 * a12) * inv_det
+        bx = (a11 * rx2 - a12 * rx1) * inv_det
+        cx = -(s2 / n) * ax
+        ry1 = float(np.dot(u2, dy))
+        ry2 = float(np.dot(u, dy))
+        ay = (ry1 * a22 - ry2 * a12) * inv_det
+        by = (a11 * ry2 - a12 * ry1) * inv_det
+        cy = -(s2 / n) * ay
+        px = np.array([ax, bx - 2.0 * ax * zm, xm + cx + ax * zm * zm - bx * zm])
+        py = np.array([ay, by - 2.0 * ay * zm, ym + cy + ay * zm * zm - by * zm])
+        return px, py
+
+      is_shallow_scan = 1 if (K - k0) * sp_k <= 185.0 else 0
+
       def trim_trajectory_inside_out(ras_pts, arr_pts, ks, shaft_p75):
         n = len(ks)
         if n < 6:
           return ras_pts, arr_pts, ks
+        rust_bounds = rust_trim_trajectory_inside_out(ras_pts, arr_pts, shaft_p75, is_shallow_scan)
+        if rust_bounds is not None:
+          start_idx, end_idx = rust_bounds
+          return ras_pts[start_idx:end_idx], arr_pts[start_idx:end_idx], ks[start_idx:end_idx]
+
         z_all = ras_pts[:, 2]
         x_all = ras_pts[:, 0]
         y_all = ras_pts[:, 1]
-        if (K - k0) * sp_k <= 185.0:
+        if is_shallow_scan:
           deg0 = 2 if n >= 7 else 1
-          px0 = np.polyfit(z_all, x_all, deg0)
-          py0 = np.polyfit(z_all, y_all, deg0)
+          px0, py0 = fast_poly_xy(z_all, x_all, y_all, deg0)
           res0 = np.hypot(x_all - np.polyval(px0, z_all), y_all - np.polyval(py0, z_all))
           if float(np.sqrt(np.mean(res0 ** 2))) <= 1.30:
             return ras_pts, arr_pts, ks
@@ -3436,17 +3501,20 @@ class TrackingAlgorithmsMixin:
         deg = 2 if len(z_vals) >= 7 else 1
         sx1, bx1, sy1, by1 = fast_line_fit(z_vals, ras_pts[:, 0], ras_pts[:, 1])
         res_l = np.hypot(ras_pts[:, 0] - (sx1 * z_vals + bx1), ras_pts[:, 1] - (sy1 * z_vals + by1))
-        inliers = res_l <= max(1.65, float(np.percentile(res_l, 85)))
-        if np.sum(inliers) >= (deg + 2):
-          px = np.polyfit(z_vals[inliers], ras_pts[inliers, 0], deg)
-          py = np.polyfit(z_vals[inliers], ras_pts[inliers, 1], deg)
+        inliers = res_l <= max(1.65, fast_pct(res_l, 85))
+        if int(np.sum(inliers)) >= (deg + 2):
+          px, py = fast_poly_xy(z_vals[inliers], ras_pts[inliers, 0], ras_pts[inliers, 1], deg)
         else:
           px = np.array([sx1, bx1])
           py = np.array([sy1, by1])
-        fit_x = np.polyval(px, z_vals)
-        fit_y = np.polyval(py, z_vals)
+        if len(px) == 3:
+          fit_x = (px[0] * z_vals + px[1]) * z_vals + px[2]
+          fit_y = (py[0] * z_vals + py[1]) * z_vals + py[2]
+        else:
+          fit_x = px[0] * z_vals + px[1]
+          fit_y = py[0] * z_vals + py[1]
         res_d = np.hypot(ras_pts[:, 0] - fit_x, ras_pts[:, 1] - fit_y)
-        rmse = float(np.percentile(res_d, 85))
+        rmse = fast_pct(res_d, 85)
         if rmse > 1.45:
           return None
 
@@ -3465,8 +3533,12 @@ class TrackingAlgorithmsMixin:
 
         bx_lin = float(fit_x[0] + slope_x * (z_base_ras - z_vals[0]))
         by_lin = float(fit_y[0] + slope_y * (z_base_ras - z_vals[0]))
-        bx_poly = float(np.polyval(px, z_base_ras))
-        by_poly = float(np.polyval(py, z_base_ras))
+        if len(px) == 3:
+          bx_poly = float((px[0] * z_base_ras + px[1]) * z_base_ras + px[2])
+          by_poly = float((py[0] * z_base_ras + py[1]) * z_base_ras + py[2])
+        else:
+          bx_poly = float(px[0] * z_base_ras + px[1])
+          by_poly = float(py[0] * z_base_ras + py[1])
         use_linear_ext = (
             (sp_k >= 2.8 and z_vals[0] > z_base_ras + 2.0 * sp_k)
             or ((K - k0) * sp_k > 185.0 and (abs(float(z_vals[0] - z_base_ras)) > 22.0 or math.hypot(bx_poly - bx_lin, by_poly - by_lin) > 3.5))
@@ -3506,13 +3578,17 @@ class TrackingAlgorithmsMixin:
           ])
 
         mean_r = float(np.mean(arr_pts[:, 3]))
-        p75_r = float(np.percentile(arr_pts[:, 3], 75))
+        p75_r = fast_pct(arr_pts[:, 3], 75)
         max_r = float(np.max(arr_pts[:, 3]))
         high_frac = float(np.mean(arr_pts[:, 3] >= cand_thresh * 0.38))
         raw_score = mean_r * (high_frac ** 1.5) * math.sqrt(max(1.0, z_span_mm)) / (1.0 + 0.5 * rmse)
         curv = math.hypot(float(px[0]), float(py[0])) if len(px) == 3 else 0.0
         return {
             "ras": smooth_ras,
+            "x_min": float(np.min(smooth_ras[:, 0])),
+            "x_max": float(np.max(smooth_ras[:, 0])),
+            "y_min": float(np.min(smooth_ras[:, 1])),
+            "y_max": float(np.max(smooth_ras[:, 1])),
             "raw_ras_pts": ras_pts,
             "raw_arr_pts": arr_pts,
             "raw_ks": list(ks),
@@ -3606,116 +3682,187 @@ class TrackingAlgorithmsMixin:
         return out
 
       def track_pass(resp_sub, c_smooth, ring_sym, sub_i0, sub_j0, cand_thresh, prior_slope_ij=None, pass_idx=1):
+        if not (resp_sub.dtype == np.float32 and resp_sub.flags.c_contiguous):
+          resp_sub = np.ascontiguousarray(resp_sub, dtype=np.float32)
+        if not (c_smooth.dtype == np.float32 and c_smooth.flags.c_contiguous):
+          c_smooth = np.ascontiguousarray(c_smooth, dtype=np.float32)
+        if not (ring_sym.dtype == np.float32 and ring_sym.flags.c_contiguous):
+          ring_sym = np.ascontiguousarray(ring_sym, dtype=np.float32)
         K_sub, J_sub, I_sub = resp_sub.shape
         pos_v = resp_sub[resp_sub > 0.5]
         if len(pos_v) > 20:
           cap_val = float(np.percentile(pos_v, 99.0))
           np.minimum(resp_sub, cap_val, out=resp_sub)
 
-        loc_max = resp_sub == maximum_filter(resp_sub, size=(1, 2 * nms_px + 1, 2 * nms_px + 1))
         max_seed_k = min(K_sub - 2, max(18, min(42, int(round(62.0 / sp_k)))))
         seed_cut = cand_thresh * ((0.82 if K_sub <= 28 else 0.88) if pass_idx == 1 else 0.62)
         seeds = []
+        used_rust_nms = False
         for k_rel in range(0, max_seed_k):
-          jj, ii = np.where(loc_max[k_rel] & (resp_sub[k_rel] >= seed_cut))
+          res_nms = rust_find_2d_nms_peaks(resp_sub[k_rel], nms_px, seed_cut)
+          if res_nms is None:
+            break
+          used_rust_nms = True
+          jj, ii, vv = res_nms
           sl_seeds = [
-              (float(resp_sub[k_rel, j_s, i_s]), k_rel, float(i_s), float(j_s), False)
-              for j_s, i_s in zip(jj, ii)
+              (float(v_s), k_rel, float(i_s), float(j_s), False)
+              for j_s, i_s, v_s in zip(jj, ii, vv)
           ]
           sl_seeds.sort(key=lambda x: -x[0])
           seeds.extend(sl_seeds[:110])
-        if K_sub * sp_k > 185.0:
+        if used_rust_nms and K_sub * sp_k > 185.0:
           up_max_k = min(K_sub - 5, int(round(165.0 / sp_k)))
           up_cut = seed_cut * 1.05
           for k_rel in range(max_seed_k, up_max_k, 2):
-            jj, ii = np.where(loc_max[k_rel] & (resp_sub[k_rel] >= up_cut))
+            res_nms = rust_find_2d_nms_peaks(resp_sub[k_rel], nms_px, up_cut)
+            if res_nms is not None:
+              jj, ii, vv = res_nms
+              sl_seeds = [
+                  (float(v_s), k_rel, float(i_s), float(j_s), False)
+                  for j_s, i_s, v_s in zip(jj, ii, vv)
+              ]
+              sl_seeds.sort(key=lambda x: -x[0])
+              seeds.extend(sl_seeds[:45])
+        if not used_rust_nms:
+          loc_max = resp_sub == maximum_filter(resp_sub, size=(1, 2 * nms_px + 1, 2 * nms_px + 1))
+          for k_rel in range(0, max_seed_k):
+            jj, ii = np.where(loc_max[k_rel] & (resp_sub[k_rel] >= seed_cut))
             sl_seeds = [
                 (float(resp_sub[k_rel, j_s, i_s]), k_rel, float(i_s), float(j_s), False)
                 for j_s, i_s in zip(jj, ii)
             ]
             sl_seeds.sort(key=lambda x: -x[0])
-            seeds.extend(sl_seeds[:45])
+            seeds.extend(sl_seeds[:110])
+          if K_sub * sp_k > 185.0:
+            up_max_k = min(K_sub - 5, int(round(165.0 / sp_k)))
+            up_cut = seed_cut * 1.05
+            for k_rel in range(max_seed_k, up_max_k, 2):
+              jj, ii = np.where(loc_max[k_rel] & (resp_sub[k_rel] >= up_cut))
+              sl_seeds = [
+                  (float(resp_sub[k_rel, j_s, i_s]), k_rel, float(i_s), float(j_s), False)
+                  for j_s, i_s in zip(jj, ii)
+              ]
+              sl_seeds.sort(key=lambda x: -x[0])
+              seeds.extend(sl_seeds[:45])
         seeds.sort(key=lambda x: -x[0])
 
         visited = np.zeros((K_sub, J_sub, I_sub), dtype=bool)
         trajs_out = []
         max_step_px = (0.65 if pass_idx == 1 else 0.52) * (sp_k / sp_i)
         decay = -0.36 if pass_idx == 1 else -0.46
-        gauss_base = np.exp(decay * ((xx_grid * sp_i) ** 2 + (yy_grid * sp_j) ** 2))
+        gauss_base = np.ascontiguousarray(np.exp(decay * ((xx_grid * sp_i) ** 2 + (yy_grid * sp_j) ** 2)), dtype=np.float64)
+        resp_ptr = resp_sub.ctypes.data_as(_FLOAT_PTR)
+        cs_ptr = c_smooth.ctypes.data_as(_FLOAT_PTR)
+        sym_ptr = ring_sym.ctypes.data_as(_FLOAT_PTR)
+        gauss_ptr = gauss_base.ctypes.data_as(_DOUBLE_PTR)
+        has_prior = 1 if prior_slope_ij is not None else 0
+        prior_si = float(prior_slope_ij[0]) if prior_slope_ij is not None else 0.0
+        prior_sj = float(prior_slope_ij[1]) if prior_slope_ij is not None else 0.0
 
         for s_val, k_start, i_start, j_start, is_up_seed in seeds:
           if visited[k_start, int(j_start), int(i_start)]:
             continue
           visited[k_start, int(j_start), int(i_start)] = True
-          pts = {k_start: (i_start, j_start, s_val)}
-          peak_r = min(s_val, cand_thresh * 40.0)
-          for direction in (1, -1):
-            curr_i, curr_j = i_start, j_start
-            if prior_slope_ij is not None:
-              vel_i = float(prior_slope_ij[0]) * direction
-              vel_j = float(prior_slope_ij[1]) * direction
-            else:
-              vel_i, vel_j = 0.0, 0.0
-            gap = 0
-            k_cur = k_start + direction
-            while 0 <= k_cur < K_sub:
-              pred_i = curr_i + vel_i
-              pred_j = curr_j + vel_j
-              ic, jc = int(round(pred_i)), int(round(pred_j))
-              if not (
-                  search_r_px <= ic < I_sub - search_r_px
-                  and search_r_px <= jc < J_sub - search_r_px
-              ):
-                break
-              patch_r = resp_sub[k_cur, jc - search_r_px:jc + search_r_px + 1, ic - search_r_px:ic + search_r_px + 1]
-              eff_score = patch_r * gauss_base
-              best_idx = np.unravel_index(np.argmax(eff_score), eff_score.shape)
-              best_r = float(patch_r[best_idx])
-              best_c = float(c_smooth[k_cur, jc - search_r_px + best_idx[0], ic - search_r_px + best_idx[1]])
-              best_sym = float(ring_sym[k_cur, jc - search_r_px + best_idx[0], ic - search_r_px + best_idx[1]])
-              ni = float(ic - search_r_px + best_idx[1])
-              nj = float(jc - search_r_px + best_idx[0])
-              ii0, jj0 = int(ni), int(nj)
-              if 1 <= ii0 < I_sub - 1 and 1 <= jj0 < J_sub - 1 and best_r > 0.5:
-                w_patch = np.maximum(resp_sub[k_cur, jj0 - 1:jj0 + 2, ii0 - 1:ii0 + 2], 0.0)
-                w_sum = float(np.sum(w_patch))
-                if w_sum > 0:
-                  ni = ii0 + float(np.sum(wx * w_patch)) / w_sum
-                  nj = jj0 + float(np.sum(wy * w_patch)) / w_sum
 
-              min_step_r = max(cand_thresh * (0.28 if pass_idx == 1 else 0.20), 0.045 * peak_r)
-              is_dark = (best_r >= min_step_r) or (best_sym > 14.0 and best_c < 0.56 * best_sym and best_r >= 0.25 * min_step_r)
-              if is_dark:
-                pts[k_cur] = (ni, nj, best_r)
-                peak_r = max(peak_r, min(best_r, cand_thresh * 42.0))
-                step_i = max(-max_step_px, min(max_step_px, ni - curr_i))
-                step_j = max(-max_step_px, min(max_step_px, nj - curr_j))
-                vel_i = 0.65 * vel_i + 0.35 * step_i
-                vel_j = 0.65 * vel_j + 0.35 * step_j
-                curr_i, curr_j = ni, nj
-                gap = 0
+          tr_res = rust_trace_seed_3d(
+              resp_ptr,
+              cs_ptr,
+              sym_ptr,
+              I_sub,
+              J_sub,
+              K_sub,
+              k_start,
+              i_start,
+              j_start,
+              s_val,
+              cand_thresh,
+              max_step_px,
+              search_r_px,
+              max_gap_slices,
+              min_pts_slices,
+              pass_idx,
+              has_prior,
+              prior_si,
+              prior_sj,
+              gauss_ptr,
+          )
+          if tr_res is not None:
+            ks_sub, i_sub, j_sub, r_sub, shaft_p75 = tr_res
+            if len(ks_sub) == 0:
+              continue
+            arr_pts = np.column_stack([i_sub + sub_i0, j_sub + sub_j0, ks_sub + k0, r_sub])
+            ks = ks_sub.tolist()
+          else:
+            pts = {k_start: (i_start, j_start, s_val)}
+            peak_r = min(s_val, cand_thresh * 40.0)
+            for direction in (1, -1):
+              curr_i, curr_j = i_start, j_start
+              if prior_slope_ij is not None:
+                vel_i = float(prior_slope_ij[0]) * direction
+                vel_j = float(prior_slope_ij[1]) * direction
               else:
-                gap += 1
-                if gap > max_gap_slices:
+                vel_i, vel_j = 0.0, 0.0
+              gap = 0
+              k_cur = k_start + direction
+              while 0 <= k_cur < K_sub:
+                pred_i = curr_i + vel_i
+                pred_j = curr_j + vel_j
+                ic, jc = int(round(pred_i)), int(round(pred_j))
+                if not (
+                    search_r_px <= ic < I_sub - search_r_px
+                    and search_r_px <= jc < J_sub - search_r_px
+                ):
                   break
-                curr_i, curr_j = pred_i, pred_j
-              k_cur += direction
+                patch_r = resp_sub[k_cur, jc - search_r_px:jc + search_r_px + 1, ic - search_r_px:ic + search_r_px + 1]
+                eff_score = patch_r * gauss_base
+                best_idx = np.unravel_index(np.argmax(eff_score), eff_score.shape)
+                best_r = float(patch_r[best_idx])
+                best_c = float(c_smooth[k_cur, jc - search_r_px + best_idx[0], ic - search_r_px + best_idx[1]])
+                best_sym = float(ring_sym[k_cur, jc - search_r_px + best_idx[0], ic - search_r_px + best_idx[1]])
+                ni = float(ic - search_r_px + best_idx[1])
+                nj = float(jc - search_r_px + best_idx[0])
+                ii0, jj0 = int(ni), int(nj)
+                if 1 <= ii0 < I_sub - 1 and 1 <= jj0 < J_sub - 1 and best_r > 0.5:
+                  w_patch = np.maximum(resp_sub[k_cur, jj0 - 1:jj0 + 2, ii0 - 1:ii0 + 2], 0.0)
+                  w_sum = float(np.sum(w_patch))
+                  if w_sum > 0:
+                    ni = ii0 + float(np.sum(wx * w_patch)) / w_sum
+                    nj = jj0 + float(np.sum(wy * w_patch)) / w_sum
 
-          ks = sorted(pts.keys())
-          if len(ks) < min_pts_slices:
-            continue
-          r_arr_ks = np.array([pts[k][2] for k in ks])
-          shaft_p75 = float(np.percentile(r_arr_ks, 75))
-          tip_cut = max(cand_thresh * 0.35, 0.08 * shaft_p75)
-          base_cut = max(cand_thresh * 0.22, 0.05 * shaft_p75)
-          while len(ks) > 2 and pts[ks[-1]][2] < tip_cut:
-            ks.pop()
-          while len(ks) > 2 and pts[ks[0]][2] < base_cut:
-            ks.pop(0)
-          if len(ks) < min_pts_slices:
-            continue
+                min_step_r = max(cand_thresh * (0.28 if pass_idx == 1 else 0.20), 0.045 * peak_r)
+                is_dark = (best_r >= min_step_r) or (best_sym > 14.0 and best_c < 0.56 * best_sym and best_r >= 0.25 * min_step_r)
+                if is_dark:
+                  pts[k_cur] = (ni, nj, best_r)
+                  peak_r = max(peak_r, min(best_r, cand_thresh * 42.0))
+                  step_i = max(-max_step_px, min(max_step_px, ni - curr_i))
+                  step_j = max(-max_step_px, min(max_step_px, nj - curr_j))
+                  vel_i = 0.65 * vel_i + 0.35 * step_i
+                  vel_j = 0.65 * vel_j + 0.35 * step_j
+                  curr_i, curr_j = ni, nj
+                  gap = 0
+                else:
+                  gap += 1
+                  if gap > max_gap_slices:
+                    break
+                  curr_i, curr_j = pred_i, pred_j
+                k_cur += direction
 
-          arr_pts = np.array([[pts[k][0] + sub_i0, pts[k][1] + sub_j0, k + k0, pts[k][2]] for k in ks], dtype=np.float64)
+            ks = sorted(pts.keys())
+            if len(ks) < min_pts_slices:
+              continue
+            r_arr_ks = np.array([pts[k][2] for k in ks])
+            shaft_p75 = float(np.percentile(r_arr_ks, 75))
+            tip_cut = max(cand_thresh * 0.35, 0.08 * shaft_p75)
+            base_cut = max(cand_thresh * 0.22, 0.05 * shaft_p75)
+            while len(ks) > 2 and pts[ks[-1]][2] < tip_cut:
+              ks.pop()
+            while len(ks) > 2 and pts[ks[0]][2] < base_cut:
+              ks.pop(0)
+            if len(ks) < min_pts_slices:
+              continue
+
+            arr_pts = np.array([[pts[k][0] + sub_i0, pts[k][1] + sub_j0, k + k0, pts[k][2]] for k in ks], dtype=np.float64)
+
           ras_pts = arr_pts[:, :3] @ rot_mat.T + trans_vec
           order = np.argsort(ras_pts[:, 2])
           ras_pts = ras_pts[order]
@@ -3747,8 +3894,9 @@ class TrackingAlgorithmsMixin:
 
           # Mark visited and attenuate resp_sub along the accepted tract so adjacent seeds do not jump onto it
           if not is_up_seed:
-            for k_v in ks:
-              iv, jv = int(round(pts[k_v][0])), int(round(pts[k_v][1]))
+            for idx_v, k_v in enumerate(ks):
+              iv = int(round(arr_pts[idx_v, 0] - sub_i0))
+              jv = int(round(arr_pts[idx_v, 1] - sub_j0))
               j_lo, j_hi = max(0, jv - visit_r_px), min(J_sub, jv + visit_r_px + 1)
               i_lo, i_hi = max(0, iv - visit_r_px), min(I_sub, iv + visit_r_px + 1)
               visited[k_v, j_lo:j_hi, i_lo:i_hi] = True
@@ -3761,41 +3909,53 @@ class TrackingAlgorithmsMixin:
 
       def dedup_trajs(traj_list, existing_list=None):
         out = list(existing_list) if existing_list else []
+        is_deep = ((K - k0) * sp_k > 185.0)
         for t in sorted(traj_list, key=lambda x: -x["raw_score"]):
           dup = False
+          t_bx, t_by = float(t["base_xy"][0]), float(t["base_xy"][1])
+          t_xmin, t_xmax = t["x_min"], t["x_max"]
+          t_ymin, t_ymax = t["y_min"], t["y_max"]
           for idx_p, p in enumerate(out):
-            base_d = float(np.hypot(t["base_xy"][0] - p["base_xy"][0], t["base_xy"][1] - p["base_xy"][1]))
+            base_d = math.hypot(t_bx - float(p["base_xy"][0]), t_by - float(p["base_xy"][1]))
             if base_d < 2.15:
               dup = True
               break
-            z_min = max(t["ras"][0, 2], p["ras"][0, 2])
-            z_max = min(t["ras"][-1, 2], p["ras"][-1, 2])
-            if z_max >= z_min:
-              zs = np.linspace(z_min, z_max, 12)
-              tx = np.interp(zs, t["ras"][:, 2], t["ras"][:, 0])
-              ty = np.interp(zs, t["ras"][:, 2], t["ras"][:, 1])
-              px_i = np.interp(zs, p["ras"][:, 2], p["ras"][:, 0])
-              py_i = np.interp(zs, p["ras"][:, 2], p["ras"][:, 1])
-              if float(np.mean(np.hypot(tx - px_i, ty - py_i))) < 2.40:
-                dup = True
-                break
+            xy_close = not (
+                t_xmax + 3.15 < p["x_min"]
+                or p["x_max"] + 3.15 < t_xmin
+                or t_ymax + 3.15 < p["y_min"]
+                or p["y_max"] + 3.15 < t_ymin
+            )
+            if xy_close:
+              z_min = max(t["ras"][0, 2], p["ras"][0, 2])
+              z_max = min(t["ras"][-1, 2], p["ras"][-1, 2])
+              if z_max >= z_min:
+                zs = np.linspace(z_min, z_max, 12)
+                tx = np.interp(zs, t["ras"][:, 2], t["ras"][:, 0])
+                ty = np.interp(zs, t["ras"][:, 2], t["ras"][:, 1])
+                px_i = np.interp(zs, p["ras"][:, 2], p["ras"][:, 0])
+                py_i = np.interp(zs, p["ras"][:, 2], p["ras"][:, 1])
+                if float(np.mean(np.hypot(tx - px_i, ty - py_i))) < 2.40:
+                  dup = True
+                  break
             # Also check actual tracked Z-overlap and collinear continuation on deep scans
-            if (K - k0) * sp_k > 185.0:
+            if is_deep:
               z_ov0 = max(t["z_start_ras"], p["z_start_ras"])
               z_ov1 = min(t["z_end_ras"], p["z_end_ras"])
               if z_ov1 >= z_ov0 + 4.0:
-                zs_ov = np.linspace(z_ov0, z_ov1, 8)
-                tx_o = np.interp(zs_ov, t["ras"][:, 2], t["ras"][:, 0])
-                ty_o = np.interp(zs_ov, t["ras"][:, 2], t["ras"][:, 1])
-                px_o = np.interp(zs_ov, p["ras"][:, 2], p["ras"][:, 0])
-                py_o = np.interp(zs_ov, p["ras"][:, 2], p["ras"][:, 1])
-                if float(np.mean(np.hypot(tx_o - px_o, ty_o - py_o))) < 3.10:
-                  if t["z_end_ras"] > p["z_end_ras"] + 8.0 and p["k_min_rel"] < t["k_min_rel"]:
-                    pkg_m = merge_two_trajs(p, t, cand_thresh)
-                    if pkg_m is not None:
-                      out[idx_p] = pkg_m
-                  dup = True
-                  break
+                if xy_close:
+                  zs_ov = np.linspace(z_ov0, z_ov1, 8)
+                  tx_o = np.interp(zs_ov, t["ras"][:, 2], t["ras"][:, 0])
+                  ty_o = np.interp(zs_ov, t["ras"][:, 2], t["ras"][:, 1])
+                  px_o = np.interp(zs_ov, p["ras"][:, 2], p["ras"][:, 0])
+                  py_o = np.interp(zs_ov, p["ras"][:, 2], p["ras"][:, 1])
+                  if float(np.mean(np.hypot(tx_o - px_o, ty_o - py_o))) < 3.10:
+                    if t["z_end_ras"] > p["z_end_ras"] + 8.0 and p["k_min_rel"] < t["k_min_rel"]:
+                      pkg_m = merge_two_trajs(p, t, cand_thresh)
+                      if pkg_m is not None:
+                        out[idx_p] = pkg_m
+                    dup = True
+                    break
               elif abs(t["z_start_ras"] - p["z_end_ras"]) <= 20.0 or abs(p["z_start_ras"] - t["z_end_ras"]) <= 20.0:
                 t_lo, t_hi = (p, t) if p["z_start_ras"] <= t["z_start_ras"] else (t, p)
                 if float(np.hypot(t_lo["slope"][0] - t_hi["slope"][0], t_lo["slope"][1] - t_hi["slope"][1])) <= 0.09:
@@ -3818,9 +3978,9 @@ class TrackingAlgorithmsMixin:
       if res1 is None:
         res1 = self._compute_3d_sym_response_numpy(vol_work, sp_i, sp_j, i0, i1, j0, j1, k0, K, body_thresh)
       resp_full, cs_full, rsym_full = res1
-      resp1 = resp_full[k0:K, j0:j1, i0:i1].copy()
-      cs1 = cs_full[k0:K, j0:j1, i0:i1]
-      rsym1 = rsym_full[k0:K, j0:j1, i0:i1]
+      resp1 = np.ascontiguousarray(resp_full[k0:K, j0:j1, i0:i1], dtype=np.float32)
+      cs1 = np.ascontiguousarray(cs_full[k0:K, j0:j1, i0:i1], dtype=np.float32)
+      rsym1 = np.ascontiguousarray(rsym_full[k0:K, j0:j1, i0:i1], dtype=np.float32)
       K_sub = K - k0
 
       nn_preds = None
@@ -4005,6 +4165,7 @@ class TrackingAlgorithmsMixin:
           yy_in, xx_in = np.mgrid[-rj_in:rj_in + 1, -ri_in:ri_in + 1]
           disk_in = ((xx_in * sp_i) ** 2 + (yy_in * sp_j) ** 2) <= (1.35 ** 2)
 
+          saved_patches = [] if not vol_work_owned else None
           for t in locked:
             ks_r = np.arange(max(0, t["k_min_rel"] - 1), min(K_sub, t["k_max_rel"] + 2))
             ics = np.round(np.polyval(t["pi_abs"], ks_r)).astype(int)
@@ -4012,22 +4173,29 @@ class TrackingAlgorithmsMixin:
             for kr, ic_a, jc_a in zip(ks_r, ics, jcs):
               if p2_i0 <= ic_a < p2_i1 and p2_j0 <= jc_a < p2_j1:
                 k_a = kr + k0
-                bg_v = float(rsym_full[k_a, jc_a, ic_a])
+                bg_v = float(rsym1[kr, jc_a - j0, ic_a - i0])
                 if bg_v > 5.0:
                   j_lo, j_hi = max(0, jc_a - rj_in), min(J, jc_a + rj_in + 1)
                   i_lo, i_hi = max(0, ic_a - ri_in), min(I, ic_a + ri_in + 1)
                   d_sub = disk_in[(j_lo - (jc_a - rj_in)):(j_hi - (jc_a - rj_in)), (i_lo - (ic_a - ri_in)):(i_hi - (ic_a - ri_in))]
                   patch = vol_work[k_a, j_lo:j_hi, i_lo:i_hi]
+                  if saved_patches is not None:
+                    saved_patches.append((k_a, j_lo, j_hi, i_lo, i_hi, patch.copy()))
                   patch[d_sub] = np.maximum(patch[d_sub], bg_v * 0.92)
 
           update_progress(60, "Stage 4/6: Re-computing symmetry & guided tracking (Pass 2 & JEV Pass 3)...")
-          res2 = rust_compute_3d_sym_response(vol_work, sp_i, sp_j, p2_i0, p2_i1, p2_j0, p2_j1, k0, K, body_thresh)
-          if res2 is None:
-            res2 = self._compute_3d_sym_response_numpy(vol_work, sp_i, sp_j, p2_i0, p2_i1, p2_j0, p2_j1, k0, K, body_thresh)
+          try:
+            res2 = rust_compute_3d_sym_response(vol_work, sp_i, sp_j, p2_i0, p2_i1, p2_j0, p2_j1, k0, K, body_thresh)
+            if res2 is None:
+              res2 = self._compute_3d_sym_response_numpy(vol_work, sp_i, sp_j, p2_i0, p2_i1, p2_j0, p2_j1, k0, K, body_thresh)
+          finally:
+            if saved_patches:
+              for k_a, j_lo, j_hi, i_lo, i_hi, orig_p in reversed(saved_patches):
+                vol_work[k_a, j_lo:j_hi, i_lo:i_hi] = orig_p
           resp2_full, cs2_full, rsym2_full = res2
-          resp2 = resp2_full[k0:K, p2_j0:p2_j1, p2_i0:p2_i1].copy()
-          cs2 = cs2_full[k0:K, p2_j0:p2_j1, p2_i0:p2_i1]
-          rsym2 = rsym2_full[k0:K, p2_j0:p2_j1, p2_i0:p2_i1]
+          resp2 = np.ascontiguousarray(resp2_full[k0:K, p2_j0:p2_j1, p2_i0:p2_i1], dtype=np.float32)
+          cs2 = np.ascontiguousarray(cs2_full[k0:K, p2_j0:p2_j1, p2_i0:p2_i1], dtype=np.float32)
+          rsym2 = np.ascontiguousarray(rsym2_full[k0:K, p2_j0:p2_j1, p2_i0:p2_i1], dtype=np.float32)
           J2, I2 = p2_j1 - p2_j0, p2_i1 - p2_i0
 
           ri_m = max(1, int(round(1.60 / sp_i)))
@@ -4061,13 +4229,20 @@ class TrackingAlgorithmsMixin:
                 d_sub = disk_m[(j_lo - (jc_s - rj_m)):(j_hi - (jc_s - rj_m)), (i_lo - (ic_s - ri_m)):(i_hi - (ic_s - ri_m))]
                 resp2[kr, j_lo:j_hi, i_lo:i_hi][d_sub] = 0.0
 
-          lm2 = resp2 == maximum_filter(resp2, size=(1, 2 * nms_px + 1, 2 * nms_px + 1))
           ctl_cut = cand_thresh * 0.55
           ctl_pts = []
           ref_bases = np.array([t["base_xy"] for t in combined])
           ref_slopes = np.array([t["slope"] for t in combined])
-          for kr in range(0, min(K_sub - 1, int(round(105.0 / sp_k)))):
-            jj, ii = np.where(lm2[kr] & (resp2[kr] >= ctl_cut))
+          max_ctl_kr = min(K_sub - 1, int(round(105.0 / sp_k)))
+          lm2 = None
+          for kr in range(0, max_ctl_kr):
+            res_nms3 = rust_find_2d_nms_peaks(resp2[kr], nms_px, ctl_cut)
+            if res_nms3 is not None:
+              jj, ii, _ = res_nms3
+            else:
+              if lm2 is None:
+                lm2 = resp2 == maximum_filter(resp2, size=(1, 2 * nms_px + 1, 2 * nms_px + 1))
+              jj, ii = np.where(lm2[kr] & (resp2[kr] >= ctl_cut))
             if len(ii) == 0:
               continue
             order_r = np.argsort(-resp2[kr, jj, ii])[:45]
@@ -4109,7 +4284,7 @@ class TrackingAlgorithmsMixin:
               sel_idxs = [by_k[k] for k in ks_j]
               arr_j = np.column_stack([ctl_arr[sel_idxs, 0], ctl_arr[sel_idxs, 1], ctl_arr[sel_idxs, 2] + k0, ctl_arr[sel_idxs, 3]])
               ras_j = ctl_arr[sel_idxs, 4:7]
-              shaft_p75 = float(np.percentile(arr_j[:, 3], 75))
+              shaft_p75 = fast_pct(arr_j[:, 3], 75)
               ras_j, arr_j, ks_j = trim_trajectory_inside_out(ras_j, arr_j, ks_j, shaft_p75)
               if len(ks_j) < (min_pts_slices + 1):
                 continue
