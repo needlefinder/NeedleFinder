@@ -917,12 +917,13 @@ and two NVIDIA GPUs (GeForce RTX 4090, 24 GB, and RTX 4070 Ti SUPER, 16
 GB), The benchmark, graph-network training, and few-shot experiments ran
 with Python 3.13.2, PyTorch 2.11.0 (CUDA 13.0), SciPy 1.16.3, and NumPy
 2.4.3; the Stage 1 networks were trained on both GPUs in parallel and
-exported to ONNX with PyTorch 2.4.1, the producer version recorded in
-the model files. The Stage 0 kernel is written in Rust (crate
-\texttt{needlefinder\_rust}, multi-threaded with the standard library,
-exposed to Python through a C interface and \texttt{ctypes}, compiled in
-release mode with link-time optimization). Hungarian matching uses
-SciPy. Figures were produced with Matplotlib.
+exported to ONNX in a separate environment with Python 3.12.9, PyTorch
+2.4.1 (CUDA 12.1), SciPy 1.16.1, and ONNX 1.23.2, the PyTorch version
+being the producer recorded in the model files. The Stage 0 kernel is
+written in Rust (crate \texttt{needlefinder\_rust}, multi-threaded with
+the standard library, exposed to Python through a C interface and
+\texttt{ctypes}, compiled in release mode with link-time optimization).
+Hungarian matching uses SciPy. Figures were produced with Matplotlib.
 
 For clinical use the trained Stage 1 and Stage 2B networks are exported
 to ONNX and run with ONNX Runtime inside an extension for 3D Slicer 5.10
