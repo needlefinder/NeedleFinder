@@ -22,5 +22,5 @@ For example:
 rsync -avz think:/mnt/SSD/github/needlefinder/vault/paper/needlefinder_2026_pmb.pdf ./
 ```
 
-Give the exact path to the file(s) just produced. This is non-optional — the human views reports off-box, so a report without its rsync line is unfinished.
+Give the exact path to the file(s) just produced. **Never use unquoted `*` wildcards in `rsync` commands** (since `zsh` fails with `no matches found` on local expansion); always use explicit filenames, brace expansion (`{pdf,html,tex}`), or directory paths. This is non-optional — the human views reports off-box, so a report without its rsync line is unfinished.
 
