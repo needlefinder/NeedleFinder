@@ -1253,13 +1253,14 @@ def run_mpnn_and_graph_transformer(
         probs = probs_base
         dz_pred_net = np.zeros(M, dtype=np.float32)
 
+    is_clinical_mri = (max((pr["mean_pm"] for pr in prof_meta), default=0.0) >= 0.15)
     conf_arr = np.zeros(M, dtype=np.float64)
     for i, p in enumerate(pool):
         t = p["traj"]
         p_rec = float(probs[i, 0])
         p_1to1 = float(probs[i, 1])
         p_long = float(probs[i, 2])
-        if script:
+        if not is_clinical_mri:
             gt_conf = 100.0 * (0.45 * p_rec + 0.55 * p_long)
             blended_conf = 0.65 * float(t.get("confidence", 65.0)) + 0.35 * gt_conf
         else:
@@ -1289,18 +1290,20 @@ def run_mpnn_and_graph_transformer(
         if center_xy is not None:
             if float(np.linalg.norm(pts[:, :2].mean(axis=0) - center_xy)) > irgm_radius_mm and conf_arr[idx_c] < float(min_confidence) + 20.0:
                 continue
-        if p_c.get("mean_sym", 0.5) < 0.14 and p_c.get("frac_active", 0.5) < 0.40 and conf_arr[idx_c] < float(min_confidence) + 15.0:
+        if is_clinical_mri and p_c.get("mean_sym", 0.5) < 0.14 and p_c.get("frac_active", 0.5) < 0.40 and conf_arr[idx_c] < float(min_confidence) + 15.0:
             continue
         dedup_thresh = 1.60 if (conf_arr[idx_c] >= 65.0 and p_c.get("mpnn_pa", 0.0) >= 0.50) else 1.95
         if any(_traj_dist_np(pts, s["ras"]) < dedup_thresh for s in out_trajs):
             continue
-        if not script and tip_out is not None:
+        if is_clinical_mri and tip_out is not None:
             dz_prof_mm = float(p_c.get("z_prof_tip", pts[-1, 2]) - pts[-1, 2])
             dz_nbr_mm = float(p_c.get("z_tip_nbr", pts[-1, 2]) - pts[-1, 2])
             dz_comb_mm = 0.36 * (0.65 * float(dz_pred_net[idx_c]) + 0.25 * dz_prof_mm + 0.10 * dz_nbr_mm)
             pts_ref = _apply_tip_adjustment_and_poly3_np(pts, dz_comb_mm, float(p_c.get("vx_top", 0.0)), float(p_c.get("vy_top", 0.0)))
             cand["ras"] = pts_ref
             cand["points"] = pts_ref
+            cand["length_mm"] = float(np.sum(np.linalg.norm(np.diff(pts_ref, axis=0), axis=1)))
+            cand["z_span_tracked"] = float(abs(pts_ref[-1, 2] - pts_ref[0, 2]))
         out_trajs.append(cand)
 
     return out_trajs

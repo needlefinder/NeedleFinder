@@ -533,10 +533,64 @@ class SceneAndEvaluationMixin:
   """ Needle segmentation report"""
   #----------------------------------------------------------------------------------------------
 
-  def addNeedleToTable(self, ID, label=None, needleType=None, comment=""):
+  def confidenceToRGB(self, confidence):
+    """Map confidence score (0..100%) to RGB in [0.0, 1.0] (Red -> Orange -> Amber -> Emerald Green)."""
+    c = float(np.clip(confidence, 0.0, 100.0))
+    if c >= 85.0:
+      t = min(1.0, (c - 85.0) / 15.0)
+      return (0.16 * (1.0 - t) + 0.09 * t, 0.78 * (1.0 - t) + 0.85 * t, 0.36 * (1.0 - t) + 0.42 * t)
+    elif c >= 70.0:
+      t = (c - 70.0) / 15.0
+      return (0.95 * (1.0 - t) + 0.16 * t, 0.76 * (1.0 - t) + 0.78 * t, 0.14 * (1.0 - t) + 0.36 * t)
+    elif c >= 50.0:
+      t = (c - 50.0) / 20.0
+      return (0.96 * (1.0 - t) + 0.95 * t, 0.45 * (1.0 - t) + 0.76 * t, 0.12 * (1.0 - t) + 0.14 * t)
+    else:
+      t = max(0.0, (c - 25.0) / 25.0)
+      return (0.90 * (1.0 - t) + 0.96 * t, 0.18 * (1.0 - t) + 0.45 * t, 0.18 * (1.0 - t) + 0.12 * t)
+
+  def updateNeedleColorsByConfidence(self, colorByConf=None):
+    """Update 3D model colors and Segmentation Report table swatches when toggling confidence coloring."""
+    widget = getattr(slicer.modules, "NeedleFinderWidget", None)
+    if colorByConf is None and widget is not None and getattr(widget, "colorByConfidenceCheckBox", None) is not None:
+      colorByConf = bool(widget.colorByConfidenceCheckBox.isChecked())
+    else:
+      colorByConf = bool(colorByConf)
+
+    modelNodes = slicer.util.getNodes("vtkMRMLModelNode*")
+    for modelNode in list(modelNodes.values()):
+      if modelNode is None or modelNode.GetDisplayNode() is None:
+        continue
+      if modelNode.GetAttribute("type") != "Detection" and not str(modelNode.GetName()).startswith("auto-seg_"):
+        continue
+      nth_str = modelNode.GetAttribute("nth")
+      nth = int(nth_str) % MAXCOL if nth_str is not None else 0
+      conf_str = modelNode.GetAttribute("confidence")
+      if colorByConf and conf_str is not None:
+        try:
+          r_f, g_f, b_f = self.confidenceToRGB(float(conf_str))
+        except Exception:
+          r_f, g_f, b_f = self.color[nth][0], self.color[nth][1], self.color[nth][2]
+      else:
+        r_f, g_f, b_f = self.color[nth][0], self.color[nth][1], self.color[nth][2]
+      modelNode.GetDisplayNode().SetColor(r_f, g_f, b_f)
+
+      row_str = modelNode.GetAttribute("table_row")
+      if widget is not None and getattr(widget, "model", None) is not None and row_str is not None:
+        try:
+          r_idx = int(row_str)
+          if 0 <= r_idx < widget.model.rowCount():
+            item0 = widget.model.item(r_idx, 0)
+            if item0 is not None:
+              qcol = qt.QColor(int(round(r_f * 255)), int(round(g_f * 255)), int(round(b_f * 255)))
+              item0.setData(qcol, 1)
+        except Exception:
+          pass
+
+  def addNeedleToTable(self, ID, label=None, needleType=None, comment="", confidence=None):
     """
     Add last segmented needle to the table
-    The color icon corresponds to the color of the needle, which corresponds to its label (color code)
+    The color icon corresponds to the color of the needle, which corresponds to its label (color code) or confidence score.
     """
     profprint()
     widget = slicer.modules.NeedleFinderWidget
@@ -556,7 +610,16 @@ class SceneAndEvaluationMixin:
     ################################################
     # Column 0
     color = qt.QColor()
-    color.setRgb(self.color255[ref][0], self.color255[ref][1], self.color255[ref][2])
+    use_conf_color = (
+        confidence is not None
+        and getattr(widget, "colorByConfidenceCheckBox", None) is not None
+        and widget.colorByConfidenceCheckBox.isChecked()
+    )
+    if use_conf_color:
+      r_f, g_f, b_f = self.confidenceToRGB(confidence)
+      color.setRgb(int(round(r_f * 255)), int(round(g_f * 255)), int(round(b_f * 255)))
+    else:
+      color.setRgb(self.color255[ref][0], self.color255[ref][1], self.color255[ref][2])
     item = qt.QStandardItem()
     item.setData(color, 1)
     widget.model.setItem(widget.row, 0, item)

@@ -468,6 +468,29 @@ class NeedleFinderWidget(ScriptedLoadableModuleWidget):
     autoDetectLayout.addWidget(self.minConfidenceSpinBox, 1)
     segmentationFrame.addRow(autoDetectRow)
 
+    self.colorByConfidenceCheckBox = qt.QCheckBox("Color Needles by Confidence Score")
+    self.colorByConfidenceCheckBox.checked = False
+    self.colorByConfidenceCheckBox.toolTip = (
+        "Color detected 3D needle tubes and Segmentation Report swatches by calibrated confidence score "
+        "(Green >= 85%, Amber 70-85%, Orange 50-70%, Red < 50%) instead of distinct per-needle index colors."
+    )
+    self.colorByConfidenceCheckBox.toggled.connect(self.onColorByConfidenceToggled)
+
+    self.colorByConfidenceLegendLabel = qt.QLabel(
+        "<span style='color:#17c964;font-weight:600;'>&#9632; &ge;85%</span> &nbsp;"
+        "<span style='color:#f5a524;font-weight:600;'>&#9632; 70-85%</span> &nbsp;"
+        "<span style='color:#f3722c;font-weight:600;'>&#9632; 50-70%</span> &nbsp;"
+        "<span style='color:#e5383b;font-weight:600;'>&#9632; &lt;50%</span>"
+    )
+    self.colorByConfidenceLegendLabel.setAlignment(qt.Qt.AlignRight | qt.Qt.AlignVCenter)
+
+    colorByConfRow = qt.QFrame()
+    colorByConfLayout = qt.QHBoxLayout(colorByConfRow)
+    colorByConfLayout.setContentsMargins(0, 0, 0, 0)
+    colorByConfLayout.addWidget(self.colorByConfidenceCheckBox, 1)
+    colorByConfLayout.addWidget(self.colorByConfidenceLegendLabel, 0)
+    segmentationFrame.addRow(colorByConfRow)
+
     self.newInsertionButton = None
 
     self.deleteNeedleButton = qt.QPushButton('Delete Last Needle [Ctrl + Z]')
@@ -1100,6 +1123,11 @@ class NeedleFinderWidget(ScriptedLoadableModuleWidget):
       self.fiducialButton.checked = 0
     min_conf = float(self.minConfidenceSpinBox.value)
     self.logic.autoDetectAllNeedles(minConfidence=min_conf)
+
+  def onColorByConfidenceToggled(self, checked):
+    """Live-toggle needle 3D model and table swatch colors between confidence colormap and per-needle index colors."""
+    profprint()
+    self.logic.updateNeedleColorsByConfidence(bool(checked))
 
   def onStartStopGivingObturatorNeedleTipsToggled(self, checked):
     """Start/stop giving obturator needle tips."""
@@ -2532,5 +2560,10 @@ class NeedleFinderTest(ScriptedLoadableModuleTest):
     comment_item = widget.model.item(0, 4)
     self.assertIsNotNone(comment_item)
     self.assertIn("Conf:", comment_item.text())
+    widget.colorByConfidenceCheckBox.setChecked(True)
+    slicer.app.processEvents()
+    self.assertTrue(widget.colorByConfidenceCheckBox.isChecked())
+    widget.colorByConfidenceCheckBox.setChecked(False)
+    slicer.app.processEvents()
 
     self.delayDisplay("UI and slice-view interaction test passed!", 50)
