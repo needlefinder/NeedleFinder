@@ -381,9 +381,9 @@ reconstruction takes 2.74 s on an 8-core CPU (1.20 s on standard
 \(768 \times 768\) scans) or 1.25 s on a GPU.
 
 \textbf{Significance.} Automatic catheter reconstruction on MRI now
-matches expert agreement, needs very little training data, and runs in 1
-to 3 seconds per patient. It turns a manual task of tens of minutes into
-a short verification step.
+matches expert agreement, needs little bundle-level training data, and
+runs in a few seconds per patient. It turns a manual task of tens of
+minutes into a short verification step.
 \end{abstract}
 
 \section*{Plain-Language Summary}\label{plain-language-summary}
@@ -769,10 +769,11 @@ from its surroundings when the native pixels are 0.3 to 0.9 mm. Working
 on the native grid instead, a standard \(3 \times 3 \times 3\)
 convolution mixes information over up to ten times more distance along
 \(z\) than in-plane. Stage 1 (NeedleUNet3D, Figure \ref{fig:arch}a)
-therefore operates on the native grid, starts with a
-\(1 \times 3 \times 3\) in-plane residual block, and continues with
-\(3 \times 3 \times 3\) residual blocks with squeeze-and-excitation
-attention (24, 48, 96, and 144 channels). Its input has six channels:
+therefore operates on the native grid, uses \(3 \times 3 \times 3\)
+residual blocks with squeeze-and-excitation attention at four scales
+(24, 48, 96, and 144 channels), pools only in-plane at the first two
+scales so that the thick slice axis is not downsampled early, and adds a
+dilated convolution at the deepest scale. Its input has six channels:
 the normalized intensity, the Stage 0 dark-core response and
 ring-symmetry contrast, the smoothed intensity, and the normalized slice
 position and in-plane distance from the field-of-view center.
@@ -783,20 +784,22 @@ The network predicts four outputs:
 \def\labelenumi{\arabic{enumi}.}
 \tightlist
 \item
-  \textbf{Tubular mask} \(P_{\text{mask}}\): binary cross-entropy with a
-  positive weight of 12 plus soft Dice on the tubular label around each
-  reference trajectory.
+  \textbf{Tubular mask} \(P_{\text{mask}}\): focal binary cross-entropy,
+  weighted 19-fold on catheter voxels and up-weighted on bright Stage 0
+  responses that are not catheters, plus soft Dice on the tubular label
+  around each reference trajectory.
 \item
   \textbf{Centerline peak} \(P_{\text{peak}}\): a sharp 2D Gaussian
   (\(\sigma = 0.70\) mm) at the sub-pixel intersection of each catheter
   with the slice, trained with a mean-squared-error loss up-weighted
-  25-fold at the peaks. Two touching catheters whose masks merge still
+  26-fold at the peaks. Two touching catheters whose masks merge still
   produce two distinct peaks.
 \item
   \textbf{Direction field}
   \((V_x, V_y) = (\Delta x/\Delta z, \Delta y/\Delta z)\): the local
-  slope of the trajectory, trained with a mean-squared-error loss inside
-  the mask.
+  slope of the trajectory, trained with a smooth \(L_1\) loss inside the
+  mask, with an additional term that penalizes slice-to-slice
+  inconsistency of the predicted direction.
 \item
   \textbf{Obturator channel} \(P_{\text{obt}}\): a dedicated
   segmentation of the large central obturator and tandem, so that its
@@ -915,8 +918,14 @@ Baselines}\label{cross-validation-protocol-and-baselines}
 
 Every learned component and every baseline is trained and evaluated with
 patient-level 5-fold cross-validation on the 54 patients, so no label of
-a test patient is used to train the model that is evaluated on it. Two
-qualifications apply. The training epoch of each Stage 1 network was
+a test patient is used to train the model that is evaluated on it. Three
+qualifications apply. The axial extent of every cached volume starts one
+slice below a template-plane slice index taken from the clinical scene
+file (or, when absent, from the median entry slice of the reference
+trajectories), and the in-plane region of interest is centered with the
+same scene information, so test volumes are cropped with
+reference-assisted bounds; the deployed extension derives these bounds
+automatically instead. The training epoch of each Stage 1 network was
 selected on its held-out fold, which can bias the Stage 1 maps slightly
 in its favor. And the Stage 2 networks of a fold are trained on Stage 1
 maps of the other patients, which were produced by Stage 1 models whose
@@ -1110,10 +1119,11 @@ each baseline, and the NeedleFinder 2026 threshold sweep on the whole
 cohort. Dashed curves are lines of constant F1; the star marks the
 default threshold \(\tau = 50\%\). \textbf{(b) Accuracy versus number of
 annotated patients per fold used to fine-tune the bundle-scoring stage},
-\(k \in \{0, 1, 5, 10, 20, 43\}\), with and without SynthBrachy3T
-pre-training; the \(k = 0\) point uses no learned bundle scoring. Shaded
-bands are the patient-level bootstrap 95\% confidence intervals of
-F1.}\label{fig:pareto}
+\(k \in \{0, 1, 5, 10, 20, 43\}\), with SynthBrachy3T pre-training; the
+\(k = 0\) point uses no learned bundle scoring, and the decoded scores
+at \(k < 43\) are blended with the full-fold clinical transformer (see
+text). Shaded bands are the patient-level bootstrap 95\% confidence
+intervals of F1.}\label{fig:pareto}
 \end{figure}
 
 Figure \ref{fig:pareto}(a) shows what each stage adds. Stage 1 alone has
@@ -1132,9 +1142,13 @@ needs, not how much annotation the whole pipeline needs. With no learned
 bundle scoring at all (\(k = 0\)), the analytical Stage 0 candidates
 with the geometric gate, duplicate merging, and cubic smoothing alone
 reach 75.1\% F1. With a single annotated patient (\(k = 1\)) the
-fine-tuned Stage 2B reaches 82.0\% F1, which is 3.9 points better than
-the same stage without synthetic pre-training and better than the PMB
-2019 U-Net trained on all 43 patients of a fold (81.3\%). Five patients
+fine-tuned Stage 2B reaches 82.0\% F1, better than the PMB 2019 U-Net
+trained on all 43 patients of a fold (81.3\%). The decoded confidence at
+\(k < 43\) still blends the fine-tuned transformer with the clinical
+transformer trained on the full fold (blend weight \(0.85 - 0.006k\) on
+the synthetic model), so 15 to 27\% of the score comes from a full-data
+model; a comparison against the same architecture trained from scratch
+on \(k\) patients without any blending has not been run. Five patients
 give 83.7\% F1, ten give 86.6\%, and all 43 give 88.2\%.
 
 \begin{figure}
@@ -1203,16 +1217,23 @@ Speed}\label{false-tracks-on-scans-without-catheters-and-speed}
 
 \input{tables/tab4_specificity.tex}
 
-A method deployed in the clinic must not invent catheters. We ran
-NeedleFinder 2026 on 48 public pelvic MRI scans that contain no
-catheters (Table \ref{tbl:specificity}, Figure \ref{fig:spec_runtime}a).
-Before Stage 2B, the candidate pool contains 20.5 false tracks per scan
-on average. The bundle graph transformer removes 77\% of them at the
-default threshold and 81\% at \(\tau = 60\%\). Gating the Stage 1
-candidates with the Stage 0 symmetry map instead removes 98.2\% of them,
-leaving 18 false tracks across all 48 scans: 0.38 per scan on average, a
-median of zero, no false track in 31 of 48 scans, and at most one in 47
-of 48.
+A method deployed in the clinic must not invent catheters. We ran the
+deployed NeedleFinder 2026 extension on 48 public pelvic MRI scans that
+contain no catheters (Table \ref{tbl:specificity}, Figure
+\ref{fig:spec_runtime}a). This experiment uses the production bundle
+transformer shipped with the extension (the 18-feature clinical model,
+without SynthBrachy3T pre-training or tip refinement), and the extension
+switches to a conservative scoring formula and disables tip refinement
+when the strongest candidate has a mean mask probability below 0.15,
+which is the case on most needle-free scans; the numbers below therefore
+characterize the deployed system rather than the Table \ref{tbl:main}
+configuration. Before Stage 2B, the candidate pool contains 20.5 false
+tracks per scan on average. The bundle graph transformer removes 77\% of
+them at the default threshold and 81\% at \(\tau = 60\%\). Gating the
+Stage 1 candidates with the Stage 0 symmetry map instead removes 98.2\%
+of them, leaving 18 false tracks across all 48 scans: 0.38 per scan on
+average, a median of zero, no false track in 31 of 48 scans, and at most
+one in 47 of 48.
 
 \begin{figure}
 \centering
@@ -1282,10 +1303,11 @@ configurations than any clinical dataset.
 Limitations}\label{what-it-means-in-the-clinic-and-limitations}
 
 NeedleFinder 2026 is a one-click module in 3D Slicer {[}83{]} that runs
-in 1 to 3 seconds without a GPU. It changes the physicist's task from
-tracing 15 to 30 catheters, which takes tens of minutes, into a 1 to 2
-minute check: click \emph{Detect Needles}, inspect the 3D bundle and the
-axial intersections, and correct the occasional tip or partial track. A
+in a few seconds without a GPU (1 to 4 s per scan, 2.7 s on average, in
+the current measurement). It changes the physicist's task from tracing
+15 to 30 catheters, which takes tens of minutes, into a 1 to 2 minute
+check: click \emph{Detect Needles}, inspect the 3D bundle and the axial
+intersections, and correct the occasional tip or partial track. A
 similar verification workflow has already saved about 15 minutes per
 case in ultrasound-guided prostate brachytherapy {[}61{]}. Because the
 in-plane shaft error (0.46 mm median) is below the 0.49 mm median
@@ -1308,19 +1330,21 @@ input are the natural next experiments for the tips. Second, all
 clinical scans come from one institution and one 3T scanner; geometric
 distortion of plastic applicators at 3T is small (0.2 to 0.75 mm)
 {[}89{]}, so accuracy is dominated by catheter identification rather
-than by the scanner. The 48 external MSD scans show that the method does
-not hallucinate on other scanners, but a prospective multi-center study
-across 1.5T, 3T, and low-field systems {[}90{]} from several vendors is
-still needed to establish generalization. Third, the reference traces
-come from one annotation convention, so agreement with them is not the
-same as agreement with physical truth, and we have not measured the
-editing time or the dosimetric effect of the residual errors in a
-planning system; the 1 to 2 minute verification workflow is therefore an
-expectation, not a measurement. Fourth, the three published baselines
-are our own adaptations to this MRI data, not the authors' code, and the
-evaluation matches catheters on their shared length only, so a correctly
-placed but incomplete track counts as detected while its tip error is
-reported separately.
+than by the scanner. The 48 external MSD scans show that false tracks on
+other scanners can be kept low with the Stage 0 gate, but the full
+pipeline still reports several per scan at its default threshold, and a
+prospective multi-center study across 1.5T, 3T, and low-field systems
+{[}90{]} from several vendors is still needed to establish
+generalization. Third, the reference traces come from one annotation
+convention, so agreement with them is not the same as agreement with
+physical truth, and we have not measured the editing time or the
+dosimetric effect of the residual errors in a planning system; the 1 to
+2 minute verification workflow is therefore an expectation, not a
+measurement. Fourth, the three published baselines are our own
+adaptations to this MRI data, not the authors' code, and the evaluation
+matches catheters on their shared length only, so a correctly placed but
+incomplete track counts as detected while its tip error is reported
+separately.
 
 \section{Conclusion}\label{conclusion}
 
@@ -1329,8 +1353,9 @@ clinical 3T T2W MRI with 88.2\% F1, 0.46 mm median shaft error, and 2.61
 mm median tip error, in 2.74 s on an 8-core CPU (1.25 s on a GPU). Its
 agreement with expert traces is closer than the agreement between two
 expert teams, its bundle-scoring stage reaches 82.0\% F1 when fine-tuned
-on a single annotated patient thanks to synthetic pre-training, and it
-produces almost no false catheters on scans that contain none. The
+on a single annotated patient thanks to synthetic pre-training, and its
+false tracks on scans that contain no catheters can be reduced to 0.38
+per scan with the Stage 0 symmetry gate (4.7 per scan without it). The
 combination of an analytical symmetry prior, a multi-head 3D U-Net, and
 bundle-level graph reasoning resolves the precision problem that has
 limited voxel-based methods on MRI, and it makes MRI-only catheter

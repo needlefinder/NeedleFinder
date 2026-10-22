@@ -653,8 +653,6 @@ def make_fig4_pareto_and_fewshot(bench):
     x_pos = np.log2(shots)
 
     f1_syn_all = [fs_syn[f"{k}_shot"]["cohort_all_1063_catheters"]["f1_1to1_pct"] for k in shots]
-    f1_nf_all = [fs[f"{k}_shot"]["cohort_all_1063_catheters"]["f1_1to1_pct"] for k in shots]
-    dice_k = [fs[f"{k}_shot"]["mean_oof_voxel_dice"] * 100.0 for k in shots]
     f1_zero = fs_syn["0_shot"]["cohort_all_1063_catheters"]["f1_1to1_pct"]
 
     # Zero-shot floor line
@@ -665,20 +663,14 @@ def make_fig4_pareto_and_fewshot(bench):
     def _ci(src, k):
         return src[f"{k}_shot"]["cohort_all_1063_catheters"]["bootstrap_95ci_1000_patients"]["f1_1to1_pct"]
     ci_syn = np.array([_ci(fs_syn, k) for k in shots])
-    ci_nf = np.array([_ci(fs, k) for k in shots])
 
     ax2.plot(x_pos, f1_syn_all, color=C["nf"], lw=1.6, marker="o", ms=4.2, zorder=5)
     ax2.fill_between(x_pos, ci_syn[:, 0], ci_syn[:, 1], color=C["nf"], alpha=0.18, zorder=3)
 
-    ax2.plot(x_pos, f1_nf_all, color=C["st2"], lw=1.3, ls="--", marker="s", ms=3.6, zorder=4)
-    ax2.fill_between(x_pos, ci_nf[:, 0], ci_nf[:, 1], color=C["st2"], alpha=0.12, zorder=2)
 
-    ax2.plot(x_pos, dice_k, color=C["st1"], lw=1.2, ls="-.", marker="^", ms=3.8, zorder=4)
 
     # Direct labels on curves
     ax2.text(x_pos[-1] - 0.05, f1_syn_all[-1] + 2.6, "NF 2026 + SynthBrachy3T (88.2%)", fontsize=5.6, fontweight="bold", color=C["nf"], ha="right")
-    ax2.text(x_pos[-1] - 0.05, f1_nf_all[-1] - 5.2, f"NF 2026 real-only ({f1_nf_all[-1]:.1f}%)", fontsize=5.5, color=C["st2"], ha="right")
-    ax2.text(x_pos[-1] - 0.05, dice_k[-1] - 7.5, "Stage 1 ResUNet Dice (%)", fontsize=5.6, color=C["st1"], ha="right")
 
     # Highlight k=1 shot Sim-to-Real jump
     ax2.annotate(f"1-shot: {f1_syn_all[0]:.1f}%",
