@@ -2896,7 +2896,7 @@ class TrackingAlgorithmsMixin:
     """Remove duplicates in 2D array."""
     return unique_points(a)
 
-  def addNeedleToScene(self, controlPoint, colorVar, needleType='Detection', script=False, trans=0, manualName="", bPause=False, comment=""):
+  def addNeedleToScene(self, controlPoint, colorVar, needleType='Detection', script=False, trans=0, manualName="", bPause=False, comment="", confidence=None):
     """Computes the Bezier curve and adds visual representation of a needle to the scene."""
     profprint()
     widget = slicer.modules.NeedleFinderWidget
@@ -2949,11 +2949,26 @@ class TrackingAlgorithmsMixin:
         nth = extract_model_id_number(model.GetID()) % MAXCOL
       else:
         nth = int(colorVar) % MAXCOL
-    modelDisplay.SetColor(self.color[int(nth)][0], self.color[int(nth)][1], self.color[int(nth)][2])
     model.SetAttribute("nth", str(nth))
+    if confidence is not None:
+      model.SetAttribute("confidence", f"{float(confidence):.2f}")
+
+    use_conf_color = (
+        needleType != 'Validation'
+        and confidence is not None
+        and getattr(widget, "colorByConfidenceCheckBox", None) is not None
+        and widget.colorByConfidenceCheckBox.isChecked()
+    )
+    if use_conf_color:
+      r_f, g_f, b_f = self.confidenceToRGB(confidence)
+      modelDisplay.SetColor(r_f, g_f, b_f)
+    else:
+      modelDisplay.SetColor(self.color[int(nth)][0], self.color[int(nth)][1], self.color[int(nth)][2])
 
     if needleType != 'Validation' and not script:
-      self.addNeedleToTable(extract_model_id_number(model.GetID()), label, comment=comment)
+      widget.initTableView()
+      model.SetAttribute("table_row", str(widget.model.rowCount()))
+      self.addNeedleToTable(extract_model_id_number(model.GetID()), label, comment=comment, confidence=confidence)
     return model
 
   def estimateAxialLimitSlice(self, vol_arr: np.ndarray, sp_k: float) -> int:
@@ -4204,13 +4219,13 @@ class TrackingAlgorithmsMixin:
             if mean_pm_v >= 0.58 and mean_pp_v >= 0.44 and conf >= 38.0:
               conf = max(conf, min(99.5, 58.0 + 38.0 * mean_pm_v))
 
-        if conf >= (25.0 if (nn_preds is not None and not script) else float(minConfidence)):
+        if conf >= (25.0 if nn_preds is not None else float(minConfidence)):
           t["nn_prob"] = nn_prob
           t["confidence"] = conf
           filtered.append(t)
 
-      # Stage 2 Direct 3D U-Net Labelmap + Tangent-Field Tube Reconstruction + NeedleSliceMPNN + DenseGraphTransformer
-      if nn_preds is not None and not script:
+      # Stage 2 Direct 3D U-Net Labelmap + Tangent-Field Tube Reconstruction + NeedleSliceMPNN + SynthBrachy3T TipAwareBundleGraphTransformer
+      if nn_preds is not None:
         try:
           nn_tubes = extract_nn_labelmap_tubes(
               nn_preds, resp1, k0, i0, j0, sp_i, sp_j, sp_k,
@@ -4243,8 +4258,10 @@ class TrackingAlgorithmsMixin:
           n_ctrl = min(15, len(ras_arr))
           sample_idx = np.linspace(len(ras_arr) - 1, 0, n_ctrl, dtype=int)
           ctrl_pts = ras_arr[sample_idx].tolist()
-          comment = f"Conf: {t['confidence']:.1f}% | L: {t['length_mm']:.1f} mm"
-          self.addNeedleToScene(ctrl_pts, idx, "Detection", script=script, comment=comment)
+          conf_val = float(t.get("confidence", 0.0))
+          len_val = float(t.get("length_mm", 0.0))
+          comment = f"Conf: {conf_val:.1f}% | L: {len_val:.1f} mm"
+          self.addNeedleToScene(ctrl_pts, idx, "Detection", script=script, comment=comment, confidence=conf_val)
         if filtered:
           widget.deleteNeedleButton.setEnabled(1)
           widget.resetDetectionButton.setEnabled(1)
