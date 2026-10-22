@@ -878,6 +878,57 @@ def make_fig6_specificity_and_runtime(spec):
     plt.close(fig)
 
 
+# =========================================================================
+# FIGURE 7: Stage 2B confidence calibration + reason-coded decisions (170 x 62 mm)
+# =========================================================================
+def make_fig7_calibration_and_reasons():
+    with open(os.path.join(SOURCES_DIR, "2026-10-23-stage2b-calibration-and-reason-codes.json")) as f:
+        d = json.load(f)
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(W2, 62 * MM), gridspec_kw={"width_ratios": [1.0, 1.15]}, constrained_layout=True)
+
+    # --- Panel a: reliability diagram (all candidates), raw vs fold-wise temperature scaling ---
+    for key, col, lbl, mk in [("calibration_all_candidates", C["nf"], "raw confidence", "o"),
+                              ("temperature_scaling_fold_wise", C["st2"], "temperature-scaled (fold-wise)", "s")]:
+        bins = [b for b in d[key]["bins"] if b.get("n", 0) > 0]
+        ax1.plot([b["mean_conf"] for b in bins], [b["frac_true"] for b in bins], color=col, lw=1.3, marker=mk, ms=3.8, label=f"{lbl} (ECE {d[key]['ece']:.3f})", zorder=4)
+    ax1.plot([0, 1], [0, 1], color="#999999", lw=0.7, ls="--", zorder=1)
+    bins = [b for b in d["calibration_all_candidates"]["bins"] if b.get("n", 0) > 0]
+    ax1b = ax1.twinx()
+    ax1b.bar([0.5 * (b["lo"] + b["hi"]) for b in bins], [b["n"] for b in bins], width=0.08, color="#DDDDDD", zorder=0)
+    ax1b.set_ylabel("candidates per bin", fontsize=6.5, color="#777777"); ax1b.tick_params(labelsize=6, colors="#777777")
+    ax1.set_zorder(ax1b.get_zorder() + 1); ax1.patch.set_visible(False)
+    ax1.set_xlim(0, 1); ax1.set_ylim(0, 1)
+    ax1.set_xlabel("Stage 2B confidence $p_m$", fontsize=7.5); ax1.set_ylabel("fraction of real catheters", fontsize=7.5)
+    ax1.set_title("a   Reliability of the track confidence", fontsize=7.2, fontweight="bold", loc="left")
+    ax1.legend(loc="upper left", fontsize=5.6, frameon=True, facecolor="white", framealpha=0.9, edgecolor="none")
+    ax1.grid(True, color="#E6E6E6", lw=0.4, zorder=0)
+
+    # --- Panel b: reason-code audit (what each decision rule removes, and at what cost) ---
+    order = ["kept", "below_threshold", "duplicate_of_kept_track", "outside_implant_region", "low_dark_core_symmetry"]
+    names = ["kept", "below\nthreshold", "duplicate of\nkept track", "outside\nimplant region", "low dark-core\nsymmetry"]
+    a = d["reason_code_audit"]
+    ypos = np.arange(len(order))[::-1]
+    false_n = np.array([a[k]["n_false"] for k in order]); red_n = np.array([a[k]["n_real_redundant"] for k in order])
+    lost_n = np.array([a[k]["n_real_lost"] for k in order]); kept_real = np.array([a[k]["n_real"] if k == "kept" else 0 for k in order])
+    ax2.barh(ypos, kept_real, color=C["nf"], height=0.6, label="real catheter, kept")
+    ax2.barh(ypos, false_n, left=kept_real, color="#BDBDBD", height=0.6, label="false track")
+    ax2.barh(ypos, red_n, left=kept_real + false_n, color=C["st2"], height=0.6, label="real, but already covered by a kept track")
+    ax2.barh(ypos, lost_n, left=kept_real + false_n + red_n, color="#B03F41", height=0.6, label="real catheter lost")
+    for yy, k in zip(ypos, order):
+        ax2.text(a[k]["n"] + 8, yy, f"n = {a[k]['n']}", va="center", fontsize=6.0, color="#333333")
+    ax2.set_yticks(ypos); ax2.set_yticklabels(names, fontsize=6.3)
+    ax2.set_xlim(0, max(a[k]["n"] for k in order) * 1.22)
+    ax2.set_xlabel("candidate tracks (54 patients)", fontsize=7.5)
+    ax2.set_title("b   Reason-coded decisions at $\\tau = 50\\%$", fontsize=7.2, fontweight="bold", loc="left")
+    ax2.legend(loc="lower right", fontsize=5.4, frameon=True, facecolor="white", framealpha=0.9, edgecolor="none")
+    ax2.grid(axis="x", color="#E6E6E6", lw=0.4, zorder=0)
+
+    assert_no_overlap(fig, pad_px=1)
+    save_all_formats(fig, "fig7_calibration_and_reasons")
+    plt.close(fig)
+
+
+
 def main():
     bench, inter, spec, qual = load_all_sources()
     export_csv_data(bench, inter, spec)
@@ -887,7 +938,8 @@ def main():
     make_fig4_pareto_and_fewshot(bench)
     make_fig5_qualitative_mri_3d(qual)
     make_fig6_specificity_and_runtime(spec)
-    print("All 6 publication vector PDF figures + CSV data files generated successfully!")
+    make_fig7_calibration_and_reasons()
+    print("All 7 publication vector PDF figures + CSV data files generated successfully!")
 
 
 if __name__ == "__main__":

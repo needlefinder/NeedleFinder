@@ -989,6 +989,20 @@ report:
   predicted and reference deepest (cranial) tip.
 \end{enumerate}
 
+\textbf{Calibration and reason-coded decisions.} Every candidate track
+in the Stage 2B pool is also treated as a binary prediction: it is a
+real catheter if its mean in-plane distance to some reference trajectory
+over their shared slices is at most 3.5 mm, and its predicted
+probability is the Stage 2B confidence \(p_m\). Over all candidates of
+the 54 patients we report a reliability diagram, the expected
+calibration error (ECE, ten equal-width bins), and the Brier score;
+temperature scaling is fitted on four folds and applied to the fifth.
+Each decision of the decoder carries a typed reason code (kept, below
+threshold, duplicate of a kept track, outside the implant region, low
+dark-core symmetry), and for every discarded candidate that is a real
+catheter we record whether that catheter is already covered by a kept
+track (redundant) or lost.
+
 Following the GEC-ESTRO and AAPM guidance on reporting brachytherapy
 uncertainties {[}82{]}, reconstruction discrepancies are reported as
 distributions (median, interquartile range, and 95th percentile) and
@@ -1221,6 +1235,50 @@ same order as the differences between manual planning-system
 reconstruction and electromagnetic tracking measured in gynecologic
 implants (0.41 mm for shafts, 0.76 mm for tips) {[}86{]}.
 
+\subsection{Is the Confidence Trustworthy, and Why Are Tracks
+Removed?}\label{is-the-confidence-trustworthy-and-why-are-tracks-removed}
+
+\begin{figure}
+\centering
+\includegraphics[width=1\linewidth,height=\textheight,keepaspectratio]{../reports/figures/fig7_calibration_and_reasons.pdf}
+\caption{\textbf{(a) Reliability of the Stage 2B confidence} over all
+1,683 candidate tracks of the 54 patients (bars: candidates per bin),
+raw and after fold-wise temperature scaling. \textbf{(b) Reason-coded
+decisions at the default threshold}: for each rule, how many candidates
+it removes and how many of those were false tracks, real catheters
+already covered by a kept track, or real catheters
+lost.}\label{fig:calib}
+\end{figure}
+
+A confidence is only useful to the physicist if it means something.
+Figure \ref{fig:calib}(a) shows that it does, approximately: of the
+candidates with confidence below 50\%, 34\% are real catheters; between
+50 and 70\%, 74\%; between 70 and 90\%, 81\%; and above 90\%, 95\%. The
+expected calibration error is 0.093 over all candidates and 0.047 over
+the kept tracks, with a Brier score of 0.119. The deviation is not a
+uniform over- or under-confidence: the model is under-confident below
+0.5 and slightly over-confident above 0.9, so temperature scaling
+(fitted temperature 1.9 to 2.4 across folds) only reduces the error to
+0.082. In the deployed extension the confidence is therefore shown as a
+ranking (needle color), not as a probability.
+
+Figure \ref{fig:calib}(b) shows what the decoder actually does with the
+1,683 candidates. The confidence threshold does almost all the work: it
+removes 548 candidates per cohort (10.2 per patient), of which 362 are
+false tracks, 97 are real catheters already covered by a kept track, and
+89 are real catheters that are lost (1.6 per patient, median confidence
+26\%). Duplicate merging removes 7 candidates, the implant-region gate
+1, and the dark-core symmetry rule none; at the default threshold on
+clinical scans these two rules are effectively inert, and their role is
+limited to lower thresholds and to needle-free scans (Table
+\ref{tbl:specificity}). The 89 lost catheters are the recall ceiling of
+the current model: they sit among the 362 false tracks in the
+low-confidence range, so lowering the threshold recovers them only at
+the cost of precision (Figure \ref{fig:pareto}a). The reason codes are
+what makes the verification step fast: a physicist sees 21 kept tracks
+per patient with a ranked confidence, and can inspect the low-confidence
+rejections separately.
+
 \subsection{False Tracks on Scans Without Catheters, and
 Speed}\label{false-tracks-on-scans-without-catheters-and-speed}
 
@@ -1316,7 +1374,9 @@ in a few seconds without a GPU (1 to 4 s per scan, 2.7 s on average, in
 the current measurement). It changes the physicist's task from tracing
 15 to 30 catheters, which takes tens of minutes, into a 1 to 2 minute
 check: click \emph{Detect Needles}, inspect the 3D bundle and the axial
-intersections, and correct the occasional tip or partial track. A
+intersections, and correct the occasional tip or partial track; the
+ranked confidence and the reason code attached to every decision (Figure
+\ref{fig:calib}) tell the physicist which tracks deserve a look. A
 similar verification workflow has already saved about 15 minutes per
 case in ultrasound-guided prostate brachytherapy {[}61{]}. Because the
 in-plane shaft error (0.46 mm median) is below the 0.50 mm median
@@ -1349,11 +1409,14 @@ convention, so agreement with them is not the same as agreement with
 physical truth, and we have not measured the editing time or the
 dosimetric effect of the residual errors in a planning system; the 1 to
 2 minute verification workflow is therefore an expectation, not a
-measurement. Fourth, the three published baselines are our own
-adaptations to this MRI data, not the authors' code, and the evaluation
-matches catheters on their shared length only, so a correctly placed but
-incomplete track counts as detected while its tip error is reported
-separately.
+measurement. Fourth, the reason-code audit shows that the implant-region
+gate and the dark-core symmetry rule remove almost nothing at the
+default threshold on clinical scans; they are kept for the needle-free
+setting but could be dropped for simplicity. Fifth, the three published
+baselines are our own adaptations to this MRI data, not the authors'
+code, and the evaluation matches catheters on their shared length only,
+so a correctly placed but incomplete track counts as detected while its
+tip error is reported separately.
 
 \section{Conclusion}\label{conclusion}
 
