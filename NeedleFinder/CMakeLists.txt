@@ -22,6 +22,8 @@ set(MODULE_PYTHON_RESOURCES
   Config/miccai15.cfg
   Config/miccai2013.cfg
   ${MODULE_NAME}Lib/needle_unet3d.onnx
+  ${MODULE_NAME}Lib/needle_graph_transformer.onnx
+  ${MODULE_NAME}Lib/needle_graphnet.npz
   NeedleFinderRust/Cargo.toml
   NeedleFinderRust/src/lib.rs
   NeedleFinderRust/src/needlefinder_core.cpp
