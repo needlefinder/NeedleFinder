@@ -324,7 +324,7 @@
 \IfFileExists{xurl.sty}{\usepackage{xurl}}{} % add URL line breaks if available
 \urlstyle{same}
 \hypersetup{
-  pdftitle={NeedleFinder 2026: Sub-Millimeter, Sub-Second Catheter Reconstruction on MRI for Interstitial Gynecologic Brachytherapy},
+  pdftitle={NeedleFinder 2026: Sub-Millimeter Catheter Reconstruction on MRI for Interstitial Gynecologic Brachytherapy in Seconds},
   pdfauthor={Guillaume Pernelle, Paolo Zaffino, Lauren Barber, Alireza Mehrtash,; Christiane Yeung, Tina Kapur, and Collaborators},
   colorlinks=true,
   linkcolor={nfaccent},
@@ -333,8 +333,8 @@
   urlcolor={nfaccent},
   pdfcreator={LaTeX via pandoc}}
 
-\title{NeedleFinder 2026: Sub-Millimeter, Sub-Second Catheter
-Reconstruction on MRI for Interstitial Gynecologic Brachytherapy}
+\title{NeedleFinder 2026: Sub-Millimeter Catheter Reconstruction on MRI
+for Interstitial Gynecologic Brachytherapy in Seconds}
 \author{Guillaume Pernelle, Paolo Zaffino, Lauren Barber, Alireza
 Mehrtash, \and Christiane Yeung, Tina Kapur, and Collaborators}
 \date{October 2026 (Target Journal: \emph{Physics in Medicine \&
@@ -370,12 +370,15 @@ scans, and on 48 public needle-free pelvic MRI scans.
 U-Net and 53.7\% for a 2026 structure-aware tracker (\(p < 10^{-4}\)).
 The median shaft error was 0.46 mm and the median tip error 2.61 mm. The
 method agreed with the expert reference more closely (0.56 mm mean shaft
-discrepancy) than two human teams agreed with each other (0.72 mm). With
-a single annotated patient, synthetic pre-training reached 82.0\% F1. On
-needle-free scans the method produced 0.38 false catheters per scan.
-Full-volume reconstruction takes 2.74 s on an 8-core CPU (1.20 s on
-standard \(320 \times 256\) scans, 3.47 s on high-resolution
-\(640 \times 416\) / \(768 \times 768\) scans) or 1.25 s on a GPU.
+discrepancy) than two human teams agreed with each other (0.71 mm). When
+only its bundle-scoring stage was fine-tuned on a single annotated
+patient, synthetic pre-training reached 82.0\% F1. On needle-free scans
+the full pipeline produced 4.7 false tracks per scan at the default
+threshold, and 0.38 per scan when its candidates were gated by the Stage
+0 symmetry map instead of the bundle transformer. Full-volume
+reconstruction takes 2.74 s on an 8-core CPU (1.20 s on standard
+\(320 \times 256\) scans, 3.47 s on high-resolution \(640 \times 416\) /
+\(768 \times 768\) scans) or 1.25 s on a GPU.
 
 \textbf{Significance.} Automatic catheter reconstruction on MRI now
 matches expert agreement, needs very little training data, and runs in 1
@@ -425,40 +428,61 @@ instead of tracing everything from scratch.
 \subsection{The Clinical Problem}\label{the-clinical-problem}
 
 Brachytherapy delivers radiation from inside the body. For locally
-advanced cervical, vaginal, and recurrent endometrial cancers it is the
-cornerstone of curative radiotherapy {[}1,2{]}. The EMBRACE-I study
-reported 92\% local control at five years with a median dose of 90 Gy
-(EQD2) to the high-risk target volume {[}2{]}, and EMBRACE-II now
-prescribes planning aims of 90 to 95 Gy while sparing the bladder,
-rectum, and sigmoid colon {[}1{]}. Reaching such doses in large or
-irregular tumors requires \emph{interstitial} implants: in addition to a
-central tandem and a vaginal obturator or ring, 10 to 30 thin plastic
-catheters or needles are inserted into the tumor through a perineal
-template or freehand {[}3--5{]}.
+advanced cervical cancer it is the cornerstone of curative radiotherapy
+{[}1,2{]}. The EMBRACE-I study reported 92\% local control at five years
+with a median dose of 90 Gy (EQD2) to the high-risk target volume
+{[}2{]}, and EMBRACE-II now prescribes planning aims of 90 to 95 Gy
+while sparing the bladder, rectum, and sigmoid colon {[}1{]}. Reaching
+such doses in large or irregular tumors requires \emph{interstitial}
+implants: in addition to a central tandem and a vaginal obturator or
+ring, 10 to 30 thin plastic catheters or needles are inserted into the
+tumor through a perineal template or freehand {[}3--5{]}.
 
-The tumor itself is best seen on T2-weighted (T2W) MRI. Historically,
-clinics took both an MRI and a CT scan and registered the two, which
-adds its own uncertainty to the reconstruction {[}6{]}. The AAPM Task
-Group 303 report describes MRI-based workflows and asks for applicator
-reconstruction accuracy of 2 mm or better {[}7{]}, the Medical Physics
-Practice Guideline 13.a lists MRI among the accepted planning modalities
-{[}8{]}, and MRI-only interstitial workflows have been validated
-clinically {[}9,10{]}.
+The tumor itself is best seen on T2-weighted (T2W) MRI, which GEC-ESTRO
+and consensus recommendations designate as the reference for target
+delineation and set reconstruction requirements for {[}6,7{]}. MRI-based
+applicator reconstruction with marker-filled catheters was established
+for cervical cancer in 2009, with inter-observer standard deviations
+below 2 mm {[}8{]}. Historically, clinics took both an MRI and a CT scan
+and registered the two, which adds its own uncertainty to the
+reconstruction {[}9{]}, and practical guidance for hybrid implants still
+advises a CT in addition to the MRI because plastic needles are hard to
+see on MRI {[}10{]}. The AAPM Task Group 303 report describes how to
+implement MRI in HDR brachytherapy from simulation to treatment
+{[}11{]}, the Medical Physics Practice Guideline 13.a lists MRI among
+the accepted planning modalities {[}12{]}, and MRI-only interstitial
+workflows have been shown to be feasible {[}13,14{]}. Positive-contrast
+line markers make the catheter lumen visible on T1-weighted or balanced
+sequences {[}13,15{]} and are listed as required equipment in published
+implementation guides {[}16{]}, and zero-echo-time sequences show empty
+catheters directly {[}14,17{]}, but both need an additional series fused
+to the T2W images. Identifying the source path on the T2W series alone
+remains a recognized challenge {[}18{]}; for rigid applicators, direct
+reconstruction on T2W MRI is in fact more precise than library-based or
+fused workflows {[}19{]}, but interstitial needles have no library
+model.
 
-Finding the catheters on MRI is the hardest step of an MRI-only workflow
-{[}4,11{]}. The dose from the \(^{192}\)Ir source falls steeply with
-distance: organ-at-risk dose parameters change by up to 5 to 6\% per
-millimeter of applicator displacement {[}12{]}, a 1.5 mm shift can
-change the rectal D2cc by 10\% {[}13{]}, and in MRI-only cervical
-implants a systematic 1 mm error along the source path already changes
-target and organ doses significantly {[}14{]}. Swapping two catheters is
-worse still {[}15{]}. Yet a 2 mm plastic catheter contains no mobile
+Finding the catheters on MRI is the central technical challenge of an
+MRI-only workflow {[}4,20{]}. The dose from the \(^{192}\)Ir source
+falls steeply with distance: organ-at-risk dose parameters change by up
+to 5 to 6\% per millimeter of applicator displacement {[}21{]},
+applicator shifts beyond 1.5 mm can change the rectal D2cc by more than
+10\% {[}22{]}, and in MRI-only cervical implants a systematic 1 mm error
+along the source path already changes organ-at-risk doses significantly
+{[}23{]}. Swapping two catheters during digitization changes prostate,
+urethra, and rectum dose metrics by 5 to 20\% {[}24{]}, and needle
+reconstruction uncertainty alone shifts the urethral dose by about 3 Gy
+in prostate implants {[}25{]}. Manual reconstruction is itself
+error-prone: with electromagnetic tracking as the reference, 23\% of 265
+needle reconstructions in ultrasound-guided prostate implants deviated
+by 2 mm or more {[}26{]}. Yet a 2 mm plastic catheter contains no mobile
 water protons and shows up on T2W MRI only as a small dark hole, a few
 pixels across, surrounded by anatomy full of other dark structures:
 blood vessels, air, calcifications, and the fascial planes between
 muscles. Tracing 15 to 30 catheters slice by slice therefore takes tens
 of minutes, 46 minutes on average in one MRI-only gynecologic series
-{[}16{]}, while the patient waits under anesthesia or sedation.
+{[}27{]}, within a template-based implant procedure of about 100 minutes
+under anesthesia {[}28{]}.
 
 \begin{figure}
 \centering
@@ -525,21 +549,34 @@ useful.
 \subsection{Previous Work}\label{previous-work}
 
 Automatic catheter digitization has gone through three generations. Two
-recent systematic reviews cover the field {[}11,17{]}.
+recent systematic reviews cover the field {[}20,29{]}.
 
-\textbf{Model-based tracking (2013 to 2019).} Our first work on the
-Brigham and Women's Hospital (BWH) cohort seeded each catheter with one
-click at its tip, searched slice by slice inside an expanding cone, and
-fitted a Bézier curve; 93 of 101 catheters in 10 patients were traced
-correctly at 0.3 s per catheter {[}18{]}. Mastmeyer \emph{et al.}
-{[}3{]} replaced the curve search with a mechanical rod-and-spring
-catheter model, reaching 1.49 mm mean Hausdorff distance on 760
-catheters in 54 patients, still from a manual tip click. Related
-model-to-image registration reconstructs rigid applicators on MRI within
-inter-observer variability {[}19{]}, and line fitting by RANSAC
-digitizes straight needles on CT {[}20{]}. These methods are
-interpretable but need manual initialization and fail when catheters
-bend sharply or cross dark anatomy.
+\textbf{Model-based tracking (2013 to 2019).} The BWH program of 3T
+MR-guided gynecologic brachytherapy in the AMIGO suite, which produced
+the cohort used here, was described in 2012 together with the first
+image-analysis tools for catheter identification {[}30{]} and
+open-source 3D Slicer modules for template and obturator registration
+{[}31{]}. Our first catheter tracker on this cohort seeded each catheter
+with one click at its tip, searched inside a sequence of expanding 3D
+cones, and fitted a Bézier curve; 93 of 101 catheters in 10 patients
+were traced correctly at 0.3 s per catheter {[}32{]}. Mastmeyer \emph{et
+al.} {[}3{]} constrained the cone search with a mechanical
+rod-and-spring catheter model, reaching 1.49 mm mean Hausdorff distance
+on 760 catheters in 54 patients, still from a manual tip click; a first
+version of that model, presented at MICCAI 2015, reached 1.40 mm mean
+error on the 101 catheters of the 2013 set {[}33{]}.
+Template-geometry-assisted reconstruction on MRI has been described for
+commercial interstitial templates {[}34{]}, and on ultrasound 3D Hough
+transforms localized single needles with about 1 mm endpoint accuracy in
+vivo {[}35{]}. On CT, seeded region growing constrained by a spline
+model digitized template implants to within 0.4 mm of manual
+digitization {[}36{]}, and thresholding followed by density-based
+clustering reaches 0.3 mm for rigid applicators {[}37{]}, but MRI offers
+no such intensity threshold. Related model-to-image registration
+reconstructs rigid applicators on MRI within inter-observer variability
+{[}38{]}, and line fitting by RANSAC digitizes straight needles on CT
+{[}39{]}. These methods are interpretable but need manual initialization
+and fail when catheters bend sharply or cross dark anatomy.
 
 \textbf{Voxel segmentation with heuristic post-processing (2019 to
 2026).} To remove manual initialization, Zaffino \emph{et al.} {[}4{]}
@@ -548,22 +585,29 @@ clinical T2W scans with 826 catheters, then clustered the voxels with
 DBSCAN and removed small islands. It reached a voxel Dice of 0.60, a
 mean distance error of 2.0 mm, 6.7\% false-positive and 1.5\%
 false-negative clusters, in 2 to 9 minutes per patient. Convolutional
-segmentation, often nnU-Net based {[}21{]}, has since been applied to CT
-brachytherapy of the cervix, prostate, and breast {[}22--29{]}, to
-MRI-guided prostate implants {[}30--32{]}, to interventional MRI
-{[}33{]}, to transrectal ultrasound {[}34--38{]}, and to gynecologic MRI
-with line markers {[}16{]} or with applicator mesh alignment {[}39{]}.
-Even with topology-preserving losses such as clDice {[}40{]}, pure voxel
-segmentation has two failure modes on T2W MRI: a one-slice signal
-dropout splits one catheter into two to four fragments, and dark vessels
-and tendons are segmented as short false catheters. The ultrasound
-literature documents the same pattern: accuracy collapses on
-artifact-laden catheters {[}37{]} and tips are much harder than shafts
-{[}36{]}. Electromagnetic tracking avoids the imaging problem altogether
-but requires dedicated hardware in the operating room {[}41--44{]}.
+segmentation, often nnU-Net based {[}40{]}, has since been applied to CT
+brachytherapy of the cervix, prostate, and breast {[}41--49{]}, to
+MRI-guided prostate implants {[}50--52{]}, to single needles on
+interventional MRI {[}53,54{]}, to transrectal ultrasound {[}55--61{]},
+and to gynecologic MRI with line markers {[}27{]} or with applicator
+mesh alignment {[}62{]}. Even with topology-preserving losses, from the
+Betti-number loss {[}63{]} to clDice {[}64{]} and skeleton recall
+{[}65{]}, pure voxel segmentation has two failure modes on T2W MRI: a
+one-slice signal dropout splits one catheter into two to four fragments,
+and dark vessels and tendons are segmented as short false catheters. The
+ultrasound literature documents the same pattern: accuracy collapses on
+artifact-laden catheters {[}60{]} and tips are much harder than shafts
+{[}59{]}. Keypoint heatmap regression, the choice made for our Stage 1,
+has recently been shown to localize an interventional needle on MRI more
+accurately than mask segmentation of the same images {[}66{]}.
+Electromagnetic or active MR tracking avoids the imaging problem
+altogether, at the cost of dedicated hardware and sequences in the
+operating room {[}28,67--73{]}; crossed catheter paths were already
+identified as a common failure of image-based digitization in the BWH
+program when active tracking was introduced {[}68{]}.
 
 \textbf{Structure-aware tracking and graph networks (2022 to 2026).} On
-CT, Xiao \emph{et al.} {[}45{]} identified two further problems:
+CT, Xiao \emph{et al.} {[}74{]} identified two further problems:
 \emph{catheter adhesion}, where shafts touch or overlap on consecutive
 slices so that greedy trackers swap or merge them, and the scarcity of
 annotated clinical data. They proposed an implant-region gating module
@@ -572,19 +616,21 @@ direction-constrained 3D Hough transform for initialization, synchronous
 cost-based inward tracking across slices, cubic polynomial smoothing,
 and synthetic-to-real training, on 38 patients and 203 fractions. Their
 companion work handles needle adhesion in dense CT seed implants by
-detecting tips and handles {[}46{]}. Outside brachytherapy,
+detecting tips and handles {[}75{]}. Outside brachytherapy,
 message-passing networks have replaced greedy linking in
-tracking-by-assignment {[}47{]}, and synthetic-to-real training has been
-shown to transfer to real needle detection {[}48{]}. Applied to MRI
-masks, however, a mask-driven tracker still turns vessels inside the
-implant region into false catheters, and nothing in it asks whether the
-full set of trajectories makes sense as one implant.
+tracking-by-detection {[}76,77{]}, transformers predict graphs of
+curvilinear structures directly from images {[}78{]}, and
+synthetic-to-real training has been shown to transfer to real needle
+detection {[}79{]}. Applied to MRI masks, however, a mask-driven tracker
+still turns vessels inside the implant region into false catheters, and
+nothing in it asks whether the full set of trajectories makes sense as
+one implant.
 
 \textbf{Open data.} No public needle or catheter dataset for
-brachytherapy exists {[}49{]}, and the AI literature in brachytherapy
-remains largely retrospective and single-center {[}17{]}. The public
+brachytherapy exists {[}80{]}, and the AI literature in brachytherapy
+remains largely retrospective and single-center {[}29{]}. The public
 pelvic MRI scans we use for the false-alarm test come from the Medical
-Segmentation Decathlon {[}50{]}.
+Segmentation Decathlon {[}81{]}.
 
 \subsection{Contributions}\label{contributions}
 
@@ -613,8 +659,8 @@ annotated MRI cohort for interstitial gynecologic brachytherapy.
   \textbf{Three clinically relevant checks.} Agreement with experts
   compared with agreement between experts on 40 doubly traced scans;
   accuracy as a function of how many annotated patients were available
-  for training, from zero to all; and false alarms on 48 public pelvic
-  MRI scans containing no catheters.
+  to fine-tune the bundle-scoring stage, from zero to all; and false
+  alarms on 48 public pelvic MRI scans containing no catheters.
 \end{enumerate}
 
 \FloatBarrier
@@ -630,7 +676,7 @@ Table \ref{tbl:cohorts} summarizes the data. The primary cohort is 54
 intraoperative 3T T2W turbo spin-echo MRI scans acquired during
 MRI-guided interstitial gynecologic brachytherapy in the AMIGO suite at
 Brigham and Women's Hospital (Harvard Medical School, Boston, MA, USA)
-with Institutional Review Board approval {[}3,4,18{]}. It consolidates
+with Institutional Review Board approval {[}3,4,32{]}. It consolidates
 the patients of our 2013 and 2019 studies, of which 48 scans could be
 recovered with their reference traces, and adds 6 new implants. Expert
 medical physicists traced 1,063 reference trajectories (9 to 42 per
@@ -640,7 +686,7 @@ obturator and partial-field-of-view tracks from the secondary set.
 In-plane pixel size ranges from 0.31 to 0.88 mm and slice thickness from
 1.2 to 6.0 mm.
 
-Xiao \emph{et al.} {[}45{]} analyzed separately the fractions in which
+Xiao \emph{et al.} {[}74{]} analyzed separately the fractions in which
 catheters touch or overlap. We define a \textbf{severe-adhesion
 subgroup} in the same spirit: the 23 of 54 patients in which at least 4
 long, or at least 6 of all, reference catheters pass within 3.0 mm of
@@ -653,7 +699,7 @@ independently by two expert teams (CY, 505 trajectories; LB/AMe, 513
 trajectories); the 464 pairs matched one-to-one within 3.5 mm define the
 human inter-observer floor. To measure false alarms on anatomy that
 contains no catheters at all, we use all 48 pelvic T2W scans of the
-public Medical Segmentation Decathlon prostate task {[}50{]} (MSD
+public Medical Segmentation Decathlon prostate task {[}81{]} (MSD
 Task05\_Prostate; 0.60 to 0.75 mm in-plane, 3 to 4 mm slices).
 
 \subsection{Stage 0: Analytical Dark-Core Symmetry
@@ -771,15 +817,15 @@ direction field, or within \(3.5 + 0.22\,\Delta z\) mm outright. Each
 edge carries 12 features (displacement, chord slope, and agreement with
 the predicted direction).
 
-A pairwise graph network cannot penalize a kink, because a kink involves
-three nodes. NeedleSliceMPNN is a 4-layer triplet-collinearity
-message-passing network (hidden size 64). Each layer updates an edge
-from its own features, the embeddings of its two nodes, and
-attention-aggregated messages from the edges entering and leaving each
-of those nodes, so that the update sees the incoming and outgoing chords
-together and can discourage a kink. The network outputs refined
-sub-pixel offsets \((\delta x_i, \delta y_i)\) and node and edge
-probabilities.
+A single pairwise message cannot see a kink, because a kink involves
+three nodes, although stacked layers accumulate wider context.
+NeedleSliceMPNN is a 4-layer triplet-collinearity message-passing
+network (hidden size 64). Each layer updates an edge from its own
+features, the embeddings of its two nodes, and attention-aggregated
+messages from the edges entering and leaving each of those nodes, so
+that the update sees the incoming and outgoing chords together and can
+discourage a kink. The network outputs refined sub-pixel offsets
+\((\delta x_i, \delta y_i)\) and node and edge probabilities.
 
 Candidate 3D tracks themselves are traced in native code: from each
 Stage 0 and Stage 1 seed, a bidirectional Kalman tracker follows the
@@ -816,7 +862,7 @@ the whole bundle. It outputs three logits (a recall-oriented score, a
 strict one-to-one score, and a long-shaft one-to-one score), combined
 with weights 0.45 and 0.55 into a confidence \(p_m\), and one cranial
 tip offset \(\Delta z_m\) that trims or extends the deep end. An
-implant-region gate inspired by the IRGM of Xiao \emph{et al.} {[}45{]}
+implant-region gate inspired by the IRGM of Xiao \emph{et al.} {[}74{]}
 is applied at this point: whereas they train a separate region branch,
 ours is geometric. The implant center is the median in-plane position of
 the candidates with confidence of at least 55\%, the implant radius is
@@ -842,7 +888,9 @@ configurations than any clinical dataset contains. Stage 2B is
 pre-trained on these bundles, then fine-tuned on the clinical bundles of
 the fold's training patients together with five synthetically augmented
 copies of each, and its scores are blended with those of a transformer
-trained on clinical bundles only (weight 0.55 on the synthetic model).
+trained on clinical bundles only (weight 0.60 on the synthetic model).
+For the long-shaft rows the confidence threshold is lowered to 42.5\%
+and the long-shaft logit is weighted more heavily.
 
 \FloatBarrier
 
@@ -852,10 +900,16 @@ trained on clinical bundles only (weight 0.55 on the synthetic model).
 Baselines}\label{cross-validation-protocol-and-baselines}
 
 Every learned component and every baseline is trained and evaluated with
-patient-level 5-fold cross-validation on the 54 patients. No slice,
-patch, or trajectory from a test patient is used for training or model
-selection in that fold. We re-implemented three published approaches on
-the same splits:
+patient-level 5-fold cross-validation on the 54 patients, so no label of
+a test patient is used to train the model that is evaluated on it. Two
+qualifications apply. The training epoch of each Stage 1 network was
+selected on its held-out fold, which can bias the Stage 1 maps slightly
+in its favor. And the Stage 2 networks of a fold are trained on Stage 1
+maps of the other patients, which were produced by Stage 1 models whose
+training folds included the fold's test patients; the stacked pipeline
+is therefore out-of-fold with respect to labels but not fully nested
+with respect to upstream features. We re-implemented three published
+approaches on the same splits:
 
 \begin{itemize}
 \tightlist
@@ -864,12 +918,12 @@ the same splits:
   mm isotropic, segmented by a 3D U-Net, then grouped by principal-axis
   estimation, DBSCAN clustering, and spline fitting.
 \item
-  \textbf{ResUNet + clDice + skeleton} {[}21,40{]}. A native-resolution
+  \textbf{ResUNet + clDice + skeleton} {[}40,64{]}. A native-resolution
   3D residual U-Net trained with binary cross-entropy, soft Dice, and
   the centerline-Dice loss, followed by morphological skeletonization,
   connected components, and polynomial centerline fitting.
 \item
-  \textbf{Xiao 2026 Sync-Track} {[}45{]}. Implant-region gating,
+  \textbf{Xiao 2026 Sync-Track} {[}74{]}. Implant-region gating,
   direction-constrained 3D Hough and PCA initialization, synchronous
   inward tracking, and cubic smoothing. As in their paper, we run it
   both on our out-of-fold segmentation masks and on the reference masks
@@ -903,10 +957,14 @@ mm in-plane cutoff over the slices they share. We report:
   predicted and reference deepest (cranial) tip.
 \end{enumerate}
 
-Differences between methods are tested over the 54 patients with paired
-two-sided Wilcoxon signed-rank tests, and 95\% confidence intervals come
-from patient-level bootstrap resamples (1,000 for the headline rows; 200
-to 500 for the threshold sweep, subgroup, and few-shot rows).
+Following the GEC-ESTRO and AAPM guidance on reporting brachytherapy
+uncertainties {[}82{]}, reconstruction discrepancies are reported as
+distributions (median, interquartile range, and 95th percentile) and
+separated from observer variation. Differences between methods are
+tested over the 54 patients with paired two-sided Wilcoxon signed-rank
+tests, and 95\% confidence intervals come from patient-level bootstrap
+resamples (1,000 for the headline rows; 200 to 500 for the threshold
+sweep, subgroup, and few-shot rows).
 
 \subsection{Computing Environment, Software, and
 Code}\label{computing-environment-software-and-code}
@@ -927,11 +985,11 @@ Hungarian matching uses SciPy. Figures were produced with Matplotlib.
 
 For clinical use the trained Stage 1 and Stage 2B networks are exported
 to ONNX and run with ONNX Runtime inside an extension for 3D Slicer 5.10
-{[}51{]}, the open-source platform in which the 2013 and 2019
-NeedleFinder modules were also built {[}4,18{]}; the Stage 2A weights
-are stored as NumPy archives. No GPU is required. The runtimes reported
-in the Results were measured on an 8-core desktop CPU and, for the GPU
-figures, on the RTX 4090.
+{[}83{]}, the open-source platform that also hosted the earlier
+NeedleFinder modules {[}3,4{]}; the Stage 2A weights are stored as NumPy
+archives. No GPU is required. The runtimes reported in the Results were
+measured on an 8-core desktop CPU and, for the GPU figures, on the RTX
+4090.
 
 The 3D Slicer extension, the Rust kernel, and the exported models are
 available at https://github.com/needlefinder/NeedleFinder. The training
@@ -990,18 +1048,24 @@ vessels inside the implant region still become tracks and nothing
 rejects them. Tracking alone does improve on skeletonization, by 15.9 F1
 points on the whole cohort.
 
-\textbf{NeedleFinder 2026 is the most accurate on every metric.} At the
-pre-specified threshold \(\tau = 50\%\) it reaches 91.3\% recall, 85.3\%
-precision, and 88.2\% F1 (88.4\% at \(\tau = 55\%\); 94.7\% recall at
-\(\tau = 25\%\)). The gains over the other methods are all significant:
-2.2 F1 points over our own pipeline without synthetic pre-training
-(\(p = 6 \times 10^{-5}\)), 6.9 points over PMB 2019
-(\(p = 1 \times 10^{-5}\)), 34.5 points over Xiao 2026, and 50.3 points
-over ResUNet + clDice (both \(p < 10^{-9}\)). Median tip error falls to
-2.61 mm, from 3.35 mm (PMB 2019), 6.02 mm (Xiao 2026), and 2.82 mm (our
-pipeline without synthetic pre-training; \(p = 5 \times 10^{-4}\)).
-Median 3D curve distance is 1.03 mm and median \(\text{HD}_{95}\) is
-3.44 mm. The median shaft error is 0.46 mm on all matched catheters and
+\textbf{NeedleFinder 2026 has the highest F1 of the evaluated
+configurations.} At the pre-specified threshold \(\tau = 50\%\) it
+reaches 91.3\% recall, 85.3\% precision, and 88.2\% F1 (88.4\% at
+\(\tau = 55\%\); 94.7\% recall at \(\tau = 25\%\)). The gains over the
+other methods are all significant: 2.9 F1 points over our own pipeline
+without synthetic pre-training (\(p = 6 \times 10^{-5}\)), 6.9 points
+over PMB 2019 (\(p = 1 \times 10^{-5}\)), 34.5 points over Xiao 2026,
+and 50.3 points over ResUNet + clDice (both \(p < 10^{-9}\)). Median tip
+error falls to 2.61 mm, from 3.35 mm (PMB 2019), 6.02 mm (Xiao 2026),
+and 2.78 mm (our pipeline without synthetic pre-training;
+\(p = 5 \times 10^{-4}\)). Median 3D curve distance is 1.03 mm and
+median \(\text{HD}_{95}\) is 3.44 mm. The tip distribution has a heavy
+tail that the median hides: 20\% of matched catheters have a tip error
+above 10 mm and the 95th percentile is 36 mm, almost always where a
+track stops early or runs on past the true end along the catheter axis.
+Across the cohort the method misses 93 reference trajectories and
+reports 167 unmatched ones, about 1.7 misses and 3.1 extra tracks per
+patient. The median shaft error is 0.46 mm on all matched catheters and
 0.45 mm on the 759 long shafts, on which recall is 92.5\% at the default
 threshold and 96.4\% at \(\tau = 25\%\).
 
@@ -1021,27 +1085,33 @@ Patients}\label{contribution-of-each-stage-and-learning-from-few-patients}
 each baseline, and the NeedleFinder 2026 threshold sweep on the whole
 cohort. Dashed curves are lines of constant F1; the star marks the
 default threshold \(\tau = 50\%\). \textbf{(b) Accuracy versus number of
-annotated training patients per fold},
+annotated patients per fold used to fine-tune the bundle-scoring stage},
 \(k \in \{0, 1, 5, 10, 20, 43\}\), with and without SynthBrachy3T
-pre-training. Shaded bands are the patient-level bootstrap 95\%
-confidence intervals of F1.}\label{fig:pareto}
+pre-training; the \(k = 0\) point uses no learned bundle scoring. Shaded
+bands are the patient-level bootstrap 95\% confidence intervals of
+F1.}\label{fig:pareto}
 \end{figure}
 
 Figure \ref{fig:pareto}(a) shows what each stage adds. Stage 1 alone has
 high recall (92.8\%) but only 62.6\% precision. Stage 2A raises
 precision by 15.1 points and tightens median shaft error to 0.41 mm.
-Stage 2B with implant gating and cubic smoothing reaches 86.0\% F1.
-Pre-training Stage 2B on SynthBrachy3T adds a further 2.2 F1 points at
-the default threshold (2.4 points at \(\tau = 55\%\)), to 88.2\%.
+Stage 2B with implant gating and cubic smoothing reaches 85.3\% F1.
+Pre-training Stage 2B on SynthBrachy3T adds a further 2.9 F1 points at
+the default threshold, to 88.2\%.
 
 Figure \ref{fig:pareto}(b) asks how many annotated patients are really
-needed. With no clinical training data at all (\(k = 0\)), the
-analytical Stage 0 prior and the synthetically pre-trained Stage 2B
-already reach 75.1\% F1. With a single annotated patient (\(k = 1\)) the
-method reaches 82.0\% F1, which is 3.9 points better than the same
-pipeline without synthetic pre-training and better than the PMB 2019
-U-Net trained on all 43 patients of a fold (81.3\%). Five patients give
-83.7\% F1, ten give 86.6\%, and all 43 give 88.2\%.
+needed. The budget \(k\) applies to the bundle-scoring Stage 2B, which
+is pre-trained on SynthBrachy3T and then fine-tuned on the bundles of
+\(k\) clinical patients; Stages 1 and 2A keep their full training folds,
+so the curve measures how much bundle-level supervision the method
+needs, not how much annotation the whole pipeline needs. With no learned
+bundle scoring at all (\(k = 0\)), the analytical Stage 0 candidates
+with the geometric gate, duplicate merging, and cubic smoothing alone
+reach 75.1\% F1. With a single annotated patient (\(k = 1\)) the
+fine-tuned Stage 2B reaches 82.0\% F1, which is 3.9 points better than
+the same stage without synthetic pre-training and better than the PMB
+2019 U-Net trained on all 43 patients of a fold (81.3\%). Five patients
+give 83.7\% F1, ten give 86.6\%, and all 43 give 88.2\%.
 
 \begin{figure}
 \centering
@@ -1074,15 +1144,16 @@ Experts}\label{agreement-with-experts-compared-with-agreement-between-experts}
 
 Because a catheter is only a few pixels wide and slices are thick, two
 experts clicking centerlines never agree perfectly; inter-observer
-discrepancies of 0.6 to 0.8 mm have been reported for breast and
-prostate implants {[}52,53{]}, and algorithms within that range are
-considered clinically equivalent to a second observer {[}19,35{]}. Table
+discrepancies of about 0.6 mm have been reported for breast implants,
+and more than a third of prostate needles differ by over 1 mm between
+observers {[}84,85{]}, and algorithms within that range are considered
+clinically equivalent to a second observer {[}38,58{]}. Table
 \ref{tbl:interobserver} measures this on the 40 doubly traced scans and
 compares it with the algorithm's agreement with each team.
 
 The two human teams matched 464 trajectory pairs, 91.9\% of CY's 505
 trajectories and 90.5\% of LB/AMe's 513, with a mean shaft discrepancy
-of 0.72 mm (median 0.50 mm, 95th percentile 2.05 mm) and a median tip
+of 0.71 mm (median 0.49 mm, 95th percentile 2.05 mm) and a median tip
 discrepancy of 3.20 mm. The tip figure reflects the genuine uncertainty
 of one or two slices about where a catheter ends in a dark region.
 NeedleFinder 2026, tested out-of-fold against the primary team CY,
@@ -1092,12 +1163,16 @@ disagreement between the two human teams and cuts the 95th-percentile
 tail by 39\%; its median tip error against CY (2.79 mm) is also below
 the human-to-human value. Against the second team LB/AMe, whose traces
 were never used in training, the algorithm matched 90.5\% of
-trajectories with a mean shaft error of 0.76 mm (median 0.53 mm, 95th
-percentile 2.09 mm), within 0.05 mm of the human-to-human figures. Only
-the tips differ: the median tip discrepancy against LB/AMe is 4.76 mm,
-because LB/AMe placed catheter ends differently from both CY and the
-algorithm. For the shafts, the algorithm is as close to either expert
-team as the teams are to each other.
+trajectories with a mean shaft error of 0.76 mm (median 0.52 mm, 95th
+percentile 2.09 mm), within 0.05 mm of the human-to-human mean, median,
+and 95th percentile (its interquartile range is wider, 0.60 versus 0.51
+mm). Only the tips differ: the median tip discrepancy against LB/AMe is
+4.76 mm, because LB/AMe placed catheter ends differently from both CY
+and the algorithm. For the shafts, the algorithm is as close to either
+expert team as the teams are to each other, and its errors are of the
+same order as the differences between manual planning-system
+reconstruction and electromagnetic tracking measured in gynecologic
+implants (0.41 mm for shafts, 0.76 mm for tips) {[}86{]}.
 
 \subsection{False Alarms on Scans Without Catheters, and
 Speed}\label{false-alarms-on-scans-without-catheters-and-speed}
@@ -1141,7 +1216,7 @@ scans and 3.47 s on high-resolution
 scans) and 1.25 s on a single GPU. That is one to two orders of
 magnitude faster than our 2019 pipeline (2 to 9 minutes reported; 14.8 s
 in our optimized re-implementation) {[}4{]} and 4.2 to 9.3 times faster
-than Xiao \emph{et al.} (11.6 s) {[}45{]}.
+than Xiao \emph{et al.} (11.6 s) {[}74{]}.
 
 \FloatBarrier
 
@@ -1157,17 +1232,18 @@ catheter reconstruction studies on CT, ultrasound, and MRI. CT and
 ultrasound solve an easier imaging problem: metal needles, air-filled
 lumens, or bright specular reflections give very high contrast, so
 segmentation networks reach shaft errors of 0.1 to 0.7 mm on CT
-{[}25,29,45{]} and 0.1 to 0.6 mm on ultrasound {[}34,35{]}. On T2W MRI
+{[}45,49,74{]} and 0.1 to 0.6 mm on ultrasound {[}56,58{]}. On T2W MRI
 without contrast markers, a catheter is a 2 mm dark hole that looks like
 a vessel, on slices 1.2 to 6 mm thick; the best published MRI results
-are 0.74 to 0.97 mm shaft error on gynecologic implants {[}16,39{]} and
-0.75 to 0.93 mm on prostate implants {[}30,32{]}. NeedleFinder 2026
+are 0.74 to 0.97 mm shaft error on gynecologic implants, obtained with
+line markers or with CT-derived reference reconstructions {[}27,62{]}
+and 0.75 to 0.93 mm on prostate implants {[}50,52{]}. NeedleFinder 2026
 reaches a median shaft error of 0.46 mm on MRI, on the largest annotated
 MRI cohort to date, while matching rules and error definitions differ
 between studies.
 
 The head-to-head comparison in Table \ref{tbl:main} explains why neither
-voxel segmentation {[}4,21,40{]} nor mask-driven tracking {[}45{]} is
+voxel segmentation {[}4,40,64{]} nor mask-driven tracking {[}74{]} is
 enough on MRI, and why the combination works. Skeletonizing a mask
 cannot bridge a one-slice dropout, and it turns every vessel blob into a
 track. Tracking bridges the gaps but still trusts the mask. NeedleFinder
@@ -1181,32 +1257,46 @@ configurations than any clinical dataset.
 \subsection{What It Means in the Clinic, and
 Limitations}\label{what-it-means-in-the-clinic-and-limitations}
 
-NeedleFinder 2026 is a one-click module in 3D Slicer {[}51{]} that runs
+NeedleFinder 2026 is a one-click module in 3D Slicer {[}83{]} that runs
 in 1 to 3 seconds without a GPU. It changes the physicist's task from
 tracing 15 to 30 catheters, which takes tens of minutes, into a 1 to 2
 minute check: click \emph{Detect Needles}, inspect the 3D bundle and the
 axial intersections, and correct the occasional tip or partial track. A
 similar verification workflow has already saved about 15 minutes per
-case in ultrasound-guided prostate brachytherapy {[}38{]}. Because the
-in-plane shaft error (0.46 mm median) is well below the 2 mm
-reconstruction accuracy asked for by AAPM TG-303 {[}7{]} and below the
-0.51 mm median disagreement between experts (Table
-\ref{tbl:interobserver}), the shafts themselves rarely need editing.
+case in ultrasound-guided prostate brachytherapy {[}61{]}. Because the
+in-plane shaft error (0.46 mm median) is below the 0.49 mm median
+disagreement between experts (Table \ref{tbl:interobserver}), the shafts
+themselves rarely need editing.
 
-Two limitations remain. First, tips are harder than shafts, here as in
-every modality {[}36,54{]}. Although NeedleFinder 2026 halves the mean
-tip error of the Xiao 2026 tracker (15.6 to 7.9 mm) and its median tip
-error of 2.61 mm (2.98 mm with severe adhesion) is within one slice
-thickness, outliers occur when a tip ends inside a dark pocket at the
-uterine fundus or when a partial track leaves the imaged slab.
-Thin-slice isotropic T2W sequences (SPACE or VISTA, 1 mm or less),
-zero-echo-time sequences that show the catheter lumen {[}10{]}, or
-combined T1W and T2W input should bring tip error below 1.5 mm. Second,
-all clinical scans come from one institution and one 3T scanner. The 48
-external MSD scans show that the method does not hallucinate on other
-scanners, but a prospective multi-center study across 1.5T, 3T, and
-low-field systems {[}55{]} from several vendors is still needed to
-establish generalization.
+Several limitations remain. First, tips are harder than shafts, here as
+in ultrasound {[}59{]}, and needles bend in situ by several millimeters
+depending on their length {[}87{]}. Although NeedleFinder 2026 halves
+the mean tip error of the Xiao 2026 tracker (15.6 to 7.9 mm) and its
+median tip error of 2.61 mm (2.98 mm with severe adhesion) is within one
+slice thickness, outliers occur when a tip ends inside a dark pocket at
+the uterine fundus or when a partial track leaves the imaged slab.
+Along-axis tip uncertainty is bounded by the slice thickness, and each
+millimeter of along-axis displacement changes the target D90 by 1 to
+2.5\% {[}88{]}. Thin-slice isotropic T2W sequences (SPACE or VISTA, 1 mm
+or less), zero-echo-time sequences that show empty catheters with
+sub-millimeter agreement to CT {[}14,17{]}, or combined T1W and T2W
+input should bring tip error below 1.5 mm. Second, all clinical scans
+come from one institution and one 3T scanner; geometric distortion of
+plastic applicators at 3T is small (0.2 to 0.75 mm) {[}89{]}, so
+accuracy is dominated by catheter identification rather than by the
+scanner. The 48 external MSD scans show that the method does not
+hallucinate on other scanners, but a prospective multi-center study
+across 1.5T, 3T, and low-field systems {[}90{]} from several vendors is
+still needed to establish generalization. Third, the reference traces
+come from one annotation convention, so agreement with them is not the
+same as agreement with physical truth, and we have not measured the
+editing time or the dosimetric effect of the residual errors in a
+planning system; the 1 to 2 minute verification workflow is therefore an
+expectation, not a measurement. Fourth, the three published baselines
+are our own adaptations to this MRI data, not the authors' code, and the
+evaluation matches catheters on their shared length only, so a correctly
+placed but incomplete track counts as detected while its tip error is
+reported separately.
 
 \section{Conclusion}\label{conclusion}
 
@@ -1214,11 +1304,11 @@ NeedleFinder 2026 reconstructs interstitial brachytherapy catheters on
 clinical 3T T2W MRI with 88.2\% F1, 0.46 mm median shaft error, and 2.61
 mm median tip error, in 2.74 s on an 8-core CPU (1.25 s on a GPU). Its
 agreement with expert traces is closer than the agreement between two
-expert teams, it reaches 82.0\% F1 after training on a single annotated
-patient thanks to synthetic pre-training of its bundle reasoning stage,
-and it produces almost no false catheters on scans that contain none.
-The combination of an analytical symmetry prior, a multi-head 3D U-Net,
-and bundle-level graph reasoning resolves the precision problem that has
+expert teams, its bundle-scoring stage reaches 82.0\% F1 when fine-tuned
+on a single annotated patient thanks to synthetic pre-training, and it
+produces almost no false catheters on scans that contain none. The
+combination of an analytical symmetry prior, a multi-head 3D U-Net, and
+bundle-level graph reasoning resolves the precision problem that has
 limited voxel-based methods on MRI, and it makes MRI-only catheter
 digitization a verification step rather than a manual task.
 
@@ -1235,7 +1325,7 @@ evaluation results may be made available by the corresponding author on
 reasonable request, subject to institutional and ethics approval. The 48
 needle-free scans are the public Medical Segmentation Decathlon prostate
 task (Task05\_Prostate), available at http://medicaldecathlon.com
-{[}50{]}. The SynthBrachy3T generator is released with the code, so the
+{[}81{]}. The SynthBrachy3T generator is released with the code, so the
 300 synthetic bundles can be regenerated from a fixed random seed.
 
 \section*{Code Availability}\label{code-availability}
@@ -1328,8 +1418,38 @@ Kidd E A 2025 \href{https://doi.org/10.1016/j.brachy.2025.05.001}{The
 intracavitary interstitial brachytherapy for locally advanced cervical
 cancer} \emph{Brachytherapy} \textbf{24} 463--78}
 
-\bibitem[\citeproctext]{ref-hellebust2010}
+\bibitem[\citeproctext]{ref-dimopoulos2012}
 \CSLLeftMargin{{[}6{]} }%
+\CSLRightInline{JC D, P P, K T, P P, D B, C K, EM P, Limbergen E van, C
+H-M and R P 2012
+\href{https://doi.org/10.1016/j.radonc.2011.12.024}{Recommendations from
+gynaecological (GYN) GEC-ESTRO working group (IV): Basic principles and
+parameters for MR imaging within the frame of image based adaptive
+cervix cancer brachytherapy} \emph{Radiotherapy and oncology : journal
+of the European Society for Therapeutic Radiology and Oncology}
+\textbf{103} 113--22}
+
+\bibitem[\citeproctext]{ref-jacobsen2022}
+\CSLLeftMargin{{[}7{]} }%
+\CSLRightInline{Jacobsen M C, Beriwal S, Dyer B A, Klopp A H, Lee S I,
+McGinnis G J, Robbins J B, Rauch G M, Sadowski E A, Simiele S J,
+Stafford R J, Taunk N K, Yashar C M and Venkatesan A M 2022
+\href{https://doi.org/10.1016/j.brachy.2022.04.005}{Contemporary
+image-guided cervical cancer brachytherapy: Consensus imaging
+recommendations from the society of abdominal radiology and the american
+brachytherapy society} \emph{Brachytherapy} \textbf{21} 369--88}
+
+\bibitem[\citeproctext]{ref-haack2009}
+\CSLLeftMargin{{[}8{]} }%
+\CSLRightInline{S H, SK N, JC L, J G and K T 2009
+\href{https://doi.org/10.1016/j.radonc.2008.09.002}{Applicator
+reconstruction in MRI 3D image-based dose planning of brachytherapy for
+cervical cancer} \emph{Radiotherapy and oncology : journal of the
+European Society for Therapeutic Radiology and Oncology} \textbf{91}
+187--93}
+
+\bibitem[\citeproctext]{ref-hellebust2010}
+\CSLLeftMargin{{[}9{]} }%
 \CSLRightInline{Hellebust T P, Kirisits C, Berger D, Pérez-Calatayud J,
 De Brabandere M, De Leeuw A, Dumas I, Hudej R, Lowe G, Wills R and
 Tanderup K 2010
@@ -1339,17 +1459,25 @@ pitfalls in commissioning and applicator reconstruction in {3D}
 image-based treatment planning of cervix cancer brachytherapy}
 \emph{Radiotherapy and Oncology} \textbf{96} 153--60}
 
+\bibitem[\citeproctext]{ref-ladbury2023}
+\CSLLeftMargin{{[}10{]} }%
+\CSLRightInline{Ladbury C, Harkenrider M, Taunk N, Fisher C, Mayadev J,
+Venkat P, Yashar C, Gaffney D, Beriwal S and Glaser S 2023
+\href{https://doi.org/10.1016/j.brachy.2023.07.001}{A practical guide to
+hybrid interstitial/intracavitary brachytherapy for locally-advanced
+cervical cancer} \emph{Brachytherapy} \textbf{22} 640--8}
+
 \bibitem[\citeproctext]{ref-prisciandaro2022}
-\CSLLeftMargin{{[}7{]} }%
-\CSLRightInline{Prisciandaro J, Zoberi J E, Cohen G N, Kim Y, Johnson P,
-Paulson E, Song W, Hesterman J, Lambert J, Cummings M, et al 2022
-\href{https://doi.org/10.1002/mp.15713}{{AAPM} task group report 303
-endorsed by the {ABS}: {MRI} implementation in {HDR}
+\CSLLeftMargin{{[}11{]} }%
+\CSLRightInline{Prisciandaro J, Zoberi J E, Cohen G, Kim Y, Johnson P,
+Paulson E, Song W, Hwang K-P, Erickson B, Beriwal S, Kirisits C and
+Mourtada F 2022 \href{https://doi.org/10.1002/mp.15713}{{AAPM} task
+group report 303 endorsed by the {ABS}: {MRI} implementation in {HDR}
 brachytherapy---considerations from simulation to treatment}
 \emph{Medical Physics} \textbf{49} e983--1023}
 
 \bibitem[\citeproctext]{ref-richardson2025}
-\CSLLeftMargin{{[}8{]} }%
+\CSLLeftMargin{{[}12{]} }%
 \CSLRightInline{Richardson S L, Baghwala A, Cohen G N, Dempsey C, Libby
 B, Melhus C S, Miller R A, Scanderbeg D J and Simiele S J 2025
 \href{https://doi.org/10.1002/acm2.70118}{{AAPM} medical physics
@@ -1357,7 +1485,7 @@ practice guideline 13.a: {HDR} brachytherapy, part {B}} \emph{Journal of
 Applied Clinical Medical Physics} \textbf{26} e70118}
 
 \bibitem[\citeproctext]{ref-shaaer2020}
-\CSLLeftMargin{{[}9{]} }%
+\CSLLeftMargin{{[}13{]} }%
 \CSLRightInline{Shaaer A, Paudel M, Smith M, Tonolete F, Nicolae A,
 Leung E and Ravi A 2020
 \href{https://doi.org/10.1016/j.brachy.2020.06.007}{Evaluation of an
@@ -1366,16 +1494,64 @@ Leung E and Ravi A 2020
 \textbf{19} 642--50}
 
 \bibitem[\citeproctext]{ref-lee2023}
-\CSLLeftMargin{{[}10{]} }%
+\CSLLeftMargin{{[}14{]} }%
 \CSLRightInline{Lee C Y, Kaza E, Harris T C, O'Farrell D A, King M T,
 Dyer M A, Cormack R A and Buzurovic I 2023
 \href{https://doi.org/10.1088/1361-6560/acaf48}{Catheter reconstruction
 and dosimetric verification of {MRI}-only treatment planning ({MRTP})
 for interstitial {HDR} brachytherapy using {PETRA} sequence}
-\emph{Physics in Medicine \& Biology} \textbf{68} 035001}
+\emph{Physics in Medicine \& Biology} \textbf{68} 035002}
+
+\bibitem[\citeproctext]{ref-ning2020}
+\CSLLeftMargin{{[}15{]} }%
+\CSLRightInline{Ning M S, Vedam S, Ma J, Stafford R J, Bruno T L,
+Cunningham M, Starks C, Lawyer A, Venkatesan A M, Wang L, Wang J,
+Olivieri N D, Guzman A B, Incalcaterra J R, Thaker N G, Joyner M M, Lin
+L L, Jhingran A, Eifel P J and Klopp A H 2020
+\href{https://doi.org/10.1016/j.brachy.2019.12.005}{Clinical utility and
+value contribution of an MRI-positive line marker for image-guided
+brachytherapy in gynecologic malignancies} \emph{Brachytherapy}
+\textbf{19} 305--15}
+
+\bibitem[\citeproctext]{ref-zhangh2019}
+\CSLLeftMargin{{[}16{]} }%
+\CSLRightInline{Zhang H, Donnelly E D, Strauss J B, Kang Z,
+Gopalakrishnan M, Lee P C, Khelashvili G, Nair C K, Lee B H and
+Sathiaseelan V 2019 \href{https://doi.org/10.1002/acm2.12736}{Clinical
+implementation, logistics and workflow guide for MRI image based
+interstitial HDR brachytherapy for gynecological cancers} \emph{Journal
+of applied clinical medical physics} \textbf{20} 37--49}
+
+\bibitem[\citeproctext]{ref-kaza2022}
+\CSLLeftMargin{{[}17{]} }%
+\CSLRightInline{Kaza E, Lee C Y, King M T, Dyer M A, Cormack R A and
+Buzurovic I 2022
+\href{https://doi.org/10.1016/j.brachy.2022.01.003}{First pointwise
+encoding time reduction with radial acquisition (PETRA) implementation
+for catheter detection in interstitial high-dose-rate (HDR)
+brachytherapy} \emph{Brachytherapy} \textbf{21} 501--10}
+
+\bibitem[\citeproctext]{ref-richart2018}
+\CSLLeftMargin{{[}18{]} }%
+\CSLRightInline{Richart J, Carmona-Meseguer V, García-Martínez T,
+Herreros A, Otal A, Pellejero S, Tornero-López A and Pérez-Calatayud J
+2018 \href{https://doi.org/10.1016/j.rpor.2018.06.005}{Review of
+strategies for MRI based reconstruction of endocavitary and interstitial
+applicators in brachytherapy of cervical cancer} \emph{Reports of
+practical oncology and radiotherapy : journal of Greatpoland Cancer
+Center in Poznan and Polish Society of Radiation Oncology} \textbf{23}
+547--61}
+
+\bibitem[\citeproctext]{ref-malajovich2020}
+\CSLLeftMargin{{[}19{]} }%
+\CSLRightInline{Malajovich I, Anamalayil S, Dolney O V, Kevin Teo B K,
+Arscott W T and Taunk N K 2020
+\href{https://doi.org/10.1016/j.brachy.2020.05.005}{Techniques for and
+uncertainties of MRI-based reconstruction of titanium tandem and ring
+brachytherapy applicators} \emph{Brachytherapy} \textbf{19} 651--8}
 
 \bibitem[\citeproctext]{ref-sargazi2026}
-\CSLLeftMargin{{[}11{]} }%
+\CSLLeftMargin{{[}20{]} }%
 \CSLRightInline{Sargazi V, Naseri S, Gholamhosseinian H and Momennezhad
 M 2026 \href{https://doi.org/10.1016/j.brachy.2025.10.004}{Applicator
 reconstruction in cervical cancer brachytherapy: A systematic review of
@@ -1383,7 +1559,7 @@ current methods, challenges, and {AI}-driven future directions}
 \emph{Brachytherapy} \textbf{25} 262--74}
 
 \bibitem[\citeproctext]{ref-tanderup2008}
-\CSLLeftMargin{{[}12{]} }%
+\CSLLeftMargin{{[}21{]} }%
 \CSLRightInline{Tanderup K, Hellebust T P, Lang S, Granfeldt J, Pötter
 R, Lindegaard J C and Kirisits C 2008
 \href{https://doi.org/10.1016/j.radonc.2008.06.010}{Consequences of
@@ -1392,7 +1568,7 @@ brachytherapy in cervical cancer} \emph{Radiotherapy and Oncology}
 \textbf{89} 156--63}
 
 \bibitem[\citeproctext]{ref-schindel2013}
-\CSLLeftMargin{{[}13{]} }%
+\CSLLeftMargin{{[}22{]} }%
 \CSLRightInline{Schindel J, Zhang W, Bhatia S K, Sun W and Kim Y 2013
 \href{https://doi.org/10.5114/jcb.2013.39453}{Dosimetric impacts of
 applicator displacements and applicator reconstruction-uncertainties on
@@ -1400,7 +1576,7 @@ applicator displacements and applicator reconstruction-uncertainties on
 Contemporary Brachytherapy} \textbf{5} 250--7}
 
 \bibitem[\citeproctext]{ref-singh2026}
-\CSLLeftMargin{{[}14{]} }%
+\CSLLeftMargin{{[}23{]} }%
 \CSLRightInline{Singh A, Karshafian R, Ravi A and Paudel M R 2026
 \href{https://doi.org/10.1002/acm2.70810}{Dosimetric evaluation of
 systematic source position uncertainty along the source path and robust
@@ -1408,7 +1584,7 @@ planning during {MRI}-only cervical {HDR} brachytherapy} \emph{Journal
 of Applied Clinical Medical Physics} \textbf{27} e70810}
 
 \bibitem[\citeproctext]{ref-nunez2021}
-\CSLLeftMargin{{[}15{]} }%
+\CSLLeftMargin{{[}24{]} }%
 \CSLRightInline{Nunez D A, Trager M, Beaudry J, Cohen G N, Dauer L T,
 Gorovets D, Hassan Rezaeian N, Kollmeier M A, Leong B, McCann P,
 Williamson M, Zelefsky M J and Damato A L 2021
@@ -1416,23 +1592,65 @@ Williamson M, Zelefsky M J and Damato A L 2021
 severity of physics errors in high-dose rate prostate brachytherapy
 using simulations} \emph{Brachytherapy} \textbf{20} 1062--9}
 
+\bibitem[\citeproctext]{ref-rylander2017}
+\CSLLeftMargin{{[}25{]} }%
+\CSLRightInline{Rylander S, Buus S, Pedersen E M, Bentzen L and Tanderup
+K 2017 \href{https://doi.org/10.1016/j.radonc.2017.01.007}{Dosimetric
+impact of contouring and needle reconstruction uncertainties in US-, CT-
+and MRI-based high-dose-rate prostate brachytherapy treatment planning}
+\emph{Radiotherapy and oncology : journal of the European Society for
+Therapeutic Radiology and Oncology} \textbf{123} 125--32}
+
+\bibitem[\citeproctext]{ref-androulakis2025}
+\CSLLeftMargin{{[}26{]} }%
+\CSLRightInline{Androulakis I, Godart J, Luthart L, MEMC C, Westerveld
+H, Nout R A, Hoogeman M and Kolkman-Deurloo I K 2025
+\href{https://doi.org/10.1016/j.brachy.2024.11.004}{Reconstruction
+errors in clinical intraoperative TRUS-based prostate HDR-BT detected
+using electromagnetic tracking} \emph{Brachytherapy} \textbf{24}
+177--85}
+
 \bibitem[\citeproctext]{ref-shaaer2022}
-\CSLLeftMargin{{[}16{]} }%
+\CSLLeftMargin{{[}27{]} }%
 \CSLRightInline{Shaaer A, Paudel M, Smith M, Tonolete F and Ravi A 2022
 \href{https://doi.org/10.1002/acm2.13494}{Deep-learning-assisted
 algorithm for catheter reconstruction during {MR}-only gynecological
 interstitial brachytherapy} \emph{Journal of Applied Clinical Medical
 Physics} \textbf{23} e13494}
 
+\bibitem[\citeproctext]{ref-roumeliotis2026}
+\CSLLeftMargin{{[}28{]} }%
+\CSLRightInline{Roumeliotis M, Antaki M, Kim G, Gardner U G, Sheikh K,
+Lee J, Seethamraju R, Tokuda J, Hu C, Schmidt E and Viswanathan A N 2026
+\href{https://doi.org/10.1016/j.brachy.2026.03.005}{Prospective
+operational feasibility, safety, and workflow of magnetic
+resonance-guided tracking technology for interstitial gynecologic
+brachytherapy} \emph{Brachytherapy} \textbf{25} 741--8}
+
 \bibitem[\citeproctext]{ref-vijayan2026}
-\CSLLeftMargin{{[}17{]} }%
+\CSLLeftMargin{{[}29{]} }%
 \CSLRightInline{Vijayan S, Theeler J J, Fu Z and Kim Y 2026
 \href{https://doi.org/10.5114/jcb.2026.160595}{Systematic review of
 artificial intelligence in brachytherapy} \emph{Journal of Contemporary
 Brachytherapy} \textbf{18} 85--114}
 
+\bibitem[\citeproctext]{ref-kapur2012}
+\CSLLeftMargin{{[}30{]} }%
+\CSLRightInline{Kapur T, Egger J, Damato A, Schmidt E J and Viswanathan
+A N 2012 \href{https://doi.org/10.1016/j.mri.2012.06.003}{3-t MR-guided
+brachytherapy for gynecologic malignancies} \emph{Magnetic resonance
+imaging} \textbf{30} 1279--90}
+
+\bibitem[\citeproctext]{ref-chen2014}
+\CSLLeftMargin{{[}31{]} }%
+\CSLRightInline{Chen X and Egger J 2014
+\href{https://doi.org/10.1186/2193-1801-3-167}{Development of an open
+source software module for enhanced visualization during MR-guided
+interstitial gynecologic brachytherapy} \emph{SpringerPlus} \textbf{3}
+167}
+
 \bibitem[\citeproctext]{ref-pernelle2013}
-\CSLLeftMargin{{[}18{]} }%
+\CSLLeftMargin{{[}32{]} }%
 \CSLRightInline{Pernelle G, Mehrtash A, Barber L, Damato A, Wang W,
 Seethamraju R T, Schmidt E J, Cormack R A, Wells W M, Viswanathan A N
 and Kapur T 2013
@@ -1442,15 +1660,55 @@ catheter segmentation for {MR}-guided gynecologic cancer brachytherapy}
 MICCAI 2013} Lecture notes in computer science vol 8151 (Springer) pp
 380--7}
 
+\bibitem[\citeproctext]{ref-mastmeyer2017a}
+\CSLLeftMargin{{[}33{]} }%
+\CSLRightInline{Mastmeyer A, Pernelle G, Barber L, Pieper S, Fortmeier
+D, Wells S, Handels H and Kapur T 2017
+\href{https://arxiv.org/abs/1705.06712}{Model-based catheter
+segmentation in MRI-images}}
+
+\bibitem[\citeproctext]{ref-richart2015}
+\CSLLeftMargin{{[}34{]} }%
+\CSLRightInline{J R, A O, S R, AI N, M D, M S, J V, F B and J P-C 2015
+\href{https://doi.org/10.5114/jcb.2015.55340}{A practical MRI-based
+reconstruction method for a new endocavitary and interstitial
+gynaecological template} \emph{Journal of contemporary brachytherapy}
+\textbf{7} 407--14}
+
+\bibitem[\citeproctext]{ref-qiu2013}
+\CSLLeftMargin{{[}35{]} }%
+\CSLRightInline{W Q, M Y, M D, D T and A F 2013
+\href{https://doi.org/10.1118/1.4795337}{Needle segmentation using 3D
+hough transform in 3D TRUS guided prostate transperineal therapy}
+\emph{Medical physics} \textbf{40} 042902}
+
+\bibitem[\citeproctext]{ref-dise2015}
+\CSLLeftMargin{{[}36{]} }%
+\CSLRightInline{Dise J, Liang X, Scheuermann J, Anamalayil S, Mesina C,
+Lin L L and Teo B K 2015
+\href{https://doi.org/10.1016/j.brachy.2015.05.004}{Development and
+evaluation of an automatic interstitial catheter digitization tool for
+adaptive high-dose-rate brachytherapy} \emph{Brachytherapy} \textbf{14}
+619--25}
+
+\bibitem[\citeproctext]{ref-deufel2020}
+\CSLLeftMargin{{[}37{]} }%
+\CSLRightInline{Deufel C L, Tian S, Yan B B, Vaishnav B D, Haddock M G
+and Petersen I A 2020
+\href{https://doi.org/10.1016/j.brachy.2019.09.002}{Automated applicator
+digitization for high-dose-rate cervix brachytherapy using image
+thresholding and density-based clustering} \emph{Brachytherapy}
+\textbf{19} 111--8}
+
 \bibitem[\citeproctext]{ref-hrinivich2019}
-\CSLLeftMargin{{[}19{]} }%
+\CSLLeftMargin{{[}38{]} }%
 \CSLRightInline{Hrinivich W T, Morcos M, Viswanathan A and Lee J 2019
 \href{https://doi.org/10.1002/mp.13730}{Automatic tandem and ring
 reconstruction using {MRI} for cervical cancer brachytherapy}
 \emph{Medical Physics} \textbf{46} 4324--32}
 
 \bibitem[\citeproctext]{ref-zheng2021}
-\CSLLeftMargin{{[}20{]} }%
+\CSLLeftMargin{{[}39{]} }%
 \CSLRightInline{Zheng Y, Jiang S, Yang Z and Wei L 2021
 \href{https://doi.org/10.1002/acm2.13231}{Automatic needle detection
 using improved random sample consensus in {CT} image-guided lung
@@ -1458,7 +1716,7 @@ interstitial brachytherapy} \emph{Journal of Applied Clinical Medical
 Physics} \textbf{22} 121--31}
 
 \bibitem[\citeproctext]{ref-isensee2021}
-\CSLLeftMargin{{[}21{]} }%
+\CSLLeftMargin{{[}40{]} }%
 \CSLRightInline{Isensee F, Jaeger P F, Kohl S A A, Petersen J and
 Maier-Hein K H 2021
 \href{https://doi.org/10.1038/s41592-020-01008-z}{{nnU-Net}: A
@@ -1466,15 +1724,24 @@ self-configuring method for deep learning-based biomedical image
 segmentation} \emph{Nature Methods} \textbf{18} 203--11}
 
 \bibitem[\citeproctext]{ref-jung2019}
-\CSLLeftMargin{{[}22{]} }%
+\CSLLeftMargin{{[}41{]} }%
 \CSLRightInline{Jung H, Shen C, Gonzalez Y, Albuquerque K and Jia X 2019
 \href{https://doi.org/10.1088/1361-6560/ab3fcb}{Deep-learning assisted
 automatic digitization of interstitial needles in {3D} {CT} image based
 high dose-rate brachytherapy of gynecological cancer} \emph{Physics in
 Medicine \& Biology} \textbf{64} 215003}
 
+\bibitem[\citeproctext]{ref-jung2019b}
+\CSLLeftMargin{{[}42{]} }%
+\CSLRightInline{Jung H, Gonzalez Y, Shen C, Klages P, Albuquerque K and
+Jia X 2019
+\href{https://doi.org/10.1016/j.brachy.2019.06.003}{Deep-learning-assisted
+automatic digitization of applicators in 3D CT image-based
+high-dose-rate brachytherapy of gynecological cancer}
+\emph{Brachytherapy} \textbf{18} 841--51}
+
 \bibitem[\citeproctext]{ref-zhangd2020}
-\CSLLeftMargin{{[}23{]} }%
+\CSLLeftMargin{{[}43{]} }%
 \CSLRightInline{Zhang D, Yang Z, Jiang S, Zhou Z, Meng M and Wang W 2020
 \href{https://doi.org/10.1002/acm2.13024}{Automatic segmentation and
 applicator reconstruction for {CT}-based brachytherapy of cervical
@@ -1482,7 +1749,7 @@ cancer using {3D} convolutional neural networks} \emph{Journal of
 Applied Clinical Medical Physics} \textbf{21} 158--69}
 
 \bibitem[\citeproctext]{ref-hu2021}
-\CSLLeftMargin{{[}24{]} }%
+\CSLLeftMargin{{[}44{]} }%
 \CSLRightInline{Hu H, Yang Q, Li J, Wang P, Tang B, Wang X and Lang J
 2021 \href{https://doi.org/10.5114/jcb.2021.106118}{Deep learning
 applications in automatic segmentation and reconstruction in {CT}-based
@@ -1490,7 +1757,7 @@ cervix brachytherapy} \emph{Journal of Contemporary Brachytherapy}
 \textbf{13} 325--30}
 
 \bibitem[\citeproctext]{ref-weishaupt2022}
-\CSLLeftMargin{{[}25{]} }%
+\CSLLeftMargin{{[}45{]} }%
 \CSLRightInline{Weishaupt L L, Sayed H K, Mao X, Choo R, Stish B J,
 Enger S A and Deufel C L 2022
 \href{https://doi.org/10.1016/j.brachy.2022.02.005}{Approaching
@@ -1500,7 +1767,7 @@ high-dose-rate prostate brachytherapy} \emph{Brachytherapy} \textbf{21}
 520--31}
 
 \bibitem[\citeproctext]{ref-xie2023}
-\CSLLeftMargin{{[}26{]} }%
+\CSLLeftMargin{{[}46{]} }%
 \CSLRightInline{Xie H, Wang J, Chen Y, Tu Y, Chen Y, Zhao Y, Zhou P,
 Wang S, Bai Z and Tang Q 2023
 \href{https://doi.org/10.5114/jcb.2023.126514}{Automatic reconstruction
@@ -1509,7 +1776,7 @@ cancer brachytherapy based on deep learning} \emph{Journal of
 Contemporary Brachytherapy} \textbf{15} 134--40}
 
 \bibitem[\citeproctext]{ref-wang2024}
-\CSLLeftMargin{{[}27{]} }%
+\CSLLeftMargin{{[}47{]} }%
 \CSLRightInline{Wang Y, Jian W, Zhu L, Cai C, Zhang B and Wang X 2024
 \href{https://doi.org/10.1016/j.adro.2023.101340}{Attention-gated
 deep-learning-based automatic digitization of interstitial needles in
@@ -1517,7 +1784,7 @@ high-dose-rate brachytherapy for cervical cancer} \emph{Advances in
 Radiation Oncology} \textbf{9} 101340}
 
 \bibitem[\citeproctext]{ref-moradi2025}
-\CSLLeftMargin{{[}28{]} }%
+\CSLLeftMargin{{[}48{]} }%
 \CSLRightInline{Moradi M M, Siavashpour Z, Takhtardeshir S, Showkatian
 E, Jaberi R, Ghaderi R, Mofid B and Taghizadeh-Hesary F 2025
 \href{https://doi.org/10.1016/j.ctro.2025.100925}{Fully automatic
@@ -1527,14 +1794,14 @@ tracking algorithms} \emph{Clinical and Translational Radiation
 Oncology} \textbf{51} 100925}
 
 \bibitem[\citeproctext]{ref-quetin2025}
-\CSLLeftMargin{{[}29{]} }%
+\CSLLeftMargin{{[}49{]} }%
 \CSLRightInline{Quetin S, Jafarzadeh H, Kalinowski J, Bekerat H, Bahoric
 B, Maleki F and Enger S A 2025
 \href{https://doi.org/10.1002/mp.18107}{Automatic catheter digitization
 in breast brachytherapy} \emph{Medical Physics} \textbf{52} e18107}
 
 \bibitem[\citeproctext]{ref-dai2020}
-\CSLLeftMargin{{[}30{]} }%
+\CSLLeftMargin{{[}50{]} }%
 \CSLRightInline{Dai X, Lei Y, Zhang Y, Qiu R L J, Wang T, Dresser S A,
 Curran W J, Patel P, Liu T and Yang X 2020
 \href{https://doi.org/10.1002/mp.14307}{Automatic multi-catheter
@@ -1543,7 +1810,7 @@ detection using deeply supervised convolutional neural network in
 Physics} \textbf{47} 4115--24}
 
 \bibitem[\citeproctext]{ref-aleong2024}
-\CSLLeftMargin{{[}31{]} }%
+\CSLLeftMargin{{[}51{]} }%
 \CSLRightInline{Aleong A M, Berlin A, Borg J, Helou J, Beiki-Ardakani A,
 Rink A, Raman S, Chung P and Weersink R A 2024
 \href{https://doi.org/10.1002/mp.17117}{Rapid multi-catheter
@@ -1551,7 +1818,7 @@ segmentation for magnetic resonance image-guided catheter-based
 interventions} \emph{Medical Physics} \textbf{51} 5361--73}
 
 \bibitem[\citeproctext]{ref-kostoulas2025}
-\CSLLeftMargin{{[}32{]} }%
+\CSLLeftMargin{{[}52{]} }%
 \CSLRightInline{Kostoulas V, Guijt A, Kerkhof E M, Pieters B R, Bosman P
 A N and Alderliesten T 2025
 \href{https://doi.org/10.1117/12.3043274}{Dealing with segmentation
@@ -1559,16 +1826,34 @@ errors in needle reconstruction for {MRI}-guided brachytherapy}
 \emph{Medical imaging 2025: Image-guided procedures, robotic
 interventions, and modeling, proc. SPIE 13408} p 1340826}
 
+\bibitem[\citeproctext]{ref-li2020}
+\CSLLeftMargin{{[}53{]} }%
+\CSLRightInline{Li X, Young A S, Raman S S, Lu D S, Lee Y H, Tsao T C
+and Wu H H 2020
+\href{https://doi.org/10.1007/s11548-020-02226-8}{Automatic needle
+tracking using mask r-CNN for MRI-guided percutaneous interventions}
+\emph{International journal of computer assisted radiology and surgery}
+\textbf{15} 1673--84}
+
 \bibitem[\citeproctext]{ref-zhou2024}
-\CSLLeftMargin{{[}33{]} }%
+\CSLLeftMargin{{[}54{]} }%
 \CSLRightInline{Zhou W, Li X, Zabihollahy F, Lu D S and Wu H H 2024
 \href{https://doi.org/10.1007/s11548-024-03077-3}{Deep learning-based
 automatic pipeline for {3D} needle localization on intra-procedural {3D}
 {MRI}} \emph{International Journal of Computer Assisted Radiology and
 Surgery} \textbf{19} 2227--37}
 
+\bibitem[\citeproctext]{ref-zhang2020tmi}
+\CSLLeftMargin{{[}55{]} }%
+\CSLRightInline{Zhang Y, He X, Tian Z, Jeong J J, Lei Y, Wang T, Zeng Q,
+Jani A B, Curran W J, Patel P, Liu T and Yang X 2020
+\href{https://doi.org/10.1109/TMI.2020.2968770}{Multi-needle detection
+in 3D ultrasound images using unsupervised order-graph regularized
+sparse dictionary learning} \emph{IEEE transactions on medical imaging}
+\textbf{39} 2302--15}
+
 \bibitem[\citeproctext]{ref-zhang2020pmb}
-\CSLLeftMargin{{[}34{]} }%
+\CSLLeftMargin{{[}56{]} }%
 \CSLRightInline{Zhang Y, Tian Z, Lei Y, Wang T, Patel P, Jani A B,
 Curran W J, Liu T and Yang X 2020
 \href{https://doi.org/10.1088/1361-6560/aba410}{Automatic multi-needle
@@ -1576,22 +1861,30 @@ localization in ultrasound images using large margin mask {RCNN} for
 ultrasound-guided prostate brachytherapy} \emph{Physics in Medicine \&
 Biology} \textbf{65} 205003}
 
+\bibitem[\citeproctext]{ref-zhang2020mp}
+\CSLLeftMargin{{[}57{]} }%
+\CSLRightInline{Zhang Y, Lei Y, Qiu R L J, Wang T, Wang H, Jani A B,
+Curran W J, Patel P, Liu T and Yang X 2020
+\href{https://doi.org/10.1002/mp.14128}{Multi-needle localization with
+attention u-net in US-guided HDR prostate brachytherapy} \emph{Medical
+physics} \textbf{47} 2735--45}
+
 \bibitem[\citeproctext]{ref-andersen2020}
-\CSLLeftMargin{{[}35{]} }%
+\CSLLeftMargin{{[}58{]} }%
 \CSLRightInline{Andersén C, Rydén T, Thunberg P and Lagerlöf J H 2020
 \href{https://doi.org/10.1002/mp.14508}{Deep learning-based digitization
 of prostate brachytherapy needles in ultrasound images} \emph{Medical
 Physics} \textbf{47} 6414--20}
 
 \bibitem[\citeproctext]{ref-wangf2020}
-\CSLLeftMargin{{[}36{]} }%
+\CSLLeftMargin{{[}59{]} }%
 \CSLRightInline{Wang F, Xing L, Bagshaw H, Buyyounouski M and Han B 2020
 \href{https://doi.org/10.1002/mp.14328}{Deep learning applications in
 automatic needle segmentation in ultrasound-guided prostate
 brachytherapy} \emph{Medical Physics} \textbf{47} 3797--805}
 
 \bibitem[\citeproctext]{ref-liu2022}
-\CSLLeftMargin{{[}37{]} }%
+\CSLLeftMargin{{[}60{]} }%
 \CSLRightInline{Liu D, Tupor S, Singh J, Chernoff T, Leong N, Sadikov E,
 Amjad A and Zilles S 2022 \href{https://doi.org/10.1002/mp.15522}{The
 challenges facing deep learning-based catheter localization for
@@ -1599,7 +1892,7 @@ ultrasound guided high-dose-rate prostate brachytherapy} \emph{Medical
 Physics} \textbf{49} 2442--51}
 
 \bibitem[\citeproctext]{ref-goulet2025}
-\CSLLeftMargin{{[}38{]} }%
+\CSLLeftMargin{{[}61{]} }%
 \CSLRightInline{Goulet M, Duguay-Drouin P, Mascolo-Fortin J, Mégrourèche
 J, Octave N and Tsui J M G 2025
 \href{https://doi.org/10.1016/j.ijrobp.2024.12.026}{Clinical application
@@ -1608,24 +1901,74 @@ brachytherapy} \emph{International Journal of Radiation Oncology,
 Biology, Physics} \textbf{122} 199--207}
 
 \bibitem[\citeproctext]{ref-kim2026}
-\CSLLeftMargin{{[}39{]} }%
+\CSLLeftMargin{{[}62{]} }%
 \CSLRightInline{Kim G, Antaki M, Schmidt E J, Roumeliotis M, Viswanathan
 A N and Lee J 2026
 \href{https://doi.org/10.1016/j.brachy.2025.09.017}{Automatic
 digitization of applicator and catheters for {MRI}-guided cervical
 cancer brachytherapy} \emph{Brachytherapy} \textbf{25} 85--94}
 
+\bibitem[\citeproctext]{ref-hu2019}
+\CSLLeftMargin{{[}63{]} }%
+\CSLRightInline{Hu X, Li F, Samaras D and Chen C 2019
+\href{https://papers.nips.cc/paper/8803-topology-preserving-deep-image-segmentation}{Topology-preserving
+deep image segmentation} \emph{Advances in neural information processing
+systems 32 (NeurIPS 2019)} vol 32}
+
 \bibitem[\citeproctext]{ref-shit2021}
-\CSLLeftMargin{{[}40{]} }%
+\CSLLeftMargin{{[}64{]} }%
 \CSLRightInline{Shit S, Paetzold J C, Sekuboyina A, Ezhov I, Unger A,
 Zhylka A, Pluim J P W, Bauer U and Menze B H 2021
 \href{https://doi.org/10.1109/CVPR46437.2021.01629}{{clDice} -- a novel
 topology-preserving loss function for tubular structure segmentation}
 \emph{Proceedings of the IEEE/CVF conference on computer vision and
-pattern recognition (CVPR)} pp 16560--9}
+pattern recognition (CVPR)} pp 16555--64}
+
+\bibitem[\citeproctext]{ref-kirchhoff2024}
+\CSLLeftMargin{{[}65{]} }%
+\CSLRightInline{Kirchhoff Y, Rokuss M R, Roy S, Kovacs B, Ulrich C, Wald
+T, Zenk M, Vollmuth P, Kleesiek J, Isensee F and Maier-Hein K 2024
+\href{https://doi.org/10.1007/978-3-031-72980-5_13}{Skeleton recall loss
+for connectivity conserving and resource efficient segmentation of thin
+tubular structures} \emph{Computer vision -- ECCV 2024, lecture notes in
+computer science} (Springer) pp 218--34}
+
+\bibitem[\citeproctext]{ref-zhouw2026}
+\CSLLeftMargin{{[}66{]} }%
+\CSLRightInline{Zhou W, Dai Q, Curiel O, Tsao T C, Chiang J, Lu D S and
+Wu H H 2026 \href{https://doi.org/10.1007/s11548-026-03592-5}{Keypoint
+detection network for needle localization on intra-procedural MRI in
+MRI-guided liver interventions} \emph{International journal of computer
+assisted radiology and surgery} \textbf{21} 1775--88}
+
+\bibitem[\citeproctext]{ref-mehrtash2014}
+\CSLLeftMargin{{[}67{]} }%
+\CSLRightInline{Mehrtash A, Damato A, Pernelle G, Barber L, Farhat N,
+Viswanathan A, Cormack R and Kapur T 2014
+\href{https://doi.org/10.1117/12.2044381}{EM-navigated catheter
+placement for gynecologic brachytherapy: An accuracy study}
+\emph{Medical imaging 2014: Image-guided procedures, robotic
+interventions, and modeling, proc. SPIE 9036} vol 9036 p 90361F}
+
+\bibitem[\citeproctext]{ref-wang2015}
+\CSLLeftMargin{{[}68{]} }%
+\CSLRightInline{Wang W, Viswanathan A N, Damato A L, Chen Y, Tse Z, Pan
+L, Tokuda J, Seethamraju R T, Dumoulin C L, Schmidt E J and Cormack R A
+2015 \href{https://doi.org/10.1118/1.4935535}{Evaluation of an active
+magnetic resonance tracking system for interstitial brachytherapy}
+\emph{Medical physics} \textbf{42} 7114--21}
+
+\bibitem[\citeproctext]{ref-dearcos2017}
+\CSLLeftMargin{{[}69{]} }%
+\CSLRightInline{Arcos J de, Schmidt E J, Wang W, Tokuda J, Vij K,
+Seethamraju R T, Damato A L, Dumoulin C L, Cormack R A and Viswanathan A
+N 2017 \href{https://doi.org/10.1016/j.ijrobp.2017.05.054}{Prospective
+clinical implementation of a novel magnetic resonance tracking device
+for real-time brachytherapy catheter positioning} \emph{International
+journal of radiation oncology, biology, physics} \textbf{99} 618--26}
 
 \bibitem[\citeproctext]{ref-durrbeck2022}
-\CSLLeftMargin{{[}41{]} }%
+\CSLLeftMargin{{[}70{]} }%
 \CSLRightInline{Dürrbeck C, Sauer B C, Lotter M, Kreppner S, Strnad V,
 Fietkau R and Bert C 2022
 \href{https://doi.org/10.1016/j.radonc.2022.09.019}{Automating implant
@@ -1634,7 +1977,7 @@ approach combining electromagnetic tracking and image segmentation}
 \emph{Radiotherapy and Oncology} \textbf{176} 172--8}
 
 \bibitem[\citeproctext]{ref-cantin2024}
-\CSLLeftMargin{{[}42{]} }%
+\CSLLeftMargin{{[}71{]} }%
 \CSLRightInline{Cantin A, Lavallée M-C, Poulin E, Hautvast G, Foster W
 and Beaulieu L 2024
 \href{https://doi.org/10.1016/j.phro.2024.100661}{Proof-of-concept of
@@ -1643,7 +1986,7 @@ catheters in high dose rate brachytherapy} \emph{Physics and Imaging in
 Radiation Oncology} \textbf{32} 100661}
 
 \bibitem[\citeproctext]{ref-deufel2024}
-\CSLLeftMargin{{[}43{]} }%
+\CSLLeftMargin{{[}72{]} }%
 \CSLRightInline{Deufel C L, Brost E E, Dupere J M, Petersen I A, Haddock
 M G and Garda A E 2024
 \href{https://doi.org/10.1016/j.brachy.2024.06.006}{{EMVision}: An
@@ -1652,7 +1995,7 @@ interstitial brachytherapy applicators} \emph{Brachytherapy} \textbf{23}
 676--86}
 
 \bibitem[\citeproctext]{ref-beaulieu2025}
-\CSLLeftMargin{{[}44{]} }%
+\CSLLeftMargin{{[}73{]} }%
 \CSLRightInline{Beaulieu L, Bert C, Borot de Battisti M, Cormack R A,
 Cunha J A M, Damato A L, Deufel C L, Hautvast G L T F, Hsu I-C,
 Kolkman-Deurloo I-K, Moerland M A, Niatsetski Y, Weersink R A and
@@ -1662,7 +2005,7 @@ catheter, needle, and applicator tracking technology} \emph{Medical
 Physics} \textbf{52} e70037}
 
 \bibitem[\citeproctext]{ref-xiao2026}
-\CSLLeftMargin{{[}45{]} }%
+\CSLLeftMargin{{[}74{]} }%
 \CSLRightInline{Xiao Z, Liu B, Wang J, Yao Q, Sun H, Zhou F, Wang J, Wu
 Q and Jiang P 2026
 \href{https://arxiv.org/abs/2607.11290}{Multi-catheter digitization in
@@ -1670,7 +2013,7 @@ brachytherapy via few-shot synthetic-to-real learning and
 structure-aware tracking} \emph{arXiv preprint arXiv:2607.11290}}
 
 \bibitem[\citeproctext]{ref-xiao2026jbhi}
-\CSLLeftMargin{{[}46{]} }%
+\CSLLeftMargin{{[}75{]} }%
 \CSLRightInline{Xiao Z, Zhou F, Wang J, He C, Liu B, Sun H, Ji Z, Jiang
 Y, Wang J and Wu Q 2026
 \href{https://doi.org/10.1109/JBHI.2026.3694701}{Multi-needle
@@ -1678,15 +2021,31 @@ localization for pelvic seed implant brachytherapy based on tip-handle
 detection and matching} \emph{IEEE Journal of Biomedical and Health
 Informatics} 1--14}
 
+\bibitem[\citeproctext]{ref-braso2020}
+\CSLLeftMargin{{[}76{]} }%
+\CSLRightInline{Brasó G and Leal-Taixé L 2020
+\href{https://doi.org/10.1109/CVPR42600.2020.00628}{Learning a neural
+solver for multiple object tracking} \emph{Proceedings of the IEEE/CVF
+conference on computer vision and pattern recognition (CVPR)} pp
+6246--56}
+
 \bibitem[\citeproctext]{ref-benhaim2022}
-\CSLLeftMargin{{[}47{]} }%
+\CSLLeftMargin{{[}77{]} }%
 \CSLRightInline{Ben-Haim T and Riklin Raviv T 2022
 \href{https://doi.org/10.1007/978-3-031-19803-8_36}{Graph neural network
 for cell tracking in microscopy videos} \emph{Computer vision -- ECCV
-2022, lecture notes in computer science} (Springer) pp 610--26}
+2022} Lecture notes in computer science vol 13681 (Springer) pp 610--26}
+
+\bibitem[\citeproctext]{ref-shit2022}
+\CSLLeftMargin{{[}78{]} }%
+\CSLRightInline{Shit S, Koner R, Wittmann B, Paetzold J, Ezhov I, Li H,
+Pan J, Sharifzadeh S, Kaissis G, Tresp V and Menze B 2022
+\href{https://doi.org/10.1007/978-3-031-19836-6_24}{Relationformer: A
+unified framework for image-to-graph generation} \emph{Computer vision
+-- ECCV 2022, lecture notes in computer science} (Springer) pp 422--39}
 
 \bibitem[\citeproctext]{ref-arapi2023}
-\CSLLeftMargin{{[}48{]} }%
+\CSLLeftMargin{{[}79{]} }%
 \CSLRightInline{Arapi V, Hardt-Stremayr A, Weiss S and Steinbrener J
 2023 \href{https://doi.org/10.1186/s41747-023-00344-x}{Bridging the
 simulation-to-real gap for {AI}-based needle and target detection in
@@ -1694,7 +2053,7 @@ robot-assisted ultrasound-guided interventions} \emph{European Radiology
 Experimental} \textbf{7} 30}
 
 \bibitem[\citeproctext]{ref-fechter2024}
-\CSLLeftMargin{{[}49{]} }%
+\CSLLeftMargin{{[}80{]} }%
 \CSLRightInline{Fechter T, Sachpazidis I and Baltas D 2024
 \href{https://doi.org/10.1016/j.zemedi.2022.10.005}{The use of deep
 learning in interventional radiotherapy (brachytherapy): A review with a
@@ -1702,15 +2061,24 @@ focus on open source and open data} \emph{Zeitschrift f{ü}r Medizinische
 Physik} \textbf{34} 180--96}
 
 \bibitem[\citeproctext]{ref-antonelli2022}
-\CSLLeftMargin{{[}50{]} }%
+\CSLLeftMargin{{[}81{]} }%
 \CSLRightInline{Antonelli M, Reinke A, Bakas S, Farahani K,
 Kopp-Schneider A, Landman B A, Litjens G, Menze B, Ronneberger O,
 Summers R M, et al 2022
 \href{https://doi.org/10.1038/s41467-022-30695-9}{The medical
 segmentation decathlon} \emph{Nature Communications} \textbf{13} 4128}
 
+\bibitem[\citeproctext]{ref-kirisits2014}
+\CSLLeftMargin{{[}82{]} }%
+\CSLRightInline{C K, MJ R, D B, F B, M D B, Laarse R van der, Y N, P P,
+TP H, J P-C, K T, JL V and FA S 2014
+\href{https://doi.org/10.1016/j.radonc.2013.11.002}{Review of clinical
+brachytherapy uncertainties: Analysis guidelines of GEC-ESTRO and the
+AAPM} \emph{Radiotherapy and oncology : journal of the European Society
+for Therapeutic Radiology and Oncology} \textbf{110} 199--212}
+
 \bibitem[\citeproctext]{ref-fedorov2012}
-\CSLLeftMargin{{[}51{]} }%
+\CSLLeftMargin{{[}83{]} }%
 \CSLRightInline{Fedorov A, Beichel R, Kalpathy-Cramer J, Finet J,
 Fillion-Robin J-C, Pujol S, Bauer C, Jennings D, Fennessy F, Sonka M, et
 al 2012 \href{https://doi.org/10.1016/j.mri.2012.05.001}{{3D Slicer} as
@@ -1718,7 +2086,7 @@ an image computing platform for the quantitative imaging network}
 \emph{Magnetic Resonance Imaging} \textbf{30} 1323--41}
 
 \bibitem[\citeproctext]{ref-kallis2019}
-\CSLLeftMargin{{[}52{]} }%
+\CSLLeftMargin{{[}84{]} }%
 \CSLRightInline{Kallis K, Kaltsas T, Kreppner S, Lotter M, Strnad V,
 Fietkau R and Bert C 2019
 \href{https://doi.org/10.1016/j.radonc.2019.02.017}{Impact of inter- and
@@ -1727,7 +2095,7 @@ multi-catheter interstitial brachytherapy of breast cancer patients}
 \emph{Radiotherapy and Oncology} \textbf{135} 25--32}
 
 \bibitem[\citeproctext]{ref-karius2024}
-\CSLLeftMargin{{[}53{]} }%
+\CSLLeftMargin{{[}85{]} }%
 \CSLRightInline{Karius A, Kreppner S, Strnad V, Schweizer C, Lotter M,
 Fietkau R and Bert C 2024
 \href{https://doi.org/10.1016/j.brachy.2024.05.002}{Inter-observer
@@ -1735,8 +2103,17 @@ effects in needle reconstruction for temporary prostate brachytherapy:
 Dosimetric implications and adaptive {CBCT-TRUS} registration solutions}
 \emph{Brachytherapy} \textbf{23} 421--32}
 
+\bibitem[\citeproctext]{ref-deufel2025}
+\CSLLeftMargin{{[}86{]} }%
+\CSLRightInline{Deufel C L, Dupere J M, Brost E E, Haddock M G and Garda
+A E 2025 \href{https://doi.org/10.1016/j.brachy.2025.04.007}{How
+accurate is applicator reconstruction in HDR gynecological
+brachytherapy? Patient-specific results from an electromagnetic tracking
+system designed to intercept errors before radiation delivery}
+\emph{Brachytherapy} \textbf{24} 772--82}
+
 \bibitem[\citeproctext]{ref-karius2026}
-\CSLLeftMargin{{[}54{]} }%
+\CSLLeftMargin{{[}87{]} }%
 \CSLRightInline{Karius A, Strnad V, Lotter M, Kreppner S, Merten R,
 Fietkau R, Bert C and Schweizer C 2026
 \href{https://doi.org/10.1007/s00066-025-02367-2}{Assessment of needle
@@ -1744,8 +2121,26 @@ bending and tracking requirements for optimized needle placement in
 combined intracavitary/interstitial gynecologic brachytherapy}
 \emph{Strahlentherapie und Onkologie} \textbf{202} 40--51}
 
+\bibitem[\citeproctext]{ref-huang2026}
+\CSLLeftMargin{{[}88{]} }%
+\CSLRightInline{Huang W, Cui H, Wei D, Li X, Wang Q and Jiang Q 2026
+\href{https://doi.org/10.5114/jcb.2026.164179}{Dosimetric impact of
+computed tomography slice thickness-induced applicator reconstruction
+uncertainties in three-dimensional brachytherapy for cervical cancer}
+\emph{Journal of contemporary brachytherapy} \textbf{18} 271--8}
+
+\bibitem[\citeproctext]{ref-vanheerden2017}
+\CSLLeftMargin{{[}89{]} }%
+\CSLRightInline{Heerden L E van, Kesteren Z van, Gurney-Champion O J,
+Houweling A C, Koedooder K, Rasch C R N, Pieters B R and Bel A 2017
+\href{https://doi.org/10.1016/j.ijrobp.2017.06.016}{Image distortions on
+a plastic interstitial computed tomography/magnetic resonance
+brachytherapy applicator at 3~tesla magnetic resonance imaging and their
+dosimetric impact} \emph{International journal of radiation oncology,
+biology, physics} \textbf{99} 710--8}
+
 \bibitem[\citeproctext]{ref-major2026}
-\CSLLeftMargin{{[}55{]} }%
+\CSLLeftMargin{{[}90{]} }%
 \CSLRightInline{Major T, Vízkeleti J and Takácsi-Nagy Z 2026
 \href{https://doi.org/10.5114/jcb.2026.164049}{Geometric accuracy of
 applicator and needle reconstruction in gynecological brachytherapy

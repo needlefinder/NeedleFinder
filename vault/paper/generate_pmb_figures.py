@@ -586,7 +586,10 @@ def make_fig4_pareto_and_fewshot(bench):
     ax1.scatter([rs_nf[idx50]], [ps_nf[idx50]], marker="*", s=85, facecolor=C["nf"], edgecolor="#000000", linewidth=0.75, zorder=7)
 
     # Also plot NeedleFinder 2026 + IRGM + Poly3 (tau=50%, no SynthBrachy3T)
-    up = c_all["Unified NeedleFinder 2026 + IRGM + SyncTrack + Poly3 (tau=50%)"]
+    # IRGM + Poly3 operating point: reproducible recomputation from the current cached bundles
+    with open(os.path.join(SOURCES_DIR, "2026-10-22-irgm-poly3-rows-recheck.json")) as f:
+        _rc = json.load(f)["rows"]["irgm_whole_cohort"]
+    up = {"hungarian_1to1_recall_pct": _rc["rec"], "precision_1to1_pct": _rc["prec"], "f1_1to1_pct": _rc["f1"]}
     ax1.scatter([up["hungarian_1to1_recall_pct"]], [up["precision_1to1_pct"]], marker="o", s=34,
                 facecolor=C["nf"], edgecolor="#000000", linewidth=0.7, alpha=0.75, zorder=6)
 
@@ -607,7 +610,7 @@ def make_fig4_pareto_and_fewshot(bench):
                  fontsize=5.8, fontweight="bold", color=C["nf"],
                  arrowprops=dict(arrowstyle="->", color=C["nf"], lw=0.6))
 
-    ax1.annotate("NF 2026 + IRGM (86.0% F1)",
+    ax1.annotate(f"NF 2026 + IRGM ({up['f1_1to1_pct']:.1f}% F1)",
                  xy=(up["hungarian_1to1_recall_pct"], up["precision_1to1_pct"]),
                  xytext=(-18, -3), textcoords="offset points", ha="right",
                  fontsize=5.6, color="#555555",
@@ -656,7 +659,7 @@ def make_fig4_pareto_and_fewshot(bench):
 
     # Zero-shot floor line
     ax2.axhline(f1_zero, color=C["st0"], ls=":", lw=1.1, zorder=2)
-    ax2.text(x_pos[-1] - 0.05, f1_zero - 5.2, f"0-shot SynthBrachy3T ({f1_zero:.1f}%)", fontsize=5.5, color=C["st0"], fontweight="bold", ha="right")
+    ax2.text(x_pos[-1] - 0.05, f1_zero - 5.2, f"0-shot, no learned scoring ({f1_zero:.1f}%)", fontsize=5.5, color=C["st0"], fontweight="bold", ha="right")
 
     # Curves + patient-level bootstrap 95% CI bands taken from the benchmark JSON
     def _ci(src, k):
@@ -674,7 +677,7 @@ def make_fig4_pareto_and_fewshot(bench):
 
     # Direct labels on curves
     ax2.text(x_pos[-1] - 0.05, f1_syn_all[-1] + 2.6, "NF 2026 + SynthBrachy3T (88.2%)", fontsize=5.6, fontweight="bold", color=C["nf"], ha="right")
-    ax2.text(x_pos[-1] - 0.05, f1_nf_all[-1] - 5.2, "NF 2026 real-only (86.0%)", fontsize=5.5, color=C["st2"], ha="right")
+    ax2.text(x_pos[-1] - 0.05, f1_nf_all[-1] - 5.2, f"NF 2026 real-only ({f1_nf_all[-1]:.1f}%)", fontsize=5.5, color=C["st2"], ha="right")
     ax2.text(x_pos[-1] - 0.05, dice_k[-1] - 7.5, "Stage 1 ResUNet Dice (%)", fontsize=5.6, color=C["st1"], ha="right")
 
     # Highlight k=1 shot Sim-to-Real jump

@@ -65,3 +65,9 @@
 - `reports/figures/fig1_pipeline_architecture.svg` — Publication architecture diagram
 - `reports/figures/fig2_pareto_precision_recall_f1.svg` — 5-Fold OOF Precision-Recall Pareto & confidence sweep figure
 - `reports/figures/fig3_shaft_error_and_runtime.svg` — Shaft error vs. inter-observer floor & sub-second runtime breakdown figure
+
+---
+
+## Library (`wiki/library/`) — verified reference pages (`type: library`)
+
+- [[wiki/library/index|Reference Library index]] — 88 one-page records (57 cited in `paper/references.bib` before the audit, 31 added by the 2026-10-22 systematic search), each built from the Crossref/PubMed/arXiv record and retrieved abstract or full text, with a claim-by-claim check of how `paper/manuscript.md` cites it.
