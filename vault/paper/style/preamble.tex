@@ -1,23 +1,184 @@
-% ---------- Typography & Colour System (Okabe-Ito Scientific Palette) ----------
-\setlength{\emergencystretch}{3em}
+% =====================================================================
+%  NeedleFinder 2026 -- PMB manuscript, print edition
+%  Book-style typography: EB Garamond + Garamond-Math, A4, 120 mm measure,
+%  floats breaking 20 mm into each margin, small-caps apparatus.
+%  Compiled with tectonic (XeTeX); unicode-math/fontspec are loaded by pandoc.
+% =====================================================================
+
+% ---------- Colour (one accent: Okabe-Ito vermilion) -----------------
 \usepackage{xcolor}
 \usepackage{colortbl}
-\definecolor{nfst0}{HTML}{E69F00}   \definecolor{nfst0tint}{HTML}{F7ECCC}
-\definecolor{nfst1}{HTML}{0072B2}   \definecolor{nfst1tint}{HTML}{CCE3F0}
-\definecolor{nfst2}{HTML}{009E73}   \definecolor{nfst2tint}{HTML}{CCECE3}
-\definecolor{nfours}{HTML}{D55E00}  \definecolor{nfrow}{HTML}{FBEFE6}
+\definecolor{nfink}{HTML}{1F1C18}       % warm near-black for text
+\definecolor{nfgrey}{HTML}{5E5850}      % secondary text (captions, notes)
+\definecolor{nfrule}{HTML}{8C857B}
+\definecolor{nfours}{HTML}{D55E00}      % accent: Okabe-Ito vermilion
+\definecolor{nfaccent}{HTML}{B34E00}    % accent at text-safe contrast
+\definecolor{nfst0}{HTML}{E69F00}
+\definecolor{nfst1}{HTML}{0072B2}
+\definecolor{nfst2}{HTML}{009E73}
+\definecolor{nfst0tint}{HTML}{F7ECCC}
+\definecolor{nfst1tint}{HTML}{CCE3F0}
+\definecolor{nfst2tint}{HTML}{CCECE3}
+\definecolor{nfrow}{HTML}{FBF1E7}       % restrained vermilion tint ("ours")
 \definecolor{nfourstext}{HTML}{9E4400}
-\definecolor{nfgrey}{HTML}{4D4D4D}  \definecolor{nfrule}{HTML}{BFBFBF}
-\definecolor{nfctrow}{HTML}{F2F2F2}
-\definecolor{ctrow}{HTML}{F2F2F2}
+\definecolor{nfctrow}{HTML}{F1EFEB}     % warm grey tint (CT studies)
+\definecolor{ctrow}{HTML}{F1EFEB}
+\color{nfink}
 
-% ---------- Tables (Booktabs + ThreePartTable, Zero Longtable Wrapping) ----------
+% ---------- Fonts -----------------------------------------------------
+% EB Garamond (Duffner/Pardo) for text, old-style proportional figures in
+% prose; Garamond-Math for mathematics with digits and the decimal point
+% taken from the text face so that numbers read identically in and out of
+% math. Tables switch to tabular lining figures (\nftabfont + \nflinmath).
+\defaultfontfeatures{Ligatures=TeX}
+\setmainfont{EBGaramond}[
+  Extension=.otf,
+  UprightFont=*-Regular, ItalicFont=*-Italic,
+  BoldFont=*-SemiBold, BoldItalicFont=*-SemiBoldItalic,
+  Numbers={OldStyle,Proportional},
+  Ligatures={TeX,Common},
+  SmallCapsFeatures={Letters=SmallCaps, LetterSpace=4}]
+\newfontfamily\nfcapsfont{EBGaramond}[
+  Extension=.otf, UprightFont=*-Regular, ItalicFont=*-Italic,
+  BoldFont=*-SemiBold,
+  Letters={SmallCaps,UppercaseSmallCaps}, LetterSpace=8,
+  Numbers={OldStyle,Proportional}]
+\newfontfamily\nftabfont{EBGaramond}[
+  Extension=.otf, UprightFont=*-Regular, ItalicFont=*-Italic,
+  BoldFont=*-SemiBold, BoldItalicFont=*-SemiBoldItalic,
+  Numbers={Lining,Monospaced}]
+\setmonofont{IBMPlexMono}[Extension=.otf, Scale=0.84, HyphenChar=None,
+  UprightFont=*-Regular, ItalicFont=*-Italic,
+  BoldFont=*-Medium, BoldItalicFont=*-MediumItalic]
+% Code identifiers (NeedleSliceMPNN, TipAwareBundleGraphTransformer, ...) may
+% break without a hyphen at a lower->upper case transition or after "_".
+\newXeTeXintercharclass\nfLower
+\newXeTeXintercharclass\nfUpper
+\newXeTeXintercharclass\nfUnder
+\count255=`a \loop\XeTeXcharclass\count255=\nfLower\ifnum\count255<`z\advance\count255 by 1\repeat
+\count255=`A \loop\XeTeXcharclass\count255=\nfUpper\ifnum\count255<`Z\advance\count255 by 1\repeat
+\XeTeXcharclass`_=\nfUnder
+\XeTeXinterchartoks\nfLower\nfUpper={\penalty200\hskip0pt\relax}
+\XeTeXinterchartoks\nfUnder\nfUpper={\penalty200\hskip0pt\relax}
+\XeTeXinterchartoks\nfUnder\nfLower={\penalty200\hskip0pt\relax}
+\let\nforigtexttt\texttt
+\renewcommand{\texttt}[1]{\nforigtexttt{\XeTeXinterchartokenstate=1 #1}}
+\setmathfont{Garamond-Math.otf}
+\setmathfont{EBGaramond-Regular.otf}[range={up/num,"2E}, Numbers={OldStyle,Proportional}]
+% In tables, math digits switch to tabular lining figures as well.
+\makeatletter
+{\nftabfont\xdef\nf@tabfamily{\f@family}}
+\DeclareSymbolFont{nflin}{TU}{\nf@tabfamily}{m}{n}
+\def\nf@set#1{\Umathcode`#1=0 \symnflin `#1\relax}
+\newcommand\nflinmath{\@tfor\nf@d:=0123456789.\do{\expandafter\nf@set\nf@d}}
+\makeatother
+\newcommand{\nfcaps}[1]{{\nfcapsfont #1}}
+
+% ---------- Paragraphs, spacing, widows ------------------------------
+\linespread{1.06}
+\setlength{\parindent}{1.25em}
+\setlength{\parskip}{0pt}
+\setlength{\emergencystretch}{2.5em}
+\tolerance=400 \pretolerance=150
+\widowpenalty=10000 \clubpenalty=10000 \displaywidowpenalty=10000
+\brokenpenalty=4000
+\raggedbottom
+% Under \raggedbottom every break has zero badness, so the default -300
+% \@secpenalty makes any section start the "best" break and pages end early
+% (e.g. before References). Neutralise it; headings still never strand.
+\makeatletter\@secpenalty=0\makeatother
+\frenchspacing
+% camel-case names are otherwise unhyphenatable and leave loose lines
+\hyphenation{Needle-Finder}
+% let long URLs stretch a little inside the measure
+\AtBeginDocument{\Urlmuskip=0mu plus 1.5mu\relax}
+\microtypesetup{protrusion=true, tracking=false}
+\usepackage{enumitem}
+\setlist{itemsep=0.25\baselineskip, topsep=0.45\baselineskip, parsep=0pt}
+\setlist[enumerate]{leftmargin=1.6em, label=\arabic*.}
+\setlist[itemize]{leftmargin=1.4em, label=\textcolor{nfgrey}{\textendash}}
+
+% ---------- Running heads and folios ----------------------------------
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\fancyhf{}
+\renewcommand{\headrulewidth}{0pt}
+\renewcommand{\footrulewidth}{0pt}
+\fancyhead[L]{\nfcaps{\footnotesize Pernelle et al.}}
+\fancyhead[R]{\footnotesize\itshape Sub-millimeter 3D catheter reconstruction in MR-guided brachytherapy}
+\fancyfoot[C]{\small\thepage}
+\fancypagestyle{plain}{\fancyhf{}\fancyfoot[C]{\small\thepage}}
+\setlength{\headheight}{14pt}
+\fancyhfoffset[L,R]{-20mm}
+
+% ---------- Section headings: hanging numbers in the margin -----------
+\usepackage[explicit]{titlesec}
+\newlength{\nfhang}\setlength{\nfhang}{1.6em}
+\titleformat{\section}[block]
+  {\normalsize}
+  {\llap{\textcolor{nfours}{\thesection}\hspace{\nfhang}}}{0pt}
+  {\nfcaps{#1}}
+\titleformat{name=\section,numberless}[block]{\normalsize}{}{0pt}{\nfcaps{#1}}
+\titleformat{\subsection}[block]
+  {\normalsize\itshape}
+  {\llap{\upshape\textcolor{nfours}{\thesubsection}\hspace{\nfhang}}}{0pt}
+  {#1}
+\titleformat{\subsubsection}[runin]
+  {\normalsize\itshape}
+  {\llap{\upshape\textcolor{nfours}{\thesubsubsection}\hspace{\nfhang}}}{0pt}
+  {#1.}
+\titlespacing*{\section}{0pt}{2.2\baselineskip plus 0.4\baselineskip minus 0.2\baselineskip}{0.9\baselineskip}
+\titlespacing*{name=\section,numberless}{0pt}{1.5\baselineskip plus 0.3\baselineskip minus 0.2\baselineskip}{0.55\baselineskip}
+\titlespacing*{\subsection}{0pt}{1.3\baselineskip plus 0.3\baselineskip minus 0.1\baselineskip}{0.5\baselineskip}
+\titlespacing*{\subsubsection}{0pt}{0.9\baselineskip plus 0.2\baselineskip}{0.6em}
+
+% ---------- Title page ------------------------------------------------
+\makeatletter
+\renewcommand{\maketitle}{%
+  \thispagestyle{plain}%
+  \begingroup
+  \def\and{ }%
+  \null\vspace*{-1.5\baselineskip}%
+  {\raggedright
+   {\nfcaps{\footnotesize Research paper}\hfill\nfcaps{\footnotesize Physics in Medicine \& Biology \textperiodcentered{} Manuscript}\par}%
+   \vspace{0.35\baselineskip}%
+   {\color{nfrule}\rule{\linewidth}{0.4pt}\par}%
+   \vspace{2.2\baselineskip}%
+   {\fontsize{21}{25.5}\selectfont\@title\par}%
+   \vspace{1.4\baselineskip}%
+   {\large\@author\par}%
+   \vspace{0.5\baselineskip}%
+   {\small\itshape\color{nfgrey}\@date\par}%
+  }%
+  \vspace{2.2\baselineskip}%
+  \endgroup}
+\makeatother
+\renewenvironment{abstract}
+  {\par\noindent{\small\nfcaps{Abstract}}\par\vspace{0.4\baselineskip}%
+   \begingroup\small\setlength{\parindent}{0pt}\setlength{\parskip}{0.45\baselineskip}}
+  {\par\endgroup
+   \vspace{0.9\baselineskip}%
+   \noindent{\color{nfrule}\rule{\linewidth}{0.4pt}}\par\vspace{0.4\baselineskip}}
+
+% ---------- Tables: booktabs with hairlines ---------------------------
 \usepackage{booktabs,tabularx,threeparttable,multirow,makecell,array,etoolbox}
+\usepackage{changepage}
+\setlength{\heavyrulewidth}{0.7pt}
+\setlength{\lightrulewidth}{0.35pt}
+\setlength{\cmidrulewidth}{0.3pt}
+\setlength{\aboverulesep}{0.5ex}
+\setlength{\belowrulesep}{0.6ex}
+\setlength{\tabcolsep}{5.2pt}
+\renewcommand{\arraystretch}{1.12}
+\AtBeginEnvironment{tabular}{\nftabfont\nflinmath}
+\AtBeginEnvironment{tablenotes}{\nftabfont\nflinmath\color{nfgrey}}
 \newcommand{\best}[1]{\textbf{#1}}
-\newcommand{\second}[1]{\underline{#1}}
+\newcommand{\second}[1]{{\setbox0\hbox{#1}\rlap{\color{nfink}\rule[-0.32ex]{\wd0}{0.35pt}}\box0}}
 \newcommand{\TBD}{\textcolor{red}{\textbf{TBD}}}
 \newcommand{\rep}{\textsuperscript{r}}
-\newcommand{\oursrow}{\rowcolor{nfrow}}
+% "ours" rows: a restrained tint plus a vermilion mark in the left gutter
+\newcommand{\nfmark}{\llap{\textcolor{nfours}{\rule[-0.45ex]{1.1pt}{2.35ex}}\hspace{3.5pt}}}
+\newcommand{\oursrow}{\rowcolor{nfrow}\nfmark}
 \newcommand{\ctrow}{\rowcolor{nfctrow}}
 \newcommand{\NF}{\textbf{NeedleFinder\,2026}}
 \newcommand{\Eshaft}{$E_{\mathrm{shaft}}$}
@@ -28,22 +189,52 @@
 \newcolumntype{R}{>{\raggedleft\arraybackslash}r}
 \newcolumntype{C}{>{\centering\arraybackslash}c}
 \newcolumntype{Y}{>{\raggedright\arraybackslash}X}
-\setlength{\tabcolsep}{5.2pt}
-\renewcommand{\arraystretch}{1.15}
-\setlength{\aboverulesep}{0.4ex}
-\setlength{\belowrulesep}{0.55ex}
-\setlength{\cmidrulewidth}{0.4pt}
 
-% ---------- Captions & Float Control ----------
-\usepackage[font=small,labelfont=bf,labelsep=period,justification=justified,singlelinecheck=false,skip=5pt]{caption}
-\captionsetup[table]{position=top}
+% ---------- Measure: 120 mm text inside a 160 mm block ----------------
+% geometry sets a 160 mm text block (the natural width of floats). Running
+% text is set 20 mm in from each side by one document-wide list, so the
+% measure is 120 mm (~68 characters) while figures and tables, which reset
+% to \columnwidth, break out 20 mm into each margin.
+\newlength{\nfbreak}\setlength{\nfbreak}{20mm}
+\AtBeginDocument{\begin{adjustwidth}{\nfbreak}{\nfbreak}}
+\AtEndDocument{\end{adjustwidth}}
+
+% ---------- Captions: small type, small-caps label hung in the margin --
+\usepackage{caption}
+\DeclareCaptionLabelFormat{nfsc}{\nfcaps{#1~#2}}
+\DeclareCaptionFormat{nfhang}{\noindent\llap{#1\hspace{0.9em}}#3}
+\captionsetup{format=plain, font={small}, labelfont={}, textfont={},
+  labelformat=nfsc, labelsep=quad, justification=justified,
+  singlelinecheck=false, skip=7pt}
+% figure captions keep to the text measure, label hung to the left
+\captionsetup[figure]{format=nfhang, margin={\nfbreak,\nfbreak}, skip=9pt}
+% table captions sit above the table and run the table's width
+\captionsetup[table]{position=top, skip=5pt}
+\setlength{\abovecaptionskip}{7pt}
+
 \usepackage{placeins}
 \usepackage{float}
 \renewcommand{\topfraction}{0.92}
-\renewcommand{\bottomfraction}{0.85}
-\renewcommand{\textfraction}{0.06}
-\renewcommand{\floatpagefraction}{0.82}
-\setcounter{topnumber}{4}
-\setcounter{totalnumber}{5}
+\renewcommand{\bottomfraction}{0.6}
+\renewcommand{\textfraction}{0.08}
+\renewcommand{\floatpagefraction}{0.75}
+\setcounter{topnumber}{3}
+\setcounter{bottomnumber}{1}
+\setcounter{totalnumber}{4}
+\setlength{\floatsep}{1.6\baselineskip plus 0.4\baselineskip minus 0.2\baselineskip}
+\setlength{\textfloatsep}{1.8\baselineskip plus 0.4\baselineskip minus 0.3\baselineskip}
+\setlength{\intextsep}{1.6\baselineskip plus 0.4\baselineskip minus 0.2\baselineskip}
 \usepackage{rotating}
-\AtBeginDocument{\hypersetup{colorlinks=true,linkcolor=nfst1,citecolor=nfst1,urlcolor=nfst1}}
+\makeatletter   % float pages: stack from the top rather than centring vertically
+\setlength{\@fptop}{0pt}
+\setlength{\@fpsep}{2\baselineskip plus 1fil}
+\setlength{\@fpbot}{0pt plus 1fil}
+\makeatother
+
+% ---------- Bibliography ----------------------------------------------
+\AtBeginEnvironment{CSLReferences}{\small\raggedright\setlength{\cslhangindent}{1.5em}}
+
+% ---------- Links -----------------------------------------------------
+% Ink-coloured citations, accent for cross-references: set through pandoc's
+% colorlinks/linkcolor/citecolor/urlcolor variables in build_paper.sh, so that
+% hyperref receives colorlinks once (no "already been used" warning).

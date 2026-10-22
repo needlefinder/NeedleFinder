@@ -44,7 +44,7 @@
 ---
 
 ## Plans & Manuscript Drafts (`plans/` & `paper/`)
-- [[paper/manuscript|2026-10-22 NeedleFinder 2026 PMB Manuscript (`needlefinder_2026_pmb.pdf` & `.html`)]] — Publication-ready *Physics in Medicine & Biology* manuscript with 5 hand-crafted `booktabs` + `threeparttable` tables (`paper/tables/tab1..5.tex`) and 6 Claude Design System vector PDF/PNG/SVG figures (`reports/figures/fig1..6.pdf`)
+- [[paper/manuscript|2026-10-22 NeedleFinder 2026 PMB Manuscript (`needlefinder_2026_pmb.pdf` & `.html`)]] — Publication-ready *Physics in Medicine & Biology* manuscript with 5 hand-crafted `booktabs` + `threeparttable` tables (`paper/tables/tab1..5.tex`) and 6 vector PDF/PNG/SVG figures (`reports/figures/fig1..6.pdf`); book-style typography in both editions (EB Garamond + Garamond-Math, 120 mm measure with floats breaking into the margins, small-caps apparatus, single vermilion accent; HTML uses embedded subset fonts, native MathML, dark mode and print CSS; HTML tables are generated at build time from the same `tables/*.tex` (single source, fails loudly on unknown LaTeX); see `paper/style/preamble.tex`, `paper/style/nf_template.html`, `paper/build_html.py`)
 - [[plans/2026-10-22-pmb-scientific-design-system|2026-10-22 PMB Scientific Design System & Visual Architecture Spec]] — Okabe–Ito entity palette, booktabs/siunitx table macros (no longtables), 6-figure blueprint with anti-collision rules, and data blockers D1–D10 (adhesion subgroup, nnU-Net+clDice, Xiao modality, few-shot)
 - [[plans/2026-10-22-needlefinder-2026-manuscript-draft|2026-10-22 NeedleFinder 2026 Scientific Manuscript Draft & Visual Blueprint]] — Initial paper draft
 - [[plans/2026-10-21-new-paper-proposal|2026-10-21 New Paper Proposal]] — Initial execution plan

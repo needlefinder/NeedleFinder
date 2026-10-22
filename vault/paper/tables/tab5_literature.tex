@@ -1,37 +1,44 @@
 \begin{table}[tbp]
 \centering
 \begin{threeparttable}
-\caption{\textbf{Representative studies on automated multi-catheter and needle reconstruction in brachytherapy (2013--2026).}
-Shaded grey rows denote CT-based studies (where metallic markers or air lumens provide high Hounsfield contrast); unshaded rows denote clinical T2W MRI studies; vermillion-tinted rows denote \NF{}.}
+\caption{\textbf{Published automatic catheter and needle reconstruction studies in brachytherapy (2013--2026), grouped by imaging modality.}
+Values are those reported in each publication on its own cohort and matching rule, so they are not directly comparable with one another or with Table~\ref{tbl:main}. Pernelle 2013 and Mastmeyer 2017 are semi-automatic (one manual click per catheter).}
 \label{tbl:literature}
 \footnotesize
-\setlength{\tabcolsep}{2.4pt}
+\setlength{\tabcolsep}{2.1pt}
 \begin{tabular}{@{}L L L R R L R R R@{}}
 \toprule
-Study & Modality & Site & {Pts} & {Cath.} & {Rec.\ / Prec.\ (\%)} & {\Eshaft{} (mm)} & {\Etip{} (mm)} & {Time (s)}\\
+Study & Modality & Site & {Pts} & {Cath.} & {Rec.\ / Prec.\ (\%)} & {\Eshaft{} (mm)} & {\Etip{} (mm)} & {Time}\\
 \midrule
-\rowcolor{ctrow} Dai \emph{et al.}\ 2020 & CT & Prostate & 20 & 358 & $96.0\rep$ / $98.0\rep$ & {0.27\rep} & {1.14\rep} & {--}\\
-\rowcolor{ctrow} Weishaupt \emph{et al.}\ 2022 & CT & Prostate & 35 & 612 & $100.0\rep$ / $100.0\rep$ & {0.22\rep} & {0.54\rep} & {--}\\
-\rowcolor{ctrow} Aleong \emph{et al.}\ 2024 & CT & GYN HDR & 55 & 520 & $96.8\rep$ / $99.5\rep$ & {0.63\rep} & {0.80\rep} & {--}\\
-\rowcolor{ctrow} Quetin \emph{et al.}\ 2025 & CT & Breast & 70 & 980 & $99.5\rep$ / $99.2\rep$ & {0.39\rep} & {1.10\rep} & {50.00\rep}\\
-\rowcolor{ctrow} Xiao \emph{et al.}\ 2026a & CT & GYN+Pros. & 99 & 1082 & $98.8\rep$ / $99.1\rep$ & {0.42\rep} & {0.69\rep} & {11.60\rep}\\
-\rowcolor{ctrow} Xiao \emph{et al.}\ 2026b & CT (5-shot) & GYN+Pros. & 70 & 940 & $97.4\rep$ / $98.2\rep$ & {0.67\rep} & {0.86\rep} & {11.60\rep}\\
+\multicolumn{9}{@{}l}{\textit{CT}}\\
+\rowcolor{ctrow} Weishaupt \emph{et al.}\ 2022 & CT & Prostate & 57 & 353\tnote{a} & {--} & 0.13 & {--} & $\sim$60\,s\\
+\rowcolor{ctrow} Xie \emph{et al.}\ 2023 & CT & GYN post-op & 70 & 210 & {--}\tnote{b} & {--} & {--} & {--}\\
+\rowcolor{ctrow} Wang \emph{et al.}\ 2024 & CT & GYN IC/IS & 17 & 56 plans & {--} & 1.8 & 1.1 & {--}\\
+\rowcolor{ctrow} Quetin \emph{et al.}\ 2025 & CT & Breast & 117 & 408\tnote{a} & {--} & 0.70 & 1.37 & 118\,s\\
+\rowcolor{ctrow} Xiao \emph{et al.}\ 2026 & CT & GYN recurrent & 38 & 203 fx & 91.1 / 90.7 & 0.31 & 0.88 & 11.6\,s\\
+\rowcolor{ctrow} Xiao \emph{et al.}\ 2026 (JBHI) & CT & Pelvic seeds & 100 & {--} & F1 90.3 & {--} & 1.05 & 9.4\,s\\
 \midrule
-Pernelle \emph{et al.}\ 2013 & 3T MRI & GYN IC/IS & 15 & 187 & $94.1\rep$ / {--} & {1.05\rep} & {--} & {3.00\rep}\\
-Zaffino \emph{et al.}\ 2019 & 3T MRI & GYN IC/IS & 41 & 760 & $88.2\rep$ / $69.8\rep$ & {2.00\rep} & {--} & {90.00\rep}\\
-Shaaer \emph{et al.}\ 2022 & 1.5T MRI & GYN IC/IS & 20 & 264 & $94.9\rep$ / $95.6\rep$ & {0.97\rep} & {1.90\rep} & {60.00\rep}\\
-Xie \emph{et al.}\ 2023 & 3T MRI & GYN IC/IS & 45 & 540 & $95.2\rep$ / {--} & {0.98\rep} & {1.80\rep} & {2.40\rep}\\
-Wang \emph{et al.}\ 2024 & 3T MRI & GYN IC/IS & 38 & 490 & $94.6\rep$ / $93.8\rep$ & {0.79\rep} & {1.85\rep} & {15.00\rep}\\
-Kostoulas \emph{et al.}\ 2025 & 1.5T MRI & Prostate & 19 & 310 & $93.5\rep$ / $94.1\rep$ & {0.72\rep} & {1.62\rep} & {45.00\rep}\\
+\multicolumn{9}{@{}l}{\textit{Ultrasound}}\\
+Zhang \emph{et al.}\ 2020 & TRUS & Prostate & 23 & 339 & 98 / {--} & 0.09 & 0.33 & $<$1\,s\\
+Anders{\'e}n \emph{et al.}\ 2020 & TRUS & Prostate & 1102 & 24422 & {--} & 0.55\tnote{c} & {--} & {--}\\
+Liu \emph{et al.}\ 2022 & TRUS & Prostate & 242 & 3500 & 80\tnote{d} / {--} & {--} & {--} & {--}\\
+Goulet \emph{et al.}\ 2025 & 3D US & Prostate & 102 & {--} & 93.4 / {--} & 0.44 & {--} & {--}\\
 \midrule
-\oursrow \NF{} (1\,063 cath.) & 3T MRI & GYN IC/IS & 54 & 1063 & 94.7 / 86.4\tnote{a} & 0.45\tnote{b} & 2.61\tnote{b} & \best{0.35}\\
-\oursrow \NF{} (759 long) & 3T MRI & GYN IC/IS & 54 & 759 & \best{96.4} / 86.4 & \best{0.45}\tnote{b} & \best{2.61}\tnote{b} & \best{0.35}\\
+\multicolumn{9}{@{}l}{\textit{MRI}}\\
+Pernelle \emph{et al.}\ 2013 & 3T T2W & GYN IC/IS & 10 & 101 & 92.1 / {--} & {--}\tnote{e} & {--} & 0.3\,s/cath.\\
+Mastmeyer \emph{et al.}\ 2017 & 3T T2W & GYN IC/IS & 54 & 760 & 93\tnote{f} / {--} & 1.49\tnote{g} & {--} & 3\,s/cath.\\
+Zaffino \emph{et al.}\ 2019 & 3T T2W & GYN IC/IS & 50 & 826 & 98.5 / 93.3\tnote{h} & 2.0 & {--} & 2--9\,min\\
+Dai \emph{et al.}\ 2020 & MRI & Prostate & 20 & 299 & {--} & 0.93 & 0.37 & {--}\\
+Shaaer \emph{et al.}\ 2022 & 1.5T + markers & GYN IC/IS & 20 & 360 & 100 / {--} & 0.97 & {--} & 11\,min\tnote{i}\\
+Aleong \emph{et al.}\ 2024 & MRI & Prostate & 35 & 214 vol. & 95 / {--} & {--} & {--} & 0.9\,s\\
+Kostoulas \emph{et al.}\ 2025 & MRI & Prostate & 34 scans & 261 & 100 / 100 & 0.75\tnote{j} & 1.07\tnote{j} & {--}\\
+Kim \emph{et al.}\ 2026 & T2W & GYN hybrid & 30 & 35 scans & $\sim$100 / {--} & 0.74 & 2.52 & {--}\\
+\oursrow \NF{} (all 1\,063) & 3T T2W & GYN IC/IS & 54 & 1063 & 91.3 / 85.3 & 0.46\tnote{j} & 2.61\tnote{j} & \best{2.74\,s}\\
+\oursrow \NF{} (759 long) & 3T T2W & GYN IC/IS & 54 & 759 & 92.5 / 84.5\tnote{k} & 0.45\tnote{j} & 2.96\tnote{j} & \best{2.74\,s}\\
 \bottomrule
 \end{tabular}
 \begin{tablenotes}[flushleft]\footnotesize
-\item $\rep$ Reported values from original publications on private institutional cohorts; not directly comparable across modalities or matching criteria. Table~\ref{tbl:main} reports head-to-head re-implementations on identical 5-fold BWH splits.
-\item[a] Strict 1-to-1 Hungarian recall at $\tau=25\,\%$ ($94.7\,\%$ all; $96.4\,\%$ long) and precision at $\tau=55\,\%$ ($86.4\,\%$; $88.4\,\%$ F1).
-\item[b] Median shaft and 3D tip errors across matched catheters ($0.64$\,s on 8-core CPU; $0.35$\,s on single GPU).
+\item[a] Test-set catheters. \item[b] Reported as Dice 0.88--0.90 and HD$_{95}$ 0.71--0.77\,mm. \item[c] Root-mean-square distance to the clinical reconstruction. \item[d] Fraction of catheters within 2\,mm along 90\,\% of their length. \item[e] Maximum Hausdorff distance below 2\,mm for 92\,\% of catheters. \item[f] Fraction within 3.4\,mm. \item[g] Mean Hausdorff distance. \item[h] Cluster-level: 1.5\,\% false negatives and 6.7\,\% false positives among 826 catheters. \item[i] Assisted reconstruction time, versus 46\,min manual. \item[j] Median. \item[k] Strict one-to-one recall at $\tau=50\,\%$; precision counts predictions matched to short obturator tracks as correct. Times for \NF{} are full-volume uncached per-patient averages on an 8-core CPU (1.20\,s on standard $320\times256$ scans, 3.47\,s on high-resolution $640\times416$ / $768\times768$ scans; 1.25\,s on one GPU).
 \end{tablenotes}
 \end{threeparttable}
 \end{table}

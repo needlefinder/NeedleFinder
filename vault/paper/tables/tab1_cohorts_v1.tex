@@ -1,0 +1,28 @@
+\begin{table}[tbp]
+\centering
+\begin{threeparttable}
+\caption{\textbf{Clinical imaging cohorts and evaluation protocols.}
+Primary evaluation uses 5-fold patient-level out-of-fold (OOF) cross-validation on 54 clinical 3T T2W MRI datasets from Brigham and Women's Hospital (BWH AMIGO).}
+\label{tbl:cohorts}
+\footnotesize
+\setlength{\tabcolsep}{3.8pt}
+\begin{tabular}{@{}L L R R L L L@{}}
+\toprule
+Cohort / Subset & Source & {Pts} & {Cath.} & {XY (mm)} & {$\Delta z$ (mm)} & {Evaluation role}\\
+\midrule
+BWH GYN full cohort\tnote{a} & BWH (3T T2W) & 54 & 1063 & $0.27\text{--}0.75$ & $1.6\text{--}3.0$ & 5-fold OOF primary benchmark\\
+\quad Long shafts ($\ge 30$\,mm) & BWH (3T T2W) & 54 & 759 & $0.27\text{--}0.75$ & $1.6\text{--}3.0$ & Full-depth active dwell shafts\\
+\quad Short / obturator ($< 30$\,mm) & BWH (3T T2W) & 54 & 304 & $0.27\text{--}0.75$ & $1.6\text{--}3.0$ & Partial-FOV \& template references\\
+\quad Adhesion subgroup\tnote{b} & BWH (3T T2W) & 23 & 233 & $0.27\text{--}0.75$ & $1.6\text{--}3.0$ & Touching / crossing shaft stress test\\
+Dual-observer subset\tnote{c} & BWH (3T T2W) & 40 & 505 & $0.27\text{--}0.75$ & $1.6\text{--}3.0$ & Inter-observer floor (\texttt{CY} vs.\ \texttt{LB}/\texttt{AMe})\\
+MSD Task05\_Prostate\tnote{d} & Radboudumc (3T) & 48 & 0 & $0.60\text{--}0.75$ & $3.0\text{--}4.0$ & Out-of-distribution 0-needle specificity\\
+\bottomrule
+\end{tabular}
+\begin{tablenotes}[flushleft]\footnotesize
+\item[a] Superset of the 15-patient MICCAI 2013 cohort (Pernelle \emph{et al.}\ 2013) and the 41-patient PMB 2019 cohort (Zaffino \emph{et al.}\ 2019).
+\item[b] Severe catheter-adhesion subgroup following Xiao \emph{et al.}\ (2026b): 23/54 patients containing 233 catheters (194 long) where $\ge 2$ catheter centerlines approach within $\le 3.0$\,mm across shared axial slices.
+\item[c] Forty clinical scenes independently contoured by two expert medical physics teams (\texttt{CY}: 505 active MRML trajectories; \texttt{LB}/\texttt{AMe}: 513 trajectories; 481 Hungarian 1-to-1 matched pairs within $3.5$\,mm).
+\item[d] Public CC-BY-SA 4.0 pelvic 3T axial T2W TSE MRI benchmark containing prostate, rectum, bladder, obturator internus, and dense periprostatic vasculature with zero implanted catheters.
+\end{tablenotes}
+\end{threeparttable}
+\end{table}

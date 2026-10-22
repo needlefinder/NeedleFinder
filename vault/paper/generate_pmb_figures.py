@@ -42,8 +42,38 @@ def load_all_sources():
         inter = json.load(f)
     with open(os.path.join(SOURCES_DIR, "2026-10-22-public-pelvic-mri-specificity-benchmark.json")) as f:
         spec = json.load(f)
-    qual = np.load(os.path.join(DATA_DIR, "qualitative_cases.npz"), allow_pickle=True)
+    qual = dict(np.load(os.path.join(DATA_DIR, "qualitative_cases.npz"), allow_pickle=True))
+    pred_path = os.path.join(DATA_DIR, "qualitative_predictions.npz")
+    if os.path.exists(pred_path):
+        qual.update(dict(np.load(pred_path, allow_pickle=True)))
     return bench, inter, spec, qual
+
+
+def project_polylines_to_slice(polylines, ijk_to_ras, crop_origin, z_mid):
+    """Intersect RAS polylines with the displayed axial slice; return crop-pixel (x, y) per polyline."""
+    inv = np.linalg.inv(np.asarray(ijk_to_ras, dtype=np.float64))
+    vox = np.array([crop_origin[0], crop_origin[1], crop_origin[2] + z_mid, 1.0], dtype=np.float64)
+    z_ras = float((np.asarray(ijk_to_ras, dtype=np.float64) @ vox)[2])
+    out = []
+    for g in polylines:
+        g = np.asarray(g, dtype=np.float64)
+        g = g[np.argsort(g[:, 2])]
+        if len(g) < 2 or not (g[0, 2] <= z_ras <= g[-1, 2]):
+            continue
+        x = np.interp(z_ras, g[:, 2], g[:, 0])
+        y = np.interp(z_ras, g[:, 2], g[:, 1])
+        pix = inv @ np.array([x, y, z_ras, 1.0])
+        out.append([pix[0] - crop_origin[0], pix[1] - crop_origin[1]])
+    return np.asarray(out, dtype=np.float64).reshape(-1, 2)
+
+
+def ortho_project(gs, az_deg=35.0, el_deg=20.0):
+    az, el = np.deg2rad(az_deg), np.deg2rad(el_deg)
+    gs = np.asarray(gs, dtype=np.float64)
+    gs = gs[np.argsort(gs[:, 2])]
+    x_p = gs[:, 0] * np.cos(az) - gs[:, 1] * np.sin(az)
+    y_p = gs[:, 2] * np.cos(el) - (gs[:, 0] * np.sin(az) + gs[:, 1] * np.cos(az)) * np.sin(el)
+    return x_p, y_p
 
 
 def export_csv_data(bench, inter, spec):
@@ -97,12 +127,12 @@ def export_csv_data(bench, inter, spec):
     # 4. runtime.csv
     with open(os.path.join(DATA_DIR, "runtime.csv"), "w", newline="") as f:
         w = csv.writer(f)
-        w.writerow(["stage", "cpu_sec", "gpu_sec"])
-        w.writerow(["Stage 0: Rust 3D Radial Symmetry", 0.060, 0.060])
-        w.writerow(["Stage 1: NeedleUNet3D + IRGM + Tubes", 0.455, 0.220])
-        w.writerow(["Stage 2A: Triplet Slice MPNN", 0.065, 0.050])
-        w.writerow(["Stage 2B: Bundle Graph Transformer", 0.030, 0.020])
-        w.writerow(["Total End-to-End", 0.610, 0.350])
+        w.writerow(["stage", "cpu_sec", "gpu_sec", "cpu_std_res_sec", "cpu_high_res_sec"])
+        w.writerow(["Stage 0: Rust 3D Radial Symmetry", 0.410, 0.410, 0.120, 0.590])
+        w.writerow(["Stage 1: NeedleUNet3D + IRGM", 0.960, 0.220, 0.550, 1.020])
+        w.writerow(["Stage 2A: Native Seed Tracking + Triplet MPNN", 1.220, 0.540, 0.450, 1.670])
+        w.writerow(["Stage 2B: Bundle Graph Transformer + Poly3", 0.150, 0.080, 0.080, 0.190])
+        w.writerow(["Total End-to-End", 2.740, 1.250, 1.200, 3.470])
 
 
 def save_all_formats(fig, basename):
@@ -155,11 +185,11 @@ def make_fig1_pipeline_overview(qual):
     xs = [0.015 + i * 0.198 for i in range(5)]
 
     titles = [
-        ("3T T2W pelvic MRI", "0.27×0.27×2.5 mm³", "#333333"),
+        ("3T T2W pelvic MRI", "0.31–0.88 mm in-plane", "#333333"),
         ("Stage 0 · Radial prior", "Multi-radii dark-core", C["st0"]),
         ("Stage 1 · ResUNet+IRGM", "Centerline + implant gate", C["st1"]),
         ("Stage 2 · MPNN+GraphTF", "Triplet + bundle pruning", C["st2"]),
-        ("Output · 3D catheters", "89.8% Rec · 0.46 mm med.", C["nf"]),
+        ("Output · 3D catheters", "OOF predictions vs. reference", C["nf"]),
     ]
 
     for idx_t, (x_left, (t_main, t_sub, col)) in enumerate(zip(xs, titles)):
@@ -219,17 +249,15 @@ def make_fig1_pipeline_overview(qual):
             ax.set_ylim(0.05, 0.95)
         elif idx_t == 4:
             ax.set_facecolor("#FAF8F7")
-            # Clean 3D orthographic projection of real Case 017 catheter bundle
+            # 3D orthographic projection: expert reference (grey) and OOF predictions (vermilion) of Case 017
+            pred_ras = qual.get("dense_pred_ras_obj")
             for g in gt_ras:
-                gs = np.asarray(g, dtype=np.float64)
-                gs = gs[np.argsort(gs[:, 2])]
-                # Orthographic projection (az=35 deg, el=20 deg)
-                az = np.deg2rad(35.0)
-                el = np.deg2rad(20.0)
-                x_p = gs[:, 0] * np.cos(az) - gs[:, 1] * np.sin(az)
-                y_p = gs[:, 2] * np.cos(el) - (gs[:, 0] * np.sin(az) + gs[:, 1] * np.cos(az)) * np.sin(el)
-                ax.plot(x_p, y_p, color="#BDBDBD", lw=2.0, alpha=0.45, solid_capstyle="round")
-                ax.plot(x_p, y_p, color=C["nf"], lw=1.1, alpha=0.92, solid_capstyle="round")
+                x_p, y_p = ortho_project(g)
+                ax.plot(x_p, y_p, color="#BDBDBD", lw=2.0, alpha=0.6, solid_capstyle="round")
+            if pred_ras is not None:
+                for g in pred_ras:
+                    x_p, y_p = ortho_project(g)
+                    ax.plot(x_p, y_p, color=C["nf"], lw=1.1, alpha=0.92, solid_capstyle="round")
                 ax.scatter([x_p[-1]], [y_p[-1]], s=8, color=C["nf"], edgecolor="white", linewidth=0.3, zorder=5)
             ax.margins(0.10)
 
@@ -243,17 +271,17 @@ def make_fig1_pipeline_overview(qual):
                                     transform=fig.transFigure, color="#666666", lw=1.0))
             fig.text(x_arr + 0.022, y_bot + tile_h / 2, "▸", fontsize=8, color="#666666", ha="center", va="center")
 
-    # Bottom row: Proportional runtime bar (CPU 0.61 s / GPU 0.35 s)
+    # Bottom row: Proportional runtime bar (CPU 2.74 s / GPU 1.25 s)
     ax_bar = fig.add_axes([0.14, 0.06, 0.83, 0.14])
     ax_bar.spines["top"].set_visible(False)
     ax_bar.spines["right"].set_visible(False)
     ax_bar.spines["left"].set_visible(False)
 
     segs = [
-        ("Stage 0: Rust symmetry", 0.060, 0.060, C["st0"]),
-        ("Stage 1: NeedleUNet3D + IRGM + tubes", 0.455, 0.220, C["st1"]),
-        ("Stage 2A: MPNN", 0.065, 0.050, C["st2"]),
-        ("Stage 2B: GraphTF", 0.030, 0.020, C["nf"]),
+        ("Stage 0: Rust symmetry", 0.410, 0.410, C["st0"]),
+        ("Stage 1: NeedleUNet3D + IRGM", 0.960, 0.220, C["st1"]),
+        ("Stage 2A: Native tracking + MPNN", 1.220, 0.540, C["st2"]),
+        ("Stage 2B: GraphTF + Poly3", 0.150, 0.080, C["nf"]),
     ]
     y_pos = [1.0, 0.0]
     left_cpu, left_gpu = 0.0, 0.0
@@ -263,20 +291,20 @@ def make_fig1_pipeline_overview(qual):
         left_cpu += t_cpu
         left_gpu += t_gpu
 
-    ax_bar.text(left_cpu + 0.012, 1.0, f"{left_cpu:.2f} s total (8-core CPU)", va="center", ha="left", fontsize=6.8, fontweight="bold", color="#222222")
-    ax_bar.text(left_gpu + 0.012, 0.0, f"{left_gpu:.2f} s total (RTX 4090 GPU)", va="center", ha="left", fontsize=6.8, fontweight="bold", color="#222222")
+    ax_bar.text(left_cpu + 0.05, 1.0, f"{left_cpu:.2f} s total (8-core CPU; 1.20 s std / 3.47 s hi-res)", va="center", ha="left", fontsize=6.5, fontweight="bold", color="#222222")
+    ax_bar.text(left_gpu + 0.05, 0.0, f"{left_gpu:.2f} s total (RTX 4090 GPU)", va="center", ha="left", fontsize=6.5, fontweight="bold", color="#222222")
     ax_bar.set_yticks([0.0, 1.0])
-    ax_bar.set_yticklabels(["GPU (0.35 s)", "CPU (0.61 s)"], fontsize=7, fontweight="bold")
-    ax_bar.set_xlim(0, 0.78)
+    ax_bar.set_yticklabels(["GPU (1.25 s)", "CPU (2.74 s)"], fontsize=7, fontweight="bold")
+    ax_bar.set_xlim(0, 4.30)
     ax_bar.set_xlabel("End-to-end inference time per patient volume (s)", fontsize=7.5)
     ax_bar.tick_params(axis="y", length=0)
 
     # Legend swatches above runtime bar
     leg_items = [
-        (0.13, "■ Stage 0: Symmetry (60 ms)", C["st0"]),
-        (0.36, "■ Stage 1: ResUNet+IRGM (455 ms)", C["st1"]),
-        (0.62, "■ Stage 2A: MPNN (65 ms)", C["st2"]),
-        (0.81, "■ Stage 2B: GraphTF (30 ms)", C["nf"]),
+        (0.12, "■ Stage 0: Symmetry (0.41 s)", C["st0"]),
+        (0.35, "■ Stage 1: ResUNet+IRGM (0.96 s)", C["st1"]),
+        (0.61, "■ Stage 2A: MPNN (1.22 s)", C["st2"]),
+        (0.81, "■ Stage 2B: GraphTF (0.15 s)", C["nf"]),
     ]
     for lx, ltxt, col in leg_items:
         fig.text(lx, 0.225, ltxt, fontsize=5.5, color=col, fontweight="bold")
@@ -298,10 +326,10 @@ def make_fig2_architecture_modules():
 
     # Panel labels
     ax.text(2.0, 64.0, "a", fontsize=9, fontweight="bold", va="top", ha="left")
-    ax.text(7.5, 64.0, "Stage 1 · Anisotropic 3D ResUNet + IRGM Gate", fontsize=7.4, fontweight="bold", color=C["st1"], va="top")
+    ax.text(7.5, 64.0, "Stage 1 · Anisotropic 3D ResUNet", fontsize=7.4, fontweight="bold", color=C["st1"], va="top")
 
     ax.text(88.0, 64.0, "b", fontsize=9, fontweight="bold", va="top", ha="left")
-    ax.text(93.5, 64.0, "Stage 2 · Synchronous Triplet MPNN & GraphTF", fontsize=7.4, fontweight="bold", color=C["st2"], va="top")
+    ax.text(93.5, 64.0, "Stage 2 · Seed tracking, Triplet MPNN & GraphTF", fontsize=7.4, fontweight="bold", color=C["st2"], va="top")
 
     # Divider line
     ax.plot([85, 85], [4, 65], color="#D9D9D9", lw=0.7, ls="--")
@@ -317,10 +345,10 @@ def make_fig2_architecture_modules():
 
     # Encoder-Decoder U-Net blocks
     enc_boxes = [
-        (24, 42, 8, 14, "1×3×3\n32 ch"),
-        (34, 38, 8, 12, "3×3×3\n64 ch"),
-        (44, 34, 8, 10, "SE-Res\n128 ch"),
-        (54, 42, 8, 14, "Up+Cat\n64 ch"),
+        (24, 42, 8, 14, "1×3×3\n24 ch"),
+        (34, 38, 8, 12, "3×3×3\n48 ch"),
+        (44, 34, 8, 10, "SE-Res\n96 ch"),
+        (54, 42, 8, 14, "Up+Cat\n48 ch"),
     ]
     for bx, by, bw, bh, btxt in enc_boxes:
         p = FancyBboxPatch((bx, by), bw, bh, boxstyle="round,pad=0.5", fc="#EBF3F9", ec=C["st1"], lw=0.8)
@@ -336,9 +364,9 @@ def make_fig2_architecture_modules():
     # IRGM Callout Inset (bottom of panel a)
     b_irgm = FancyBboxPatch((23, 7), 38, 19, boxstyle="round,pad=0.8", fc="#FFFFFF", ec=C["st1"], lw=0.8, ls="--")
     ax.add_patch(b_irgm)
-    ax.text(42, 23.0, "Implant-Region Gate (IRGM)", ha="center", va="center", fontsize=6.4, fontweight="bold", color=C["st1"])
-    ax.text(42, 16.5, r"$g = \sigma\!\left(W_g * [F \,;\, S_0]\right)$", ha="center", va="center", fontsize=6.8, color="#111111")
-    ax.text(42, 10.2, r"$\tilde{F} = F \odot (1 + g) \cdot \mathcal{G}_{\sigma}(S_0 > \eta)$", ha="center", va="center", fontsize=6.4, color="#333333")
+    ax.text(42, 23.0, "Implant-region gate (Stage 2B)", ha="center", va="center", fontsize=6.4, fontweight="bold", color=C["st1"])
+    ax.text(42, 16.5, "center = median XY of candidates (conf. ≥ 55%)", ha="center", va="center", fontsize=5.6, color="#111111")
+    ax.text(42, 10.2, "radius = P98 distance + 16 mm", ha="center", va="center", fontsize=5.8, color="#333333")
 
     # Arrow from S0 to IRGM and IRGM to Decoder
     ax.annotate("", xy=(23, 16.5), xytext=(11.5, 26.8), arrowprops=dict(arrowstyle="->", color=C["st0"], lw=0.9, connectionstyle="angle,angleA=-90,angleB=180,rad=3"))
@@ -384,21 +412,21 @@ def make_fig2_architecture_modules():
     # Triplet MPNN callout box
     b_mpnn = FancyBboxPatch((89, 5), 40, 12, boxstyle="round,pad=0.6", fc="#FFFFFF", ec=C["st2"], lw=0.7)
     ax.add_patch(b_mpnn)
-    ax.text(109, 13.5, "4× Triplet MPNN + Sync Cost Matrix", ha="center", va="center", fontsize=6.3, fontweight="bold", color=C["st2"])
-    ax.text(109, 8.2, r"$m_{ijk} = \phi(h_i, h_j, h_k, \cos\theta_{ijk}, \Delta xy)$", ha="center", va="center", fontsize=6.5, color="#111111")
+    ax.text(109, 13.5, "Seed tracking + 4× Triplet MPNN", ha="center", va="center", fontsize=6.3, fontweight="bold", color=C["st2"])
+    ax.text(109, 8.2, "edge update from $h_i, h_j, e_{ij}$ + in/out messages", ha="center", va="center", fontsize=6.5, color="#111111")
 
     # Right of Panel b: Bundle Graph Transformer & Poly3 Output
     b_gat = FancyBboxPatch((133, 39), 34, 16, boxstyle="round,pad=0.6", fc="#EDF7F4", ec=C["st2"], lw=0.8)
     ax.add_patch(b_gat)
     ax.text(150, 50.5, "Bundle Graph Transformer", ha="center", va="center", fontsize=6.6, fontweight="bold", color=C["st2"])
-    ax.text(150, 45.5, "2× Edge-Biased GAT\n+ 2× Set Transformer", ha="center", va="center", fontsize=6.1, color="#222222")
-    ax.text(150, 40.8, "18-D node · 6-D spatial edge", ha="center", va="center", fontsize=5.8, color="#4D4D4D")
+    ax.text(150, 45.5, "2× edge-biased attention\n+ 1× global attention", ha="center", va="center", fontsize=6.1, color="#222222")
+    ax.text(150, 40.8, "26-D node · 8-D pair edge", ha="center", va="center", fontsize=5.8, color="#4D4D4D")
 
     b_out = FancyBboxPatch((133, 18), 34, 15, boxstyle="round,pad=0.6", fc=C["nf_tint"], ec=C["nf"], lw=0.9)
     ax.add_patch(b_out)
     ax.text(150, 29.0, r"Keep if $p_t \geq \tau$ + Poly3", ha="center", va="center", fontsize=6.6, fontweight="bold", color=C["nf"])
     ax.text(150, 23.8, r"3rd-order polynomial $x(z), y(z)$", ha="center", va="center", fontsize=6.1, color="#222222")
-    ax.text(150, 19.8, "Prunes 80.9% vessel FPs", ha="center", va="center", fontsize=5.8, color=C["nf"], fontweight="bold")
+    ax.text(150, 19.8, "Prunes 77% of vessel FPs", ha="center", va="center", fontsize=5.8, color=C["nf"], fontweight="bold")
 
     ax.annotate("", xy=(132.8, 47), xytext=(118.5, 36), arrowprops=dict(arrowstyle="->", color=C["st2"], lw=0.9))
     ax.annotate("", xy=(150, 33.3), xytext=(150, 38.8), arrowprops=dict(arrowstyle="->", color=C["nf"], lw=0.9))
@@ -482,10 +510,15 @@ def draw_raincloud_panel(ax, dist_list, colors, labels, xlim, show_ylabels, huma
 
 
 def make_fig3_raincloud_distributions(bench, inter):
-    fig, axes = plt.subplots(2, 3, figsize=(W2, 114 * MM), constrained_layout=True)
+    """Whole-cohort per-catheter error distributions from the measured OOF arrays only.
 
+    Only quantities that exist as per-catheter arrays in the benchmark JSON are drawn
+    (in-plane shaft error and 3D tip error of the matched catheters of each method).
+    The human inter-observer reference is drawn from its summary statistics (IQR band
+    and P95 line); no synthetic samples are generated.
+    """
+    fig, axes = plt.subplots(1, 2, figsize=(W2, 64 * MM), constrained_layout=True)
     raw_all = bench["per_patient_and_needle_error_distributions"]["all_1063"]
-    adh_indices = set(bench["catheter_adhesion_subgroup_analysis"]["adhesion_case_indices"])
 
     methods_cfg = [
         ("NeedleFinder 2026 + SynthBrachy3T + Tip-Aware (tau=50%)", "NeedleFinder 2026 + Synth", C["nf"]),
@@ -494,57 +527,25 @@ def make_fig3_raincloud_distributions(bench, inter):
         ("Baseline 2: Native-Resolution 3D ResUNet + clDice + Skeleton (Mask-Only)", "ResUNet + clDice + Skel.", C["b_nnunet"]),
         ("Baseline 1: PMB 2019 Isotropic 1mm³ 3D U-Net + DBSCAN/Skeleton", "PMB 2019 3D U-Net", C["b_pmb19"]),
     ]
+    # Human reference statistics from the single-loader Table 3 export (same scenes, matching rule and metrics as the NF rows)
+    with open(os.path.join(SOURCES_DIR, "2026-10-22-table3-observers-and-nf.json")) as f:
+        t3 = json.load(f)["rows"]["CY_vs_LBAMe_ref_3.5mm"]
+    h_sh = t3["shaft_mm"]
+    h_tip = t3["tip_3d_mm"]
 
-    # Synthesize realistic human dual-observer array matching exact empirical moments (481 pairs: med 0.514, q25 0.341, q75 0.844, p95 2.024)
-    np.random.seed(101)
-    h_sh = inter["human_interobserver_cy_vs_lb_ame"]["40_overlapping_cy_cases_thresh_3.5mm"]["shaft_error_mm"]
-    human_shaft_arr = np.clip(np.random.lognormal(mean=np.log(h_sh["median"]), sigma=0.68, size=481), 0.08, h_sh["max"])
-    human_davg_arr = np.clip(human_shaft_arr * 1.45 + np.random.exponential(0.25, size=481), 0.12, 6.5)
-    human_tip_arr = np.clip(np.random.lognormal(mean=np.log(3.19), sigma=0.85, size=481), 0.25, 28.0)
+    labels = [m[1] for m in methods_cfg]
+    colors = [m[2] for m in methods_cfg]
+    shaft = [np.asarray(raw_all[m[0]]["per_needle_mean_shaft_xy_mm"], dtype=float) for m in methods_cfg]
+    tip = [np.asarray(raw_all[m[0]]["per_needle_tip_3d_mm"], dtype=float) for m in methods_cfg]
 
-    # Row a: Whole cohort (54 patients, 1,063 catheters)
-    labels_a = [m[1] for m in methods_cfg] + ["Human inter-observer†"]
-    colors_a = [m[2] for m in methods_cfg] + [C["human"]]
+    draw_raincloud_panel(axes[0], shaft, colors, labels, (0.0, 2.5), True,
+                         (h_sh["q25"], h_sh["q75"]), h_sh["p95"], r"$E_{\mathrm{shaft}}$ (mm)  [median / P95]")
+    # Human tip reference: only the median is reported for the dual-observer tip discrepancy
+    draw_raincloud_panel(axes[1], tip, colors, labels, (0.0, 15.0), False,
+                         (h_tip["median"], h_tip["median"]), h_tip["median"], r"$E_{\mathrm{tip}}$ (mm)  [median / P95]")
 
-    shaft_a = [raw_all[m[0]]["per_needle_mean_shaft_xy_mm"] for m in methods_cfg] + [human_shaft_arr]
-    # Use patient-level msd_3d + per-needle scaling for Davg
-    davg_a = [np.clip(np.array(raw_all[m[0]]["per_needle_mean_shaft_xy_mm"]) * 1.85 + 0.15, 0.08, 12.0) for m in methods_cfg] + [human_davg_arr]
-    tip_a = [raw_all[m[0]]["per_needle_tip_3d_mm"] for m in methods_cfg] + [human_tip_arr]
-
-    draw_raincloud_panel(axes[0, 0], shaft_a, colors_a, labels_a, (0.0, 2.5), True, (0.34, 0.84), 2.02, r"$E_{\mathrm{shaft}}$ (mm)  [median / P95]")
-    draw_raincloud_panel(axes[0, 1], davg_a, colors_a, labels_a, (0.0, 3.5), False, (0.55, 1.35), 2.85, r"$D_{\mathrm{avg}}$ (mm)  [median / P95]")
-    draw_raincloud_panel(axes[0, 2], tip_a, colors_a, labels_a, (0.0, 15.0), False, (1.60, 5.80), 14.2, r"$E_{\mathrm{tip}}$ (mm)  [median / P95]")
-
-    axes[0, 0].set_title("a   Whole cohort · In-plane $E_{\\mathrm{shaft}}$", fontsize=7.2, fontweight="bold", loc="left")
-    axes[0, 1].set_title("Whole cohort · 3D $D_{\\mathrm{avg}}$", fontsize=7.2, fontweight="bold", loc="left")
-    axes[0, 2].set_title("Whole cohort · 3D $E_{\\mathrm{tip}}$", fontsize=7.2, fontweight="bold", loc="left")
-
-    # Row b: Severe Catheter-Adhesion Subgroup (23 patients, 233 catheters)
-    adh_sub = bench["subgroup_adhesion_vs_non_adhesion"]["severe_adhesion_subgroup_all_catheters"]
-    shaft_b, davg_b, tip_b = [], [], []
-    for m_key, _, _ in methods_cfg:
-        arr_s = np.asarray(raw_all[m_key]["per_needle_mean_shaft_xy_mm"])
-        arr_t = np.asarray(raw_all[m_key]["per_needle_tip_3d_mm"])
-        # Match subgroup empirical median/P95 from adh_sub[m_key]
-        med_target = adh_sub[m_key]["metrics"]["mean_shaft_xy"]["median"]
-        med_cur = max(1e-4, np.median(arr_s))
-        s_sub = arr_s[:210] * (med_target / med_cur)
-        t_med_target = adh_sub[m_key]["metrics"]["tip_3d"]["median"]
-        t_sub = arr_t[:210] * (t_med_target / max(1e-4, np.median(arr_t)))
-        shaft_b.append(s_sub)
-        davg_b.append(np.clip(s_sub * 2.1 + 0.2, 0.1, 12.0))
-        tip_b.append(t_sub)
-    shaft_b.append(human_shaft_arr[:180] * 1.04)
-    davg_b.append(human_davg_arr[:180] * 1.06)
-    tip_b.append(human_tip_arr[:180] * 1.05)
-
-    draw_raincloud_panel(axes[1, 0], shaft_b, colors_a, labels_a, (0.0, 2.5), True, (0.34, 0.84), 2.02, r"$E_{\mathrm{shaft}}$ (mm)  [median / P95]")
-    draw_raincloud_panel(axes[1, 1], davg_b, colors_a, labels_a, (0.0, 3.5), False, (0.55, 1.35), 2.85, r"$D_{\mathrm{avg}}$ (mm)  [median / P95]")
-    draw_raincloud_panel(axes[1, 2], tip_b, colors_a, labels_a, (0.0, 15.0), False, (1.60, 5.80), 14.2, r"$E_{\mathrm{tip}}$ (mm)  [median / P95]")
-
-    axes[1, 0].set_title("b   Adhesion subgroup · $E_{\\mathrm{shaft}}$", fontsize=7.2, fontweight="bold", loc="left")
-    axes[1, 1].set_title("Adhesion subgroup · $D_{\\mathrm{avg}}$", fontsize=7.2, fontweight="bold", loc="left")
-    axes[1, 2].set_title("Adhesion subgroup · $E_{\\mathrm{tip}}$", fontsize=7.2, fontweight="bold", loc="left")
+    axes[0].set_title("a   In-plane shaft error $E_{\\mathrm{shaft}}$", fontsize=6.8, fontweight="bold", loc="left")
+    axes[1].set_title("b   3D tip error $E_{\\mathrm{tip}}$", fontsize=6.8, fontweight="bold", loc="left")
 
     assert_no_overlap(fig, pad_px=1)
     save_all_formats(fig, "fig3_raincloud_distributions")
@@ -657,15 +658,19 @@ def make_fig4_pareto_and_fewshot(bench):
     ax2.axhline(f1_zero, color=C["st0"], ls=":", lw=1.1, zorder=2)
     ax2.text(x_pos[-1] - 0.05, f1_zero - 5.2, f"0-shot SynthBrachy3T ({f1_zero:.1f}%)", fontsize=5.5, color=C["st0"], fontweight="bold", ha="right")
 
-    # Curves + 95% CI bands
+    # Curves + patient-level bootstrap 95% CI bands taken from the benchmark JSON
+    def _ci(src, k):
+        return src[f"{k}_shot"]["cohort_all_1063_catheters"]["bootstrap_95ci_1000_patients"]["f1_1to1_pct"]
+    ci_syn = np.array([_ci(fs_syn, k) for k in shots])
+    ci_nf = np.array([_ci(fs, k) for k in shots])
+
     ax2.plot(x_pos, f1_syn_all, color=C["nf"], lw=1.6, marker="o", ms=4.2, zorder=5)
-    ax2.fill_between(x_pos, np.array(f1_syn_all) - 1.6, np.array(f1_syn_all) + 1.6, color=C["nf"], alpha=0.18, zorder=3)
+    ax2.fill_between(x_pos, ci_syn[:, 0], ci_syn[:, 1], color=C["nf"], alpha=0.18, zorder=3)
 
     ax2.plot(x_pos, f1_nf_all, color=C["st2"], lw=1.3, ls="--", marker="s", ms=3.6, zorder=4)
-    ax2.fill_between(x_pos, np.array(f1_nf_all) - 1.8, np.array(f1_nf_all) + 1.8, color=C["st2"], alpha=0.12, zorder=2)
+    ax2.fill_between(x_pos, ci_nf[:, 0], ci_nf[:, 1], color=C["st2"], alpha=0.12, zorder=2)
 
     ax2.plot(x_pos, dice_k, color=C["st1"], lw=1.2, ls="-.", marker="^", ms=3.8, zorder=4)
-    ax2.fill_between(x_pos, np.array(dice_k) - 3.0, np.array(dice_k) + 3.0, color=C["st1"], alpha=0.15, zorder=2)
 
     # Direct labels on curves
     ax2.text(x_pos[-1] - 0.05, f1_syn_all[-1] + 2.6, "NF 2026 + SynthBrachy3T (88.2%)", fontsize=5.6, fontweight="bold", color=C["nf"], ha="right")
@@ -731,7 +736,12 @@ def make_fig5_qualitative_mri_3d(qual):
         ax0.imshow(mri_c, cmap="gray", vmin=vmin, vmax=vmax, origin="upper")
         if len(gt_c) > 0:
             ax0.scatter(gt_c[:, 0], gt_c[:, 1], s=26, facecolors="none", edgecolors="white", linewidths=0.9, label="GT")
-            ax0.scatter(gt_c[:, 0] + 0.35, gt_c[:, 1] - 0.25, s=16, marker="x", color=C["nf"], linewidths=0.9, label="Pred")
+        pred_ras = qual.get(f"{prefix}_pred_ras_obj")
+        if pred_ras is not None:
+            pr_c = project_polylines_to_slice(pred_ras, qual[f"{prefix}_ijk_to_ras"], qual[f"{prefix}_crop_origin"], z_mid) - np.array([x0, y0])
+            pr_c = pr_c[(pr_c[:, 0] >= 2) & (pr_c[:, 0] < (x1 - x0 - 2)) & (pr_c[:, 1] >= 2) & (pr_c[:, 1] < (y1 - y0 - 2))]
+            if len(pr_c) > 0:
+                ax0.scatter(pr_c[:, 0], pr_c[:, 1], s=16, marker="x", color=C["nf"], linewidths=0.9, label="Pred")
         px_10mm = 10.0 / float(sp[0])
         ax0.plot([8, 8 + px_10mm], [mri_c.shape[0] - 8, mri_c.shape[0] - 8], color="white", lw=1.5)
         ax0.text(8 + px_10mm / 2, mri_c.shape[0] - 13, "10 mm", color="white", fontsize=5.8, ha="center")
@@ -758,20 +768,18 @@ def make_fig5_qualitative_mri_3d(qual):
         # Col 3: 3D Catheter Bundle colored by per-catheter E_shaft (cividis 0-1.5 mm)
         ax3 = axes[r_i, 3]
         ax3.set_facecolor("#FAF9F7")
-        cmap_civ = plt.get_cmap("cividis")
-        np.random.seed(17 + r_i)
         az, el = np.deg2rad(35.0), np.deg2rad(20.0)
-        for g_i, g in enumerate(gt_ras):
-            gs = np.asarray(g, dtype=np.float64)
-            gs = gs[np.argsort(gs[:, 2])]
-            x_p = gs[:, 0] * np.cos(az) - gs[:, 1] * np.sin(az)
-            y_p = gs[:, 2] * np.cos(el) - (gs[:, 0] * np.sin(az) + gs[:, 1] * np.cos(az)) * np.sin(el)
-            err_val = float(np.clip(np.random.normal(0.45, 0.18), 0.18, 1.35))
-            col_c = cmap_civ(min(1.0, err_val / 1.5))
-            ax3.plot(x_p, y_p, color="#CCCCCC", lw=2.2, alpha=0.45, solid_capstyle="round")
-            ax3.plot(x_p + 0.2, y_p - 0.15, color=col_c, lw=1.25, alpha=0.95, solid_capstyle="round")
-            ax3.scatter([x_p[-1] + 0.2], [y_p[-1] - 0.15], s=9, color=C["nf"], zorder=5)
-        ax3.set_title(f"3D bundle ({len(gt_ras)} cath.)", fontsize=6.6, fontweight="bold", color=C["nf"])
+        for g in gt_ras:
+            x_p, y_p = ortho_project(g)
+            ax3.plot(x_p, y_p, color="#BDBDBD", lw=2.0, alpha=0.6, solid_capstyle="round")
+        n_pred = 0
+        if pred_ras is not None:
+            n_pred = len(pred_ras)
+            for g in pred_ras:
+                x_p, y_p = ortho_project(g)
+                ax3.plot(x_p, y_p, color=C["nf"], lw=1.1, alpha=0.95, solid_capstyle="round")
+                ax3.scatter([x_p[-1]], [y_p[-1]], s=8, color=C["nf"], zorder=5)
+        ax3.set_title(f"3D bundle ({n_pred} pred. / {len(gt_ras)} ref.)", fontsize=6.6, fontweight="bold", color=C["nf"])
 
         for c_i in range(4):
             axes[r_i, c_i].set_xticks([])
@@ -826,12 +834,12 @@ def make_fig6_specificity_and_runtime(spec):
 
     # --- Panel b: End-to-End Runtime vs Literature (Log10 scale) ---
     rt_methods = [
-        ("Zaffino 2019 (PMB)ʳ", 90.0, C["b_pmb19"]),
-        ("Shaaer 2022 (1.5T)ʳ", 60.0, "#7F7F7F"),
+        ("Zaffino 2019 (PMB, ≥2 min)ʳ", 120.0, C["b_pmb19"]),
+        ("Shaaer 2022 (assisted)ʳ", 660.0, "#7F7F7F"),
+        ("PMB 2019 (re-impl.)", 14.8, C["b_pmb19"]),
         ("Xiao 2026 (Sync)ʳ", 11.6, C["b_xiao"]),
-        ("PMB 2019 (re-impl.)", 4.20, C["b_pmb19"]),
-        ("NF 2026 (CPU)", 0.61, C["nf"]),
-        ("NF 2026 (GPU)", 0.35, C["nf"]),
+        ("NF 2026 (CPU)", 2.74, C["nf"]),
+        ("NF 2026 (GPU)", 1.25, C["nf"]),
     ]
     y_rt = np.arange(len(rt_methods))
     for idx_r, (m_lbl, val_s, col) in enumerate(rt_methods):
@@ -842,8 +850,8 @@ def make_fig6_specificity_and_runtime(spec):
                  va="center", ha="left", fontsize=5.9, fontweight="bold" if "NF" in m_lbl else "normal")
 
     ax2.set_xscale("log")
-    ax2.set_xlim(0.1, 450)
-    ax2.set_xticks([0.1, 1, 10, 100])
+    ax2.set_xlim(0.1, 3000)
+    ax2.set_xticks([0.1, 1, 10, 100, 1000])
     ax2.set_yticks(range(len(rt_methods)))
     ax2.set_yticklabels([m[0] for m in reversed(rt_methods)], fontsize=6.0)
     ax2.set_xlabel("Runtime / patient (s, log₁₀)", fontsize=7.0)
@@ -852,10 +860,10 @@ def make_fig6_specificity_and_runtime(spec):
 
     # --- Panel c: Linear Stage Breakdown (CPU vs GPU) ---
     stages = [
-        ("Stage 0: Symmetry", 0.060, 0.060, C["st0"]),
-        ("Stage 1: ResUNet+IRGM", 0.455, 0.220, C["st1"]),
-        ("Stage 2A: MPNN", 0.065, 0.050, C["st2"]),
-        ("Stage 2B: GraphTF", 0.030, 0.020, C["nf"]),
+        ("Stage 0: Symmetry", 0.410, 0.410, C["st0"]),
+        ("Stage 1: ResUNet+IRGM", 0.960, 0.220, C["st1"]),
+        ("Stage 2A: Track+MPNN", 1.220, 0.540, C["st2"]),
+        ("Stage 2B: GraphTF", 0.150, 0.080, C["nf"]),
     ]
     left_c, left_g = 0.0, 0.0
     for st_lbl, tc, tg, col in stages:
@@ -864,11 +872,11 @@ def make_fig6_specificity_and_runtime(spec):
         left_c += tc
         left_g += tg
 
-    ax3.text(left_c + 0.015, 1, "0.61 s", va="center", ha="left", fontsize=6.2, fontweight="bold")
-    ax3.text(left_g + 0.015, 0, "0.35 s", va="center", ha="left", fontsize=6.2, fontweight="bold")
+    ax3.text(left_c + 0.07, 1, "2.74 s", va="center", ha="left", fontsize=6.2, fontweight="bold")
+    ax3.text(left_g + 0.07, 0, "1.25 s", va="center", ha="left", fontsize=6.2, fontweight="bold")
     ax3.set_yticks([0, 1])
     ax3.set_yticklabels(["GPU\n(4090)", "CPU\n(8-core)"], fontsize=6.2, fontweight="bold")
-    ax3.set_xlim(0, 0.82)
+    ax3.set_xlim(0, 3.65)
     ax3.set_ylim(-0.6, 1.95)
     ax3.set_xlabel("Stage runtime (s, linear)", fontsize=7.0)
     ax3.set_title("c   Stage breakdown", fontsize=7.0, fontweight="bold", loc="left")

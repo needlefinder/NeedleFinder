@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+$for(author-meta)$
+<meta name="author" content="$author-meta$">
+$endfor$
+<title>$pagetitle$</title>
+$for(header-includes)$
+$header-includes$
+$endfor$
+</head>
+<body>
+<article class="page">
+<header class="masthead">
+  <p class="kicker"><span>Research paper</span><span>Physics in Medicine &amp; Biology · Manuscript</span></p>
+  <h1 class="title">$title$</h1>
+  <p class="authors">$for(author)$$author$$sep$ $endfor$</p>
+$if(date)$
+  <p class="date">$date$</p>
+$endif$
+</header>
+$if(abstract)$
+<section class="abstract" aria-labelledby="abstract-label">
+  <h2 class="abstract-label" id="abstract-label">Abstract</h2>
+$abstract$
+</section>
+$endif$
+$body$
+</article>
+</body>
+</html>

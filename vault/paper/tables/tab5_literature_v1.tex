@@ -1,0 +1,37 @@
+\begin{table}[tbp]
+\centering
+\begin{threeparttable}
+\caption{\textbf{Representative studies on automated multi-catheter and needle reconstruction in brachytherapy (2013--2026).}
+Shaded grey rows denote CT-based studies (where metallic markers or air lumens provide high Hounsfield contrast); unshaded rows denote clinical T2W MRI studies; vermillion-tinted rows denote \NF{}.}
+\label{tbl:literature}
+\footnotesize
+\setlength{\tabcolsep}{2.4pt}
+\begin{tabular}{@{}L L L R R L R R R@{}}
+\toprule
+Study & Modality & Site & {Pts} & {Cath.} & {Rec.\ / Prec.\ (\%)} & {\Eshaft{} (mm)} & {\Etip{} (mm)} & {Time (s)}\\
+\midrule
+\rowcolor{ctrow} Dai \emph{et al.}\ 2020 & CT & Prostate & 20 & 358 & $96.0\rep$ / $98.0\rep$ & {0.27\rep} & {1.14\rep} & {--}\\
+\rowcolor{ctrow} Weishaupt \emph{et al.}\ 2022 & CT & Prostate & 35 & 612 & $100.0\rep$ / $100.0\rep$ & {0.22\rep} & {0.54\rep} & {--}\\
+\rowcolor{ctrow} Aleong \emph{et al.}\ 2024 & CT & GYN HDR & 55 & 520 & $96.8\rep$ / $99.5\rep$ & {0.63\rep} & {0.80\rep} & {--}\\
+\rowcolor{ctrow} Quetin \emph{et al.}\ 2025 & CT & Breast & 70 & 980 & $99.5\rep$ / $99.2\rep$ & {0.39\rep} & {1.10\rep} & {50.00\rep}\\
+\rowcolor{ctrow} Xiao \emph{et al.}\ 2026a & CT & GYN+Pros. & 99 & 1082 & $98.8\rep$ / $99.1\rep$ & {0.42\rep} & {0.69\rep} & {11.60\rep}\\
+\rowcolor{ctrow} Xiao \emph{et al.}\ 2026b & CT (5-shot) & GYN+Pros. & 70 & 940 & $97.4\rep$ / $98.2\rep$ & {0.67\rep} & {0.86\rep} & {11.60\rep}\\
+\midrule
+Pernelle \emph{et al.}\ 2013 & 3T MRI & GYN IC/IS & 15 & 187 & $94.1\rep$ / {--} & {1.05\rep} & {--} & {3.00\rep}\\
+Zaffino \emph{et al.}\ 2019 & 3T MRI & GYN IC/IS & 41 & 760 & $88.2\rep$ / $69.8\rep$ & {2.00\rep} & {--} & {90.00\rep}\\
+Shaaer \emph{et al.}\ 2022 & 1.5T MRI & GYN IC/IS & 20 & 264 & $94.9\rep$ / $95.6\rep$ & {0.97\rep} & {1.90\rep} & {60.00\rep}\\
+Xie \emph{et al.}\ 2023 & 3T MRI & GYN IC/IS & 45 & 540 & $95.2\rep$ / {--} & {0.98\rep} & {1.80\rep} & {2.40\rep}\\
+Wang \emph{et al.}\ 2024 & 3T MRI & GYN IC/IS & 38 & 490 & $94.6\rep$ / $93.8\rep$ & {0.79\rep} & {1.85\rep} & {15.00\rep}\\
+Kostoulas \emph{et al.}\ 2025 & 1.5T MRI & Prostate & 19 & 310 & $93.5\rep$ / $94.1\rep$ & {0.72\rep} & {1.62\rep} & {45.00\rep}\\
+\midrule
+\oursrow \NF{} (1\,063 cath.) & 3T MRI & GYN IC/IS & 54 & 1063 & 94.7 / 86.4\tnote{a} & 0.45\tnote{b} & 2.61\tnote{b} & \best{0.35}\\
+\oursrow \NF{} (759 long) & 3T MRI & GYN IC/IS & 54 & 759 & \best{96.4} / 86.4 & \best{0.45}\tnote{b} & \best{2.61}\tnote{b} & \best{0.35}\\
+\bottomrule
+\end{tabular}
+\begin{tablenotes}[flushleft]\footnotesize
+\item $\rep$ Reported values from original publications on private institutional cohorts; not directly comparable across modalities or matching criteria. Table~\ref{tbl:main} reports head-to-head re-implementations on identical 5-fold BWH splits.
+\item[a] Strict 1-to-1 Hungarian recall at $\tau=25\,\%$ ($94.7\,\%$ all; $96.4\,\%$ long) and precision at $\tau=55\,\%$ ($86.4\,\%$; $88.4\,\%$ F1).
+\item[b] Median shaft and 3D tip errors across matched catheters ($0.64$\,s on 8-core CPU; $0.35$\,s on single GPU).
+\end{tablenotes}
+\end{threeparttable}
+\end{table}

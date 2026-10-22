@@ -71,14 +71,15 @@ Across all **54 clinical intraoperative 3T T2-weighted MRI cases** from the Brig
 
 ---
 
-## 4. Per-Stage Computation Time Breakdown (54-Case Average)
+## 4. Per-Stage Computation Time Breakdown (54-Case Full-Volume Uncached Average)
 
-| Pipeline Stage | CPU Runtime (8-core Desktop / Laptop) | GPU Runtime (`edelweiss` RTX 4090) | Memory / Artifact Size |
+> [!NOTE]
+> Earlier benchmark logs (`0.61 s` CPU / `0.35 s` GPU) measured cached-ROI tensor inference (`30×160×160`). In October 2026, we replaced the Python `track_pass` / `trim_trajectory_inside_out` / `dedup_trajs` bottlenecks with native C++17 & Rust kernels (`nf_find_2d_nms_peaks`, `nf_trace_seed_3d`, `nf_trim_trajectory_inside_out`) achieving a **4.1×–4.4× end-to-end speedup** (`8.38 s -> 2.03 s` on `2016-RSNA` `640×416×112`, `1.47 s -> 0.33 s` on `Case016` `320×256×28`) with 100% identical trajectory outputs, and measured true uncached full-volume runtimes across all 54 clinical volumes.
+
+| Pipeline Stage | CPU Runtime (8-core Mean; Std / Hi-Res) | GPU Runtime (`edelweiss` RTX 4090) | Memory / Artifact Size |
 | :--- | :---: | :---: | :---: |
-| **Stage 0: Rust/C++17 3D Radial & Half-Ring Symmetry Filter** | `0.06 s` | `0.06 s` (CPU) | `libneedlefinder_rust.so` (`310 KB`) |
-| **Stage 1: 3-Pass Physics Tracker (`Pass 1 + Inpainting + Pass 2 + Pass 3 Radon`) + `HybridNeedleNet`** | `0.21 s` | `0.21 s` (CPU) | Pure NumPy / Rust |
-| **Stage 1 NN: `NeedleUNet3D` Multi-Head 3D Segmentation (ONNX Runtime)** | `0.21 s` | `0.03 s` | `needle_unet3d.onnx` (`8.95 MB`) |
-| **Stage 2A: Tangent-Field Tube Reconstruction (`extract_nn_labelmap_tubes`)** | `0.04 s` | `0.04 s` | Pure NumPy |
-| **Stage 2B: `NeedleSliceMPNN` (Vectorized Graph Build + 4-Layer Triplet MPNN)** | `0.08 s` | `0.01 s` | `needle_graphnet.npz` (`1.34 MB`) |
-| **Stage 2C: `DenseGraphTransformer` (2-Layer GAT + 2-Layer Set Transformer + NMS)** | `0.015 s` | `0.002 s` | `needle_graph_transformer.onnx` (`257 KB`) |
-| **Total End-to-End Pipeline (All Stages Combined)** | **`0.61 s / patient`** | **`0.35 s / patient`** | **`10.5 MB` total weights** |
+| **Stage 0: Rust/C++17 3D Radial & Half-Ring Symmetry Filter** | `0.41 s` (`0.12 s` std / `0.59 s` hi-res) | `0.41 s` (CPU) | `libneedlefinder_rust.so` (`310 KB`) |
+| **Stage 1: `NeedleUNet3D` + IRGM Multi-Head 3D Segmentation (ONNX Runtime)** | `0.96 s` (`0.55 s` std / `1.02 s` hi-res) | `0.22 s` | `needle_unet3d.onnx` (`8.95 MB`) |
+| **Stage 2A: Native C++17/Rust Seed Tracking + `NeedleSliceMPNN` + Sync-Track** | `1.22 s` (`0.45 s` std / `1.67 s` hi-res) | `0.54 s` | `needle_graphnet.npz` (`1.34 MB`) |
+| **Stage 2B: `TipAwareBundleGraphTransformer` + Poly3 + BBox Dedup** | `0.15 s` (`0.08 s` std / `0.19 s` hi-res) | `0.08 s` | `needle_graph_transformer.onnx` (`257 KB`) |
+| **Total End-to-End Uncached Pipeline (All Stages Combined)** | **`2.74 s / patient`** (`1.20 s` std / `3.47 s` hi-res) | **`1.25 s / patient`** | **`10.5 MB` total weights** |
