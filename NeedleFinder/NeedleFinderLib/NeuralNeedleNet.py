@@ -659,6 +659,121 @@ def _traj_dist_np(p_ras, q_ras):
     return float(np.mean(np.hypot(px - qx, py - qy)))
 
 
+def _softmax_last_np(x):
+    mx = np.max(x, axis=-1, keepdims=True)
+    ex = np.exp(np.clip(x - mx, -20.0, 20.0))
+    return ex / np.maximum(1e-6, np.sum(ex, axis=-1, keepdims=True))
+
+
+def _forward_tip_bgt_numpy(x_26, adj_feat_8, adj_mask, W):
+    """
+    Pure-NumPy forward pass of the SynthBrachy3T-pretrained TipAwareBundleGraphTransformer
+    (26-D node features, 8-D pairwise bundle features, 2-layer Edge-Biased GAT + Set Transformer).
+    Returns [M, 4]: [logit_rec, logit_1to1, logit_long_1to1, pred_dz_tip].
+    """
+    if "tip_bgt.node_enc.0.weight" not in W:
+        return None
+    h = _silu_np(_ln_np(_lin_np(x_26, W["tip_bgt.node_enc.0.weight"], W["tip_bgt.node_enc.0.bias"]),
+                        W["tip_bgt.node_enc.1.weight"], W["tip_bgt.node_enc.1.bias"]))
+    h = _silu_np(_ln_np(_lin_np(h, W["tip_bgt.node_enc.3.weight"], W["tip_bgt.node_enc.3.bias"]),
+                        W["tip_bgt.node_enc.4.weight"], W["tip_bgt.node_enc.4.bias"]))
+    ef = _silu_np(_lin_np(adj_feat_8, W["tip_bgt.edge_enc.0.weight"], W["tip_bgt.edge_enc.0.bias"]))
+    scale = 1.0 / math.sqrt(float(h.shape[-1]))
+
+    # Layer 1: Edge-Biased GAT
+    q1 = _lin_np(h, W["tip_bgt.q1.weight"], W["tip_bgt.q1.bias"])
+    k1 = _lin_np(h, W["tip_bgt.k1.weight"], W["tip_bgt.k1.bias"])
+    v1 = _lin_np(h, W["tip_bgt.v1.weight"], W["tip_bgt.v1.bias"])
+    ea1 = _lin_np(ef, W["tip_bgt.e_att1.weight"], W["tip_bgt.e_att1.bias"]).squeeze(-1)
+    scores1 = (q1 @ k1.T) * scale + ea1
+    scores1 = np.where(adj_mask > 0.0, scores1, -1e4)
+    attn1 = _softmax_last_np(scores1) * adj_mask
+    attn1 = attn1 / np.maximum(1e-6, np.sum(attn1, axis=-1, keepdims=True))
+    msg1 = (attn1 @ v1) + np.sum(attn1[:, :, None] * ef, axis=1)
+    h = _ln_np(h + _silu_np(msg1), W["tip_bgt.norm1.weight"], W["tip_bgt.norm1.bias"])
+
+    # Layer 2: Edge-Biased GAT
+    q2 = _lin_np(h, W["tip_bgt.q2.weight"], W["tip_bgt.q2.bias"])
+    k2 = _lin_np(h, W["tip_bgt.k2.weight"], W["tip_bgt.k2.bias"])
+    v2 = _lin_np(h, W["tip_bgt.v2.weight"], W["tip_bgt.v2.bias"])
+    ea2 = _lin_np(ef, W["tip_bgt.e_att2.weight"], W["tip_bgt.e_att2.bias"]).squeeze(-1)
+    scores2 = (q2 @ k2.T) * scale + ea2
+    scores2 = np.where(adj_mask > 0.0, scores2, -1e4)
+    attn2 = _softmax_last_np(scores2) * adj_mask
+    attn2 = attn2 / np.maximum(1e-6, np.sum(attn2, axis=-1, keepdims=True))
+    msg2 = (attn2 @ v2) + np.sum(attn2[:, :, None] * ef, axis=1)
+    h = _ln_np(h + _silu_np(msg2), W["tip_bgt.norm2.weight"], W["tip_bgt.norm2.bias"])
+
+    # Layer 3: Global Set Transformer self-attention + FFN
+    q3 = _lin_np(h, W["tip_bgt.q3.weight"], W["tip_bgt.q3.bias"])
+    k3 = _lin_np(h, W["tip_bgt.k3.weight"], W["tip_bgt.k3.bias"])
+    v3 = _lin_np(h, W["tip_bgt.v3.weight"], W["tip_bgt.v3.bias"])
+    attn3 = _softmax_last_np((q3 @ k3.T) * scale)
+    h = _ln_np(h + (attn3 @ v3), W["tip_bgt.norm3.weight"], W["tip_bgt.norm3.bias"])
+    ff = _silu_np(_lin_np(h, W["tip_bgt.ffn.0.weight"], W["tip_bgt.ffn.0.bias"]))
+    ff = _lin_np(ff, W["tip_bgt.ffn.2.weight"], W["tip_bgt.ffn.2.bias"])
+    h = _ln_np(h + ff, W["tip_bgt.norm4.weight"], W["tip_bgt.norm4.bias"])
+
+    hd = _silu_np(_lin_np(h, W["tip_bgt.head.0.weight"], W["tip_bgt.head.0.bias"]))
+    return _lin_np(hd, W["tip_bgt.head.2.weight"], W["tip_bgt.head.2.bias"])
+
+
+def _regularize_poly3_np(pts_ras):
+    pts = np.asarray(pts_ras, dtype=np.float64)
+    pts = pts[np.argsort(pts[:, 2])]
+    n = len(pts)
+    if n < 4:
+        return pts
+    z = pts[:, 2]
+    z_span = float(z[-1] - z[0])
+    if z_span < 4.0:
+        return pts
+    deg = 3 if (n >= 9 and z_span >= 28.0) else (2 if n >= 5 else 1)
+    zn = 2.0 * (z - z[0]) / z_span - 1.0
+    try:
+        cx = np.polyfit(zn, pts[:, 0], deg)
+        cy = np.polyfit(zn, pts[:, 1], deg)
+        fx = np.polyval(cx, zn)
+        fy = np.polyval(cy, zn)
+        if float(np.max(np.hypot(fx - pts[:, 0], fy - pts[:, 1]))) <= 1.8:
+            return np.column_stack([fx, fy, z])
+    except Exception:
+        pass
+    return pts
+
+
+def _apply_tip_adjustment_and_poly3_np(pts_ras, dz_tip_mm, vx_top, vy_top):
+    pts = np.asarray(pts_ras, dtype=np.float64)
+    pts = pts[np.argsort(pts[:, 2])]
+    if len(pts) < 3:
+        return pts
+    dz_clamp = float(np.clip(dz_tip_mm, -9.5, 9.5))
+    z_bot = float(pts[0, 2])
+    z_top_old = float(pts[-1, 2])
+    z_top_new = max(z_bot + 7.5, z_top_old + dz_clamp)
+
+    if z_top_new < z_top_old - 0.5:
+        x_top = float(np.interp(z_top_new, pts[:, 2], pts[:, 0]))
+        y_top = float(np.interp(z_top_new, pts[:, 2], pts[:, 1]))
+        keep = pts[:, 2] < z_top_new - 0.25
+        pts_trim = np.vstack([pts[keep], np.array([[x_top, y_top, z_top_new]])])
+        if len(pts_trim) >= 3:
+            pts = pts_trim
+    elif z_top_new > z_top_old + 0.5:
+        dz_ext = z_top_new - z_top_old
+        x_ext = float(pts[-1, 0]) + vx_top * dz_ext
+        y_ext = float(pts[-1, 1]) + vy_top * dz_ext
+        pts = np.vstack([pts, np.array([[x_ext, y_ext, z_top_new]])])
+
+    if len(pts) >= 4:
+        pts_poly = _regularize_poly3_np(pts)
+        pts_blend = pts.copy()
+        pts_blend[:, 0] = 0.65 * pts[:, 0] + 0.35 * pts_poly[:, 0]
+        pts_blend[:, 1] = 0.65 * pts[:, 1] + 0.35 * pts_poly[:, 1]
+        return pts_blend
+    return pts
+
+
 def run_mpnn_and_graph_transformer(
     vol, nn_preds, resp_roi, cs_roi, rsym_roi,
     k0, i0, j0, sp_i, sp_j, sp_k,
@@ -970,20 +1085,32 @@ def run_mpnn_and_graph_transformer(
     if M == 0 or gt_sess is None:
         return [p["traj"] for p in pool if p["traj"].get("confidence", 0.0) >= float(min_confidence)]
 
-    # 3. Build Trajectory-Level Bundle Graph & Run DenseGraphTransformer
+    # 3. Build Trajectory-Level Bundle Graph & Run DenseGraphTransformer + TipAwareBundleGraphTransformer
     bases = np.array([p["base_xy"] for p in pool])
     slopes = np.array([p["slope"] for p in pool])
     med_base = np.median(bases, axis=0)
     med_slope = np.median(slopes, axis=0)
 
-    x_feats = []
+    vol_roi_full = vol if vol.shape == (K_sub, H, W) else vol[k0:k0 + K_sub, j0:j0 + H, i0:i0 + W]
+    pos_r_f = resp_roi[resp_roi > 0]
+    r_sc_f = float(np.percentile(pos_r_f, 99)) if len(pos_r_f) > 20 else 50.0
+    sym_arr = np.clip(np.log1p(np.maximum(0.0, resp_roi)) / max(1.0, math.log1p(r_sc_f)), 0.0, 1.5).astype(np.float32)
+    pos_c_f = cs_roi[cs_roi > 0]
+    c_sc_f = float(np.percentile(pos_c_f, 99)) if len(pos_c_f) > 20 else 25.0
+    cs_arr = np.clip(cs_roi / max(1.0, c_sc_f), 0.0, 1.5).astype(np.float32)
+    rc_arr = np.clip((rsym_roi - vol_roi_full) / (rsym_roi + 15.0), -0.5, 1.0).astype(np.float32)
+
+    z_tops = np.array([float(p["ras"][-1, 2]) for p in pool], dtype=np.float32)
+    z_bots = np.array([float(p["ras"][0, 2]) for p in pool], dtype=np.float32)
+
+    prof_meta = []
     for p in pool:
         ras = p["ras"]
         zs = np.linspace(ras[0, 2], ras[-1, 2], 15)
         xs = np.interp(zs, ras[:, 2], ras[:, 0])
         ys = np.interp(zs, ras[:, 2], ras[:, 1])
         ijks = (ras_to_ijk @ np.column_stack([xs, ys, zs, np.ones_like(zs)]).T).T
-        pm_l, pp_l, po_l = [], [], []
+        pm_l, pp_l, po_l, sym_l, cs_l, rc_l = [], [], [], [], [], []
         for row in ijks:
             ic = int(round(row[0] - i0))
             jc = int(round(row[1] - j0))
@@ -992,25 +1119,99 @@ def run_mpnn_and_graph_transformer(
                 pm_l.append(float(np.max(p_mask[kc, jc - 1:jc + 2, ic - 1:ic + 2])))
                 pp_l.append(float(np.max(p_peak[kc, jc - 1:jc + 2, ic - 1:ic + 2])))
                 po_l.append(float(np.max(p_obt[kc, jc - 1:jc + 2, ic - 1:ic + 2])))
+                sym_l.append(float(np.max(sym_arr[kc, jc - 1:jc + 2, ic - 1:ic + 2])))
+                cs_l.append(float(np.max(cs_arr[kc, jc - 1:jc + 2, ic - 1:ic + 2])))
+                rc_l.append(float(np.max(rc_arr[kc, jc - 1:jc + 2, ic - 1:ic + 2])))
         mean_pm = float(np.mean(pm_l)) if pm_l else 0.0
         p75_pm = float(np.percentile(pm_l, 75)) if pm_l else 0.0
         mean_pp = float(np.mean(pp_l)) if pp_l else 0.0
         mean_po = float(np.mean(po_l)) if po_l else 0.0
+        mean_sym = float(np.mean(sym_l)) if sym_l else 0.0
+        p75_sym = float(np.percentile(sym_l, 75)) if sym_l else 0.0
+        mean_cs = float(np.mean(cs_l)) if cs_l else 0.0
+        mean_rc = float(np.mean(rc_l)) if rc_l else 0.0
+        frac_active = float(np.mean([(m > 0.22 or pk > 0.18 or s > 0.25) for m, pk, s in zip(pm_l, pp_l, sym_l)])) if pm_l else 0.0
 
+        top_pts = ras[-min(6, len(ras)):]
+        if len(top_pts) >= 2 and abs(top_pts[-1, 2] - top_pts[0, 2]) > 1.0:
+            vx_top = float((top_pts[-1, 0] - top_pts[0, 0]) / (top_pts[-1, 2] - top_pts[0, 2]))
+            vy_top = float((top_pts[-1, 1] - top_pts[0, 1]) / (top_pts[-1, 2] - top_pts[0, 2]))
+        else:
+            vx_top, vy_top = 0.0, 0.0
+
+        z_top_cur = float(ras[-1, 2])
+        z_probe = np.linspace(z_top_cur - 15.0, z_top_cur + 15.0, 25)
+        x_probe = np.where(z_probe <= z_top_cur, np.interp(z_probe, ras[:, 2], ras[:, 0]), ras[-1, 0] + vx_top * (z_probe - z_top_cur))
+        y_probe = np.where(z_probe <= z_top_cur, np.interp(z_probe, ras[:, 2], ras[:, 1]), ras[-1, 1] + vy_top * (z_probe - z_top_cur))
+        ijks_p = (ras_to_ijk @ np.column_stack([x_probe, y_probe, z_probe, np.ones_like(z_probe)]).T).T
+        support_p = np.zeros(len(z_probe), dtype=np.float32)
+        for idx_p, row in enumerate(ijks_p):
+            ic, jc, kc = int(round(row[0] - i0)), int(round(row[1] - j0)), int(round(row[2] - k0))
+            if 1 <= ic < W - 1 and 1 <= jc < H - 1 and 0 <= kc < K_sub:
+                m_v = float(np.max(p_mask[kc, jc - 1:jc + 2, ic - 1:ic + 2]))
+                p_v = float(np.max(p_peak[kc, jc - 1:jc + 2, ic - 1:ic + 2]))
+                o_v = float(np.max(p_obt[kc, jc - 1:jc + 2, ic - 1:ic + 2]))
+                s_v = float(np.max(sym_arr[kc, jc - 1:jc + 2, ic - 1:ic + 2]))
+                support_p[idx_p] = 0.40 * max(m_v, o_v) + 0.35 * p_v + 0.25 * min(1.0, s_v)
+        valid_sup = np.where(support_p >= 0.24)[0]
+        z_prof_tip = float(z_probe[int(valid_sup[-1])]) if len(valid_sup) > 0 else z_top_cur
+        tip_sup_cur = float(support_p[12])
+
+        prof_meta.append({
+            "mean_pm": mean_pm, "p75_pm": p75_pm, "mean_pp": mean_pp, "mean_po": mean_po,
+            "mean_sym": mean_sym, "p75_sym": p75_sym, "mean_cs": mean_cs, "mean_rc": mean_rc,
+            "frac_active": frac_active, "z_prof_tip": z_prof_tip, "tip_sup_cur": tip_sup_cur,
+            "vx_top": vx_top, "vy_top": vy_top,
+        })
+
+    qual_weights = np.array([max(0.05, pr["mean_pm"] * 0.4 + pr["mean_pp"] * 0.3 + pr["mean_sym"] * 0.3) for pr in prof_meta])
+    z_tip_nbr = np.zeros(M, dtype=np.float32)
+    for u in range(M):
+        dists_xy = np.hypot(bases[:, 0] - bases[u, 0], bases[:, 1] - bases[u, 1])
+        span_u = z_tops[u] - z_bots[u]
+        same_class = np.abs((z_tops - z_bots) - span_u) <= 22.0
+        nbr_mask = (dists_xy <= 28.0) & same_class & (qual_weights >= 0.25)
+        if np.sum(nbr_mask) >= 2:
+            w_n = qual_weights[nbr_mask]
+            z_tip_nbr[u] = float(np.sum(z_tops[nbr_mask] * w_n) / np.sum(w_n))
+        else:
+            z_tip_nbr[u] = float(z_tops[u])
+
+    x_feats = []
+    x_feats_26 = []
+    for u, p in enumerate(pool):
+        ras = p["ras"]
+        pr = prof_meta[u]
         d_base = float(np.hypot(p["base_xy"][0] - med_base[0], p["base_xy"][1] - med_base[1])) / 40.0
         d_slope = float(np.hypot(p["slope"][0] - med_slope[0], p["slope"][1] - med_slope[1])) / 0.25
         z_low = float(ras[0, 2] - z_base_ras) / 50.0
         z_high = float(ras[-1, 2] - z_base_ras) / 100.0
+        dz_prof = float(pr["z_prof_tip"] - ras[-1, 2]) / 20.0
+        dz_nbr = float(z_tip_nbr[u] - ras[-1, 2]) / 20.0
 
-        x_feats.append([
+        p["z_prof_tip"] = pr["z_prof_tip"]
+        p["z_tip_nbr"] = float(z_tip_nbr[u])
+        p["vx_top"] = pr["vx_top"]
+        p["vy_top"] = pr["vy_top"]
+        p["mean_sym"] = pr["mean_sym"]
+        p["frac_active"] = pr["frac_active"]
+
+        f18 = [
             p["conf_heur"], p["from_mpnn"], p["mpnn_pa"], p["mpnn_pl"], p["mpnn_pe"],
-            mean_pm, p75_pm, mean_pp, mean_po, max(mean_pm, mean_po),
+            pr["mean_pm"], pr["p75_pm"], pr["mean_pp"], pr["mean_po"], max(pr["mean_pm"], pr["mean_po"]),
             p["z_span"] / 60.0, p["rmse"], d_base, d_slope, z_low, z_high,
             float(p["slope"][0]), float(p["slope"][1]),
+        ]
+        x_feats.append(f18)
+        x_feats_26.append(f18 + [
+            pr["mean_sym"], pr["p75_sym"], pr["mean_cs"], pr["mean_rc"],
+            pr["frac_active"], pr["tip_sup_cur"], dz_prof, dz_nbr,
         ])
 
     x_arr = np.asarray(x_feats, dtype=np.float32)
+    x_arr_26 = np.asarray(x_feats_26, dtype=np.float32)
     adj_feat = np.zeros((M, M, 6), dtype=np.float32)
+    adj_feat_8 = np.zeros((M, M, 8), dtype=np.float32)
     adj_mask = np.zeros((M, M), dtype=np.float32)
     for u in range(M):
         for v in range(M):
@@ -1020,6 +1221,8 @@ def run_mpnn_and_graph_transformer(
             if db <= 35.0:
                 ds = float(np.hypot(pool[u]["slope"][0] - pool[v]["slope"][0], pool[u]["slope"][1] - pool[v]["slope"][1]))
                 sh_d = _traj_dist_np(pool[u]["ras"], pool[v]["ras"])
+                dz_t = float(z_tops[v] - z_tops[u]) / 30.0
+                z_ov = max(0.0, min(z_tops[u], z_tops[v]) - max(z_bots[u], z_bots[v])) / max(1.0, max(z_tops[u] - z_bots[u], z_tops[v] - z_bots[v]))
                 adj_mask[u, v] = 1.0
                 adj_feat[u, v] = [
                     db / 35.0, sh_d / 35.0, ds / 0.30,
@@ -1027,12 +1230,28 @@ def run_mpnn_and_graph_transformer(
                     float(x_arr[v, 5] - x_arr[u, 5]),
                     float(x_arr[v, 0] - x_arr[u, 0]),
                 ]
+                adj_feat_8[u, v] = [
+                    db / 35.0, sh_d / 35.0, ds / 0.30,
+                    1.0 if sh_d < 2.2 else 0.0,
+                    float(x_arr_26[v, 5] - x_arr_26[u, 5]),
+                    float(x_arr_26[v, 0] - x_arr_26[u, 0]),
+                    dz_t, z_ov,
+                ]
 
     try:
-        logits = gt_sess.run(None, {"x": x_arr, "adj_feat": adj_feat, "adj_mask": adj_mask})[0]
-        probs = 1.0 / (1.0 + np.exp(-np.clip(logits, -20.0, 20.0)))
+        logits_base = gt_sess.run(None, {"x": x_arr, "adj_feat": adj_feat, "adj_mask": adj_mask})[0]
+        probs_base = 1.0 / (1.0 + np.exp(-np.clip(logits_base, -20.0, 20.0)))
     except Exception:
         return [p["traj"] for p in pool if p["traj"].get("confidence", 0.0) >= float(min_confidence)]
+
+    tip_out = _forward_tip_bgt_numpy(x_arr_26, adj_feat_8, adj_mask, W_dict)
+    if tip_out is not None:
+        probs_syn = 1.0 / (1.0 + np.exp(-np.clip(tip_out[:, :3], -20.0, 20.0)))
+        probs = 0.42 * probs_base + 0.58 * probs_syn
+        dz_pred_net = tip_out[:, 3] * 15.0
+    else:
+        probs = probs_base
+        dz_pred_net = np.zeros(M, dtype=np.float32)
 
     conf_arr = np.zeros(M, dtype=np.float64)
     for i, p in enumerate(pool):
@@ -1049,13 +1268,39 @@ def run_mpnn_and_graph_transformer(
         t["graph_prob"] = float(0.45 * p_rec + 0.55 * p_1to1)
         conf_arr[i] = t["confidence"]
 
+    # IRGM implant centroid & radius in XY physical space
+    high_idx = np.where(conf_arr >= 55.0)[0]
+    if len(high_idx) >= 3:
+        all_xy = np.concatenate([pool[idx]["ras"][:, :2] for idx in high_idx], axis=0)
+        center_xy = np.median(all_xy, axis=0)
+        dists_core = np.linalg.norm(all_xy - center_xy[None, :], axis=1)
+        irgm_radius_mm = float(np.percentile(dists_core, 98.0)) + 15.5
+    else:
+        center_xy = None
+        irgm_radius_mm = 999.0
+
     out_trajs = []
     for idx_c in np.argsort(-conf_arr):
         if conf_arr[idx_c] < float(min_confidence):
             continue
-        cand = pool[idx_c]["traj"]
-        if any(_traj_dist_np(cand["ras"], s["ras"]) < 1.95 for s in out_trajs):
+        p_c = pool[idx_c]
+        cand = p_c["traj"]
+        pts = np.asarray(cand["ras"], dtype=np.float64)
+        if center_xy is not None:
+            if float(np.linalg.norm(pts[:, :2].mean(axis=0) - center_xy)) > irgm_radius_mm and conf_arr[idx_c] < float(min_confidence) + 20.0:
+                continue
+        if p_c.get("mean_sym", 0.5) < 0.14 and p_c.get("frac_active", 0.5) < 0.40 and conf_arr[idx_c] < float(min_confidence) + 15.0:
             continue
+        dedup_thresh = 1.60 if (conf_arr[idx_c] >= 65.0 and p_c.get("mpnn_pa", 0.0) >= 0.50) else 1.95
+        if any(_traj_dist_np(pts, s["ras"]) < dedup_thresh for s in out_trajs):
+            continue
+        if not script and tip_out is not None:
+            dz_prof_mm = float(p_c.get("z_prof_tip", pts[-1, 2]) - pts[-1, 2])
+            dz_nbr_mm = float(p_c.get("z_tip_nbr", pts[-1, 2]) - pts[-1, 2])
+            dz_comb_mm = 0.36 * (0.65 * float(dz_pred_net[idx_c]) + 0.25 * dz_prof_mm + 0.10 * dz_nbr_mm)
+            pts_ref = _apply_tip_adjustment_and_poly3_np(pts, dz_comb_mm, float(p_c.get("vx_top", 0.0)), float(p_c.get("vy_top", 0.0)))
+            cand["ras"] = pts_ref
+            cand["points"] = pts_ref
         out_trajs.append(cand)
 
     return out_trajs
