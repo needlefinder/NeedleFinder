@@ -1,0 +1,1448 @@
+% Options for packages loaded elsewhere
+\PassOptionsToPackage{unicode}{hyperref}
+\PassOptionsToPackage{hyphens}{url}
+\documentclass[
+  10pt]{article}
+\usepackage{xcolor}
+\usepackage[a4paper,textwidth=170mm,textheight=242mm,centering]{geometry}
+\usepackage{amsmath,amssymb}
+\setcounter{secnumdepth}{5}
+\usepackage{iftex}
+\ifPDFTeX
+  \usepackage[T1]{fontenc}
+  \usepackage[utf8]{inputenc}
+  \usepackage{textcomp} % provide euro and other symbols
+\else % if luatex or xetex
+  \usepackage{unicode-math} % this also loads fontspec
+  \defaultfontfeatures{Scale=MatchLowercase}
+  \defaultfontfeatures[\rmfamily]{Ligatures=TeX,Scale=1}
+\fi
+\usepackage{lmodern}
+\ifPDFTeX\else
+  % xetex/luatex font selection
+\fi
+% Use upquote if available, for straight quotes in verbatim environments
+\IfFileExists{upquote.sty}{\usepackage{upquote}}{}
+\IfFileExists{microtype.sty}{% use microtype if available
+  \usepackage[]{microtype}
+  \UseMicrotypeSet[protrusion]{basicmath} % disable protrusion for tt fonts
+}{}
+\makeatletter
+\@ifundefined{KOMAClassName}{% if non-KOMA class
+  \IfFileExists{parskip.sty}{%
+    \usepackage{parskip}
+  }{% else
+    \setlength{\parindent}{0pt}
+    \setlength{\parskip}{6pt plus 2pt minus 1pt}}
+}{% if KOMA class
+  \KOMAoptions{parskip=half}}
+\makeatother
+\usepackage{graphicx}
+\makeatletter
+\newsavebox\pandoc@box
+\newcommand*\pandocbounded[1]{% scales image to fit in text height/width
+  \sbox\pandoc@box{#1}%
+  \Gscale@div\@tempa{\textheight}{\dimexpr\ht\pandoc@box+\dp\pandoc@box\relax}%
+  \Gscale@div\@tempb{\linewidth}{\wd\pandoc@box}%
+  \ifdim\@tempb\p@<\@tempa\p@\let\@tempa\@tempb\fi% select the smaller of both
+  \ifdim\@tempa\p@<\p@\scalebox{\@tempa}{\usebox\pandoc@box}%
+  \else\usebox{\pandoc@box}%
+  \fi%
+}
+% Set default figure placement to htbp
+\def\fps@figure{htbp}
+\makeatother
+% definitions for citeproc citations
+\NewDocumentCommand\citeproctext{}{}
+\NewDocumentCommand\citeproc{mm}{%
+  \begingroup\def\citeproctext{#2}\cite{#1}\endgroup}
+\makeatletter
+ % allow citations to break across lines
+ \let\@cite@ofmt\@firstofone
+ % avoid brackets around text for \cite:
+ \def\@biblabel#1{}
+ \def\@cite#1#2{{#1\if@tempswa , #2\fi}}
+\makeatother
+\newlength{\cslhangindent}
+\setlength{\cslhangindent}{1.5em}
+\newlength{\csllabelwidth}
+\setlength{\csllabelwidth}{3em}
+\newenvironment{CSLReferences}[2] % #1 hanging-indent, #2 entry-spacing
+ {\begin{list}{}{%
+  \setlength{\itemindent}{0pt}
+  \setlength{\leftmargin}{0pt}
+  \setlength{\parsep}{0pt}
+  % turn on hanging indent if param 1 is 1
+  \ifodd #1
+   \setlength{\leftmargin}{\cslhangindent}
+   \setlength{\itemindent}{-1\cslhangindent}
+  \fi
+  % set entry spacing
+  \setlength{\itemsep}{#2\baselineskip}}}
+ {\end{list}}
+\usepackage{calc}
+\newcommand{\CSLBlock}[1]{\hfill\break\parbox[t]{\linewidth}{\strut\ignorespaces#1\strut}}
+\newcommand{\CSLLeftMargin}[1]{\parbox[t]{\csllabelwidth}{\strut#1\strut}}
+\newcommand{\CSLRightInline}[1]{\parbox[t]{\linewidth - \csllabelwidth}{\strut#1\strut}}
+\newcommand{\CSLIndent}[1]{\hspace{\cslhangindent}#1}
+\setlength{\emergencystretch}{3em} % prevent overfull lines
+\providecommand{\tightlist}{%
+  \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+% ---------- Typography & Colour System (Okabe-Ito Scientific Palette) ----------
+\setlength{\emergencystretch}{3em}
+\usepackage{xcolor}
+\usepackage{colortbl}
+\definecolor{nfst0}{HTML}{E69F00}   \definecolor{nfst0tint}{HTML}{F7ECCC}
+\definecolor{nfst1}{HTML}{0072B2}   \definecolor{nfst1tint}{HTML}{CCE3F0}
+\definecolor{nfst2}{HTML}{009E73}   \definecolor{nfst2tint}{HTML}{CCECE3}
+\definecolor{nfours}{HTML}{D55E00}  \definecolor{nfrow}{HTML}{FBEFE6}
+\definecolor{nfourstext}{HTML}{9E4400}
+\definecolor{nfgrey}{HTML}{4D4D4D}  \definecolor{nfrule}{HTML}{BFBFBF}
+\definecolor{nfctrow}{HTML}{F2F2F2}
+\definecolor{ctrow}{HTML}{F2F2F2}
+
+% ---------- Tables (Booktabs + ThreePartTable, Zero Longtable Wrapping) ----------
+\usepackage{booktabs,tabularx,threeparttable,multirow,makecell,array,etoolbox}
+\newcommand{\best}[1]{\textbf{#1}}
+\newcommand{\second}[1]{\underline{#1}}
+\newcommand{\TBD}{\textcolor{red}{\textbf{TBD}}}
+\newcommand{\rep}{\textsuperscript{r}}
+\newcommand{\oursrow}{\rowcolor{nfrow}}
+\newcommand{\ctrow}{\rowcolor{nfctrow}}
+\newcommand{\NF}{\textbf{NeedleFinder\,2026}}
+\newcommand{\Eshaft}{$E_{\mathrm{shaft}}$}
+\newcommand{\Etip}{$E_{\mathrm{tip}}$}
+\newcommand{\Davg}{$D_{\mathrm{avg}}$}
+\newcommand{\HD}{$\mathrm{HD}$}
+\newcolumntype{L}{>{\raggedright\arraybackslash}l}
+\newcolumntype{R}{>{\raggedleft\arraybackslash}r}
+\newcolumntype{C}{>{\centering\arraybackslash}c}
+\newcolumntype{Y}{>{\raggedright\arraybackslash}X}
+\setlength{\tabcolsep}{5.2pt}
+\renewcommand{\arraystretch}{1.15}
+\setlength{\aboverulesep}{0.4ex}
+\setlength{\belowrulesep}{0.55ex}
+\setlength{\cmidrulewidth}{0.4pt}
+
+% ---------- Captions & Float Control ----------
+\usepackage[font=small,labelfont=bf,labelsep=period,justification=justified,singlelinecheck=false,skip=5pt]{caption}
+\captionsetup[table]{position=top}
+\usepackage{placeins}
+\usepackage{float}
+\renewcommand{\topfraction}{0.92}
+\renewcommand{\bottomfraction}{0.85}
+\renewcommand{\textfraction}{0.06}
+\renewcommand{\floatpagefraction}{0.82}
+\setcounter{topnumber}{4}
+\setcounter{totalnumber}{5}
+\usepackage{rotating}
+\AtBeginDocument{\hypersetup{colorlinks=true,linkcolor=nfst1,citecolor=nfst1,urlcolor=nfst1}}
+\usepackage{bookmark}
+\IfFileExists{xurl.sty}{\usepackage{xurl}}{} % add URL line breaks if available
+\urlstyle{same}
+\hypersetup{
+  pdftitle={Sub-Millimeter 3D Catheter Reconstruction in MR-Guided Interstitial Gynecologic Brachytherapy via Physics-Informed Multi-Head 3D U-Nets and Bundle Graph Transformers},
+  pdfauthor={Guillaume Pernelle, Paolo Zaffino, Lauren Barber, Alireza Mehrtash,; Christiane Yeung, Tina Kapur, and Collaborators},
+  hidelinks,
+  pdfcreator={LaTeX via pandoc}}
+
+\title{Sub-Millimeter 3D Catheter Reconstruction in MR-Guided
+Interstitial Gynecologic Brachytherapy via Physics-Informed Multi-Head
+3D U-Nets and Bundle Graph Transformers}
+\author{Guillaume Pernelle, Paolo Zaffino, Lauren Barber, Alireza
+Mehrtash, \and Christiane Yeung, Tina Kapur, and Collaborators}
+\date{October 2026 (Target Journal: \emph{Physics in Medicine \&
+Biology})}
+
+\begin{document}
+\maketitle
+\begin{abstract}
+\textbf{Objective.} Magnetic resonance (MR)-only adaptive high-dose-rate
+(HDR) interstitial gynecologic brachytherapy has become the
+international clinical standard following the EMBRACE II protocol and
+the 2025 AAPM Task Group 317 recommendations. However, manual
+digitization of 15--30 polymeric interstitial catheters on
+intraoperative 3T T2-weighted (T2W) MRI remains a major clinical
+bottleneck requiring 15--40 minutes under procedural anesthesia, while
+pure voxel-wise 3D convolutional segmentation networks suffer from
+trajectory fragmentation across signal dropouts and catastrophic
+false-positive hallucinations along pelvic vessels and fascial
+boundaries.
+
+\textbf{Approach.} Continuing our multi-institutional research lineage
+on catheter digitization at Brigham and Women's Hospital (Pernelle
+\emph{et al.} MICCAI 2013; Mastmeyer \emph{et al.} 2017; Zaffino
+\emph{et al.} \emph{Phys. Med. Biol.} 2019), we present
+\textbf{NeedleFinder 2026}, a two-stage physics-informed deep learning
+and relational 3D graph architecture evaluated across 54 clinical 3T T2W
+MRI datasets containing 1,063 expert-contoured trajectories (759
+full-depth interstitial shafts and 304 short/obturator reference tracks)
+plus 48 public needle-free 3T pelvic MRI volumes
+(\texttt{MSD\ Task05\_Prostate}). Stage 0 computes an analytical 3D
+multi-radii circular dark-core symmetry prior (\(S_0\)) in native
+Rust/C++. Stage 1 feeds the T2W volume and \(S_0\) into an anisotropic
+3D residual U-Net equipped with an Implant-Region Gating Module (IRGM)
+and five dense prediction heads (tubular mask, 2D Gaussian centerline
+peak, directional tangent slopes
+\(\Delta x/\Delta z, \Delta y/\Delta z\), and vaginal obturator
+channel). Stage 2 constructs a 3D multi-slice candidate graph and
+applies a 4-layer Triplet Message-Passing Neural Network
+(\texttt{NeedleSliceMPNN}) with synchronous Hungarian cost-matrix
+adhesion separation, followed by a global
+\texttt{BundleGraphTransformer} (2-layer Edge-Biased Graph Attention
+Network + 2-layer Set Transformer) and 3rd-order polynomial trajectory
+regularization (\texttt{Poly3}).
+
+\textbf{Main results.} Under strict patient-level 5-fold out-of-fold
+cross-validation across all 1,063 catheters, \textbf{NeedleFinder 2026 +
+IRGM + Poly3} achieves \textbf{89.8\% one-to-one Hungarian recall,
+82.5\% precision, and 86.0\% F1} (and \textbf{92.8\% recall} at
+\(\tau=25\%\), \textbf{95.3\% recall} on the 759 long interstitial
+shafts), outperforming re-implemented isotropic 3D U-Net + DBSCAN
+(\texttt{PMB\ 2019}: 81.3\% F1, \(p = 0.0085\)), native-resolution 3D
+ResUNet + \texttt{clDice} + skeletonization (37.9\% F1,
+\(p = 1.98 \times 10^{-10}\)), and structure-aware 3D Hough +
+synchronous inward cost-matrix tracking (\texttt{Xiao\ et\ al.\ 2026}:
+53.7\% F1, \(p = 3.97 \times 10^{-10}\)). Across matched shafts,
+\textbf{NeedleFinder 2026} achieves a mean in-plane localization error
+of \textbf{\(0.57 \pm 0.36\text{ mm}\) (\(0.46\text{ mm}\) median;
+\(0.43\text{ mm}\) median on long shafts)} and reduces 3D distal-tip
+error by 44\% (\(15.64 \to 8.70\text{ mm}\) mean, \(2.82\text{ mm}\)
+median, \(p = 8.19 \times 10^{-9}\)). On a 40-patient dual-observer
+cohort (\texttt{CY} vs.~\texttt{LB}/\texttt{AMe}, 481 paired
+trajectories), algorithm-to-human agreement
+(\(0.55 \pm 0.36\text{ mm}\), median \(0.45\text{ mm}\), P95
+\(1.19\text{ mm}\)) surpasses human inter-observer agreement
+(\(0.71 \pm 0.58\text{ mm}\), median \(0.51\text{ mm}\), P95
+\(2.02\text{ mm}\), \(p < 10^{-4}\)). In few-shot clinical training, the
+analytical Stage 0 radial prior + IRGM enables \textbf{84.0\% F1 with
+only \(k=5\) annotated training patients} (recovering 97.7\% of full
+43-patient accuracy without synthetic data generation), while achieving
+\textbf{0.38 false-positive tracks per volume (median 0.0)} on 48
+out-of-distribution needle-free pelvic MRI volumes in
+\textbf{\(0.61\text{ s}\) on CPU (\(0.35\text{ s}\) on GPU)}.
+
+\textbf{Significance.} Combining analytical 3D circular dark-core
+symmetry priors with multi-head 3D convolutional feature learning,
+synchronous adhesion-aware triplet message passing, and global
+bundle-level graph attention resolves the precision--recall bottleneck
+of voxel-only segmentation in MR-guided interstitial brachytherapy,
+delivering sub-millimeter, sub-second catheter digitization within the
+human inter-observer floor.
+\end{abstract}
+
+\section{Introduction}\label{introduction}
+
+\subsection{Clinical Evolution of MR-Guided Interstitial Gynecologic
+Brachytherapy
+(2013--2026)}\label{clinical-evolution-of-mr-guided-interstitial-gynecologic-brachytherapy-20132026}
+
+Image-guided adaptive brachytherapy (IGABT) is the cornerstone of
+definitive radiotherapy for locally advanced cervical, vaginal, and
+recurrent endometrial malignancies (Pötter et al. 2018, 2021). Over the
+past decade, multi-institutional prospective outcomes from the EMBRACE I
+and EMBRACE II studies (Pötter et al. 2018, 2021) have demonstrated that
+escalating the dose to the high-risk clinical target volume
+(\(\text{CTV}_{\text{HR}} D_{90} > 85\text{--}90\text{ Gy }\text{EQD2}_{10}\))
+while respecting strict organ-at-risk (OAR) constraints for the bladder,
+rectum, and sigmoid colon yields 5-year local control rates exceeding
+92\%. Achieving this therapeutic window in patients with large,
+asymmetric, or parametrial-invading tumors requires combined
+intracavitary and interstitial (IC/IS) applicators---where a central
+tandem and vaginal obturator or ring are supplemented by 10 to 30
+titanium or polymeric interstitial needles inserted through perineal
+templates (such as the Syed-Neblett or Venezia/Geneva templates) or
+freehand (Mastmeyer et al. 2017; Zaffino et al. 2019; Beaulieu et al.
+2025).
+
+While computed tomography (CT) provides high Hounsfield contrast for
+metallic stylets or air-filled catheter lumens, soft-tissue delineation
+of the gross tumor volume and parametrial extension requires T2-weighted
+(T2W) magnetic resonance imaging (MRI). Historically, many clinics
+acquired both a post-implant MRI and a planning CT, relying on
+deformable or rigid image registration that introduces
+\(1\text{--}3\text{ mm}\) systematic fusion uncertainties (Schindel et
+al. 2013). Consequently, recent consensus guidelines---including the
+2025 American Association of Physicists in Medicine (AAPM) Task Group
+317 report on high-dose-rate (HDR) brachytherapy treatment planning
+(Beaulieu et al. 2025) and Medical Physics Practice Guideline (MPPG)
+13.a (Richardson et al. 2025)---strongly endorse transitioning toward
+\textbf{pure MR-only adaptive brachytherapy workflows} (Deufel et al.
+2024; Moradi et al. 2025).
+
+However, catheter reconstruction on clinical 3T pelvic T2W MRI remains
+the single most error-prone and labor-intensive step in an MR-only
+workflow (Zaffino et al. 2019; Xiao, Liu, et al. 2026). Because
+High-Dose-Rate \(^{192}\text{Ir}\) sources exhibit an inverse-square
+dose gradient of approximately
+\(6\%\text{--}12\%\text{ per millimeter}\) within the target volume
+(Tanderup et al. 2008; Schindel et al. 2013), a
+\(1.5\text{--}2.0\text{ mm}\) catheter shaft or tip reconstruction error
+translates into a \(10\%\text{--}20\%\) dosimetric deviation to
+\(\text{CTV}_{\text{HR}}\) and adjacent OARs. On spin-echo T2W MRI, 6F
+(\(2.0\text{ mm}\) diameter) plastic catheters contain no water protons
+and manifest only as small signal voids (``dark holes'' of 3--5 pixels
+in-plane) embedded within heterogeneous pelvic anatomy containing signal
+dropouts, chemical-shift artifacts, periprostatic/parametrial blood
+vessels, calcifications, air pockets, and dark muscular fascial planes.
+Manually digitizing 20--28 catheters slice-by-slice takes an experienced
+medical physicist 15 to 40 minutes while the patient remains immobilized
+under general anesthesia or conscious sedation (Zaffino et al. 2019; Xie
+et al. 2023; Xiao, Zhou, et al. 2026).
+
+\begin{figure}
+\centering
+\includegraphics[width=1\linewidth,height=\textheight,keepaspectratio]{../reports/figures/fig1_pipeline_overview.pdf}
+\caption{\textbf{Overview of the NeedleFinder 2026 two-stage
+physics-informed deep learning and 3D graph architecture.} Given a
+clinical 3T T2W pelvic MRI volume (Case 017, 26 interstitial catheters +
+vaginal obturator), \textbf{Stage 0} computes an analytical 3D
+multi-radii circular dark-core symmetry prior \(S_0\) in native Rust/C++
+(\(60\text{ ms}\)). \textbf{Stage 1} applies an anisotropic 3D residual
+U-Net with an Implant-Region Gating Module (IRGM) to predict dense
+centerline peaks, tangent slopes, and obturator masks (\(455\text{ ms}\)
+CPU / \(220\text{ ms}\) GPU). \textbf{Stage 2} links slice candidates
+via a 4-layer Triplet Message-Passing Neural Network
+(\texttt{NeedleSliceMPNN}) with synchronous Hungarian adhesion
+resolution (\(65\text{ ms}\)) and prunes anatomical false positives
+globally via a \texttt{BundleGraphTransformer} + 3rd-order polynomial
+trajectory regularization (\(30\text{ ms}\)), completing full-volume
+reconstruction in \(0.61\text{ s}\) on CPU (\(0.35\text{ s}\) on
+GPU).}\label{fig:overview}
+\end{figure}
+
+\subsection{Related Work and Scientific Lineage
+(2013--2026)}\label{related-work-and-scientific-lineage-20132026}
+
+Automated catheter and needle digitization has evolved through three
+distinct algorithmic generations over the past decade:
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  \textbf{Analytical Tubular Filters and Model-Based Tracking
+  (2013--2017):} Early approaches relied on geometric image processing
+  and Sequential Monte Carlo tracking. In our initial work on the
+  Brigham and Women's Hospital (BWH) Advanced Multimodality Image-Guided
+  Operating (AMIGO) suite cohort, Pernelle \emph{et al.} (2013)
+  introduced an elliptical template-matching likelihood coupled with a
+  particle filter initialized from the Syed-Neblett perineal template,
+  achieving \(1.05\text{ mm}\) mean shaft error across 187 catheters in
+  15 patients. Mastmeyer, Pernelle \emph{et al.} (2017) extended this
+  physical modeling with multi-step directional compass filters and
+  dynamic programming across 19 patients (260 catheters). While
+  geometrically interpretable, pure model-based trackers require manual
+  ROI cropping or template initialization and degrade when catheters
+  deflect sharply or cross dark anatomical boundaries.
+\item
+  \textbf{Voxel-Wise 3D Convolutional Segmentation + Heuristic
+  Post-Processing (2019--2025):} To eliminate manual initialization,
+  Zaffino, Pernelle \emph{et al.} (2019) (\emph{Physics in Medicine \&
+  Biology}, 2019) pioneered 3D U-Net voxel segmentation on 50 clinical
+  3T gynecologic MRI scans (41 training/validation cases with 760
+  catheters and 9 test cases with 153 catheters), followed by 2D
+  Hough-transform axis alignment and DBSCAN density clustering,
+  achieving \(88.2\%\) recall, \(69.8\%\) precision, and
+  \(2.00 \pm 1.50\text{ mm}\) mean shaft error in \(\sim 90\text{ s}\)
+  per patient. Related 3D CNN and nnU-Net (2021) pipelines were
+  subsequently investigated for transperineal prostate MRI biopsies
+  (Mehrtash et al. 2019), CT brachytherapy (Jung et al. 2019; Dai et al.
+  2020; Weishaupt et al. 2022; Aleong et al. 2024; Cantin et al. 2024;
+  Quetin et al. 2025), and gynecologic MRI (Shaaer et al. 2022; Xie et
+  al. 2023; Wang et al. 2024; Zhou et al. 2024; Kostoulas et al. 2025).
+  Despite architectural advances such as centerline-Dice
+  (\texttt{clDice}) topology-preserving losses (Shit et al. 2021), pure
+  voxel segmentation followed by morphological skeletonization suffers
+  from two fundamental failure modes on clinical T2W MRI: (i)
+  \textbf{trajectory fragmentation}, where a single-slice MRI signal
+  dropout splits one physical catheter into 2--4 disconnected segments,
+  and (ii) \textbf{anatomical false-positive hallucinations}, where
+  blood vessels, rectovaginal septa, and obturator internus tendons are
+  segmented as short tubular fragments.
+\item
+  \textbf{Structure-Aware Synchronous Tracking and Graph Neural Networks
+  (2025--2026):} Most recently, Xiao \emph{et al.} (2026; 2026)
+  (\texttt{arXiv:2607.11290}, July 2026) highlighted two critical
+  challenges that degrade standard deep learning pipelines in
+  multi-catheter brachytherapy: \textbf{catheter adhesion} (where
+  \(\ge 2\) adjacent shafts approach within \(\le 3.0\text{ mm}\) or
+  cross on axial slices, causing greedy nearest-neighbor trackers to
+  swap identities or merge shafts) and \textbf{clinical annotation
+  scarcity}. To address these on multi-catheter datasets, Xiao \emph{et
+  al.} (2026) proposed an \textbf{Implant-Region Gating Module (IRGM)}
+  to suppress out-of-implant background features, a
+  \textbf{direction-constrained 3D Hough transform + intensity-weighted
+  local PCA} for shaft direction estimation, and \textbf{synchronous
+  inward cost-matrix tracking} via the Hungarian algorithm followed by
+  \textbf{3rd-order polynomial trajectory fitting}. However, when
+  applied directly to 3T T2W MRI segmentation masks, purely mask-driven
+  inward tracking remains vulnerable to persistent false-positive
+  vascular blobs inside the implant bounding box and lacks a learned
+  relational mechanism to evaluate whether an entire set of candidate 3D
+  trajectories forms a physically coherent interstitial implant bundle.
+\end{enumerate}
+
+\subsection{Contributions of This
+Work}\label{contributions-of-this-work}
+
+In this paper, we bridge the gap between analytical physics priors,
+dense 3D convolutional feature learning, synchronous adhesion-aware
+tracking, and relational 3D graph reasoning on the expanded 54-patient
+(\textbf{1,063-catheter}) BWH clinical 3T T2W MRI cohort:
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  \textbf{Two-Stage Physics + Multi-Head 3D U-Net + Relational Graph
+  Architecture (\texttt{NeedleFinder\ 2026}):} We combine a
+  zero-parameter Stage 0 Rust/C++ 3D multi-radii circular dark-core
+  symmetry filter (\(S_0\)) with a 5-head anisotropic 3D residual U-Net
+  (\texttt{NeedleUNet3D}) enhanced by an Implant-Region Gating Module
+  (IRGM), a 4-layer Triplet Message-Passing Neural Network
+  (\texttt{NeedleSliceMPNN}) with synchronous Hungarian cost-matrix
+  tracking, and a global \texttt{BundleGraphTransformer} with 3rd-order
+  polynomial regularization (\texttt{Poly3}).
+\item
+  \textbf{Rigorous Head-to-Head 5-Fold Cross-Validation Against Modern
+  Baselines:} To eliminate historical evaluation discrepancies across
+  cohorts and matching rules, we re-implement and evaluate three
+  representative external paradigms on identical 5-fold patient-level
+  splits of all 54 patients (1,063 catheters) and on the \textbf{Severe
+  Catheter-Adhesion Subgroup} (23 patients, 233 catheters approaching
+  within \(\le 3.0\text{ mm}\)): (i) \texttt{PMB\ 2019} Isotropic
+  \(1\text{ mm}^3\) 3D U-Net + DBSCAN/Skeleton (Zaffino et al. 2019),
+  (ii) Native-Resolution 3D ResUNet + \texttt{clDice} + Morphological
+  Skeletonization (Isensee et al. 2021; Shit et al. 2021), and (iii)
+  \texttt{Xiao\ 2026} IRGM + Direction-Constrained 3D Hough +
+  Synchronous Inward Cost-Matrix Tracking + \texttt{Poly3} (Xiao, Liu,
+  et al. 2026), alongside an oracle ground-truth mask evaluation.
+\item
+  \textbf{Human Inter-Observer Equivalence, Few-Shot Annotation
+  Efficiency, and Zero-Needle Specificity:} Across 40 dual-contoured
+  clinical scenes (481 paired trajectories digitized independently by
+  expert teams \texttt{CY} and \texttt{LB}/\texttt{AMe}), we demonstrate
+  that \texttt{NeedleFinder\ 2026} achieves lower shaft discrepancy
+  (\(0.55\text{ mm}\) mean, \(0.45\text{ mm}\) median) than human
+  inter-observer variability (\(0.71\text{ mm}\) mean,
+  \(0.51\text{ mm}\) median). Furthermore, we evaluate clinical
+  annotation budgets of \(k \in \{0, 1, 5, 10, 20, 43\}\) training
+  patients per fold---showing that our analytical Stage 0 radial prior +
+  IRGM achieves \textbf{84.0\% F1 with only 5 training patients} without
+  requiring synthetic data generation---and benchmark zero-needle
+  out-of-distribution specificity on 48 public 3T pelvic T2W MRI volumes
+  (\texttt{MSD\ Task05\_Prostate}).
+\end{enumerate}
+
+\FloatBarrier
+
+\section{Materials and Methods}\label{materials-and-methods}
+
+\subsection{Clinical Patient Cohorts and Public Specificity
+Benchmark}\label{clinical-patient-cohorts-and-public-specificity-benchmark}
+
+\input{tables/tab1_cohorts.tex}
+
+Table \ref{tbl:cohorts} summarizes the clinical and public imaging
+cohorts evaluated in this study. Our primary clinical cohort comprises
+54 intraoperative 3T T2-weighted turbo spin-echo (T2W TSE) MRI datasets
+acquired during MR-guided interstitial gynecologic brachytherapy in the
+AMIGO suite at Brigham and Women's Hospital (Harvard Medical School,
+Boston, MA, USA) under Institutional Review Board approval (Pernelle et
+al. 2013; Mastmeyer et al. 2017; Zaffino et al. 2019). This 54-patient
+cohort represents the complete consolidated superset of the 15-patient
+MICCAI 2013 dataset (Pernelle et al. 2013) and the 41-patient PMB 2019
+cohort (Zaffino et al. 2019), expanded with 13 additional clinical
+implants. Across all 54 patients, expert medical physicists digitized
+\textbf{1,063 reference 3D trajectories} (\texttt{6\ to\ 34} per
+patient, mean \(19.7 \pm 6.4\)), comprising \textbf{759 full-depth
+active interstitial catheters} (tracked axial span \(\ge 30\text{ mm}\))
+and \textbf{304 short or partial-FOV reference trajectories and vaginal
+obturator tracks} (\(< 30\text{ mm}\)). In-plane pixel spacing ranges
+from \(0.27 \times 0.27\text{ mm}^2\) to
+\(0.75 \times 0.75\text{ mm}^2\) with axial slice thickness
+\(\Delta z \in [1.6, 3.0]\text{ mm}\) (anisotropy ratio \(4:1\) to
+\(9:1\)).
+
+Following Xiao \emph{et al.} (2026), we partition the 54 clinical cases
+into a \textbf{Whole Cohort} (54 patients, 1,063 catheters) and a
+\textbf{Severe Catheter-Adhesion Subgroup} comprising the \textbf{23/54
+patients (42.6\%)} containing \textbf{233 total catheters (194 long
+shafts)} where at least two ground-truth catheter centerlines approach
+within a Euclidean distance \(\le 3.0\text{ mm}\) across \(\ge 3\)
+consecutive axial slices. In addition, \textbf{40 clinical scenes} were
+independently contoured by two expert observer groups (\texttt{CY}: 505
+active MRML trajectories; \texttt{LB}/\texttt{AMe}: 513 trajectories),
+yielding 481 one-to-one Hungarian matched human trajectory pairs within
+\(3.5\text{ mm}\) to establish the empirical human inter-observer floor.
+Finally, to evaluate out-of-distribution false-positive specificity on
+complex pelvic anatomy containing zero catheters, we evaluate all 48
+clinical 3T axial T2W TSE pelvic MRI volumes from the public
+\textbf{Medical Segmentation Decathlon (MSD) \texttt{Task05\_Prostate}}
+benchmark (\(0.60\text{--}0.75\text{ mm}\) in-plane,
+\(3.0\text{--}4.0\text{ mm}\) slice thickness).
+
+\subsection{Stage 0: Analytical 3D Multi-Radii Circular Dark-Core
+Symmetry
+Prior}\label{stage-0-analytical-3d-multi-radii-circular-dark-core-symmetry-prior}
+
+A fundamental physical property distinguishing a polymeric brachytherapy
+catheter from a dark tissue boundary or vessel wall on axial T2W MRI is
+\textbf{radial contrast symmetry}: whereas a fascial plane or muscle
+border exhibits a one-sided intensity step edge, an axial catheter
+cross-section forms a localized dark core surrounded across all
+\(360^\circ\) of azimuth by brighter tissue. In Stage 0, we compute a
+zero-parameter analytical 3D circular dark-core symmetry prior
+\(S_0(x, y, z)\) implemented in multi-threaded native Rust/C++
+(\texttt{rayon} + \texttt{PyO3}).
+
+For each voxel \((x, y, z)\) on axial slice \(z\) with in-plane spacing
+\((s_x, s_y)\), we sample \(M = 8\) azimuthal directions
+\(\theta_m = m\pi/4\) (\(m \in \{0, \dots, 7\}\)) at multiple physical
+radii \(r \in \mathcal{R} = \{1.0, 1.5, 2.2, 3.0\}\text{ mm}\). Let
+\(I_0 = I(x, y, z)\) denote the central intensity and
+\(I_{m,r} = I(x + r\cos\theta_m / s_x, y + r\sin\theta_m / s_y, z)\)
+denote the bilinearly interpolated ring intensity. To enforce strict
+azimuthal completeness while suppressing one-sided edges, we pair
+opposite directions \((m, m+4)\) across 4 diameters and define the
+multi-radii dark-core symmetry response:
+\[S_{\text{2D}}(x,y,z) = \max_{r \in \mathcal{R}} \left[ \min_{d \in \{0,1,2,3\}} \max\!\left(0,\, \min(I_{d,r}, I_{d+4,r}) - I_0\right) \cdot \exp\!\left(-\frac{\sigma_{\theta,r}}{2\mu_{\theta,r} + \epsilon}\right) \right]\]
+where \(\mu_{\theta,r}\) and \(\sigma_{\theta,r}\) are the mean and
+standard deviation of \(\{I_{m,r} - I_0\}_{m=0}^7\). Taking the minimum
+across opposite diameters guarantees that \(S_{\text{2D}} = 0\) along
+planar tissue interfaces where one side of the ring remains dark. We
+then aggregate \(S_{\text{2D}}\) across adjacent slices
+\(\{z-1, z, z+1\}\) within a \(35^\circ\) physical deflection cone to
+obtain the 3D tubular symmetry prior \(S_0(x,y,z) \in [0, 1]\),
+executing in \(60\text{ ms}\) per volume on an 8-core CPU.
+
+\begin{figure}
+\centering
+\includegraphics[width=1\linewidth,height=\textheight,keepaspectratio]{../reports/figures/fig2_architecture_modules.pdf}
+\caption{\textbf{Detailed architecture of Stage 1 and Stage 2 modules.}
+\textbf{(a)} Stage 1 feeds the normalized 3T T2W volume \(I(x,y,z)\) and
+the analytical Stage 0 radial dark-core prior \(S_0(x,y,z)\) into an
+anisotropic 3D residual U-Net (\texttt{NeedleUNet3D}) equipped with
+Squeeze-and-Excitation (SE) blocks and an Implant-Region Gating Module
+(IRGM) that modulates decoder features via
+\(g = \sigma(W_g * [F ; S_0])\), predicting five dense output heads
+(\(P_{\text{mask}}, P_{\text{peak}}, V_x, V_y, P_{\text{obt}}\)).
+\textbf{(b)} Stage 2 links 2D slice peaks across consecutive slices
+\((z-1, z, z+1)\) using a 4-layer Triplet Message-Passing Neural Network
+(\texttt{NeedleSliceMPNN}) with synchronous Hungarian cost-matrix
+adhesion separation, followed by a global
+\texttt{BundleGraphTransformer} (2-layer Edge-Biased GAT + 2-layer Set
+Transformer) and 3rd-order polynomial trajectory regularization
+(\texttt{Poly3}).}\label{fig:arch}
+\end{figure}
+
+\subsection{Stage 1: Multi-Head Anisotropic 3D ResUNet with
+Implant-Region Gating
+(IRGM)}\label{stage-1-multi-head-anisotropic-3d-resunet-with-implant-region-gating-irgm}
+
+Standard isotropic resampling (\(1 \times 1 \times 1\text{ mm}^3\))
+blurs \(0.27\text{ mm}\) in-plane catheter voids by a factor of
+\(3.7\times\), destroying sub-millimeter shaft boundaries. Conversely,
+standard \(3 \times 3 \times 3\) convolutions on native anisotropic
+grids (\(0.27 \times 0.27 \times 2.5\text{ mm}^3\)) mix features across
+10x larger physical distances along \(z\) than in \((x,y)\). As
+illustrated in Figure \ref{fig:arch}(a), Stage 1 (\texttt{NeedleUNet3D})
+operates on the native high-resolution grid using a 2-channel input
+\([I_{\text{norm}}(x,y,z),\, S_0(x,y,z)]\) and employs
+\textbf{anisotropic \(1 \times 3 \times 3\) in-plane residual blocks} at
+full resolution before transitioning to 3D \(3 \times 3 \times 3\)
+residual blocks with Squeeze-and-Excitation (SE) channel attention at
+deeper scales (\texttt{32\ -\textgreater{}\ 64\ -\textgreater{}\ 128}
+channels).
+
+To prevent false-positive activations in peripheral pelvic musculature
+and bowel loops outside the interstitial implant envelope, we integrate
+a physics-conditioned \textbf{Implant-Region Gating Module (IRGM)}
+inspired by Xiao \emph{et al.} (2026). Whereas Xiao \emph{et al.} train
+an auxiliary binary region branch from scratch, we condition our IRGM
+directly on the analytical Stage 0 dark-core hull
+\(\mathcal{G}_{\sigma}(S_0 > \eta)\) alongside multi-scale decoder
+features \(F\):
+\[g = \sigma\!\left(W_g * [F \,;\, S_0]\right), \qquad \tilde{F} = F \odot (1 + g) \cdot \mathcal{G}_{\sigma}(S_0 > \eta)\]
+where \(\mathcal{G}_{\sigma}\) is a smooth 3D Gaussian spatial envelope
+(\(\sigma_{xy} = 3.5,\, \sigma_z = 0.7\) voxels) around the implant
+core. From the gated full-resolution feature map \(\tilde{F}\),
+\texttt{NeedleUNet3D} predicts \textbf{five complementary output heads}:
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  \textbf{Tubular Mask Probability (\(P_{\text{mask}} \in [0,1]\)):}
+  Supervised by a weighted binary cross-entropy (BCE) + soft Dice loss
+  (\(\mathcal{L}_{\text{mask}}\)) on a \(1.5\text{ mm}\) radius cylinder
+  around each GT trajectory.
+\item
+  \textbf{Sub-Voxel 2D Gaussian Centerline Peak
+  (\(P_{\text{peak}} \in [0,1]\)):} Supervised by a focal MSE loss
+  (\(\mathcal{L}_{\text{peak}}\)) against a sharp 2D Gaussian heatmap
+  (\(\sigma = 0.85\text{ mm}\)) centered at the exact sub-pixel slice
+  intersection \((x_c(z), y_c(z))\) of each catheter, enabling natural
+  separation of touching shafts whose binary masks merge.
+\item
+  \textbf{3D Directional Tangent Vector Field
+  (\(V_x = \Delta x / \Delta z,\, V_y = \Delta y / \Delta z\)):}
+  Supervised by a smooth \(L_1\) loss (\(\mathcal{L}_{\text{vec}}\))
+  within foreground tubular masks, providing local 3D trajectory slope
+  estimates at every voxel.
+\item
+  \textbf{Dedicated Vaginal Obturator Channel
+  (\(P_{\text{obt}} \in [0,1]\)):} Explicitly segments the large central
+  vaginal obturator / tandem assembly (\(\mathcal{L}_{\text{obt}}\)) to
+  prevent its central lumen or outer perimeter from generating spurious
+  interstitial needle tracks.
+\end{enumerate}
+
+As a controlled Stage 1 architectural ablation, we also evaluate
+\texttt{AxialTransUNet3D}, which augments the 3D ResUNet bottleneck with
+a 2-layer Multi-Head Self-Attention (MHSA) Transformer across the axial
+depth dimension \(Z\).
+
+\subsection{Stage 2: Synchronous Triplet MPNN, Bundle Graph Transformer,
+and Polynomial
+Regularization}\label{stage-2-synchronous-triplet-mpnn-bundle-graph-transformer-and-polynomial-regularization}
+
+To link 2D slice detections into smooth, unfragmented 3D catheter
+trajectories while resolving catheter adhesion and rejecting anatomical
+false positives, Stage 2 operates on two hierarchical geometric graphs
+(Figure \ref{fig:arch}(b)):
+
+\subsubsection{\texorpdfstring{Stage 2A: 3D Slice Graph and Triplet
+Message-Passing Neural Network
+(\texttt{NeedleSliceMPNN})}{Stage 2A: 3D Slice Graph and Triplet Message-Passing Neural Network (NeedleSliceMPNN)}}\label{stage-2a-3d-slice-graph-and-triplet-message-passing-neural-network-needleslicempnn}
+
+On each axial slice \(z\), local maxima of \(P_{\text{peak}}\) and Stage
+0 symmetry peaks form candidate 2D nodes \(v_i^z \in \mathcal{V}\)
+characterized by a 16-dimensional feature vector
+\(\mathbf{x}_i \in \mathbb{R}^{16}\) encoding normalized 3D coordinates,
+\(P_{\text{mask}}\), \(P_{\text{peak}}\), \(S_0\), local \(3 \times 3\)
+intensity statistics, predicted slopes \((V_x, V_y)\), and obturator
+proximity \(P_{\text{obt}}\). Directed inter-slice edges
+\(e_{ij} = (v_i^z, v_j^{z+\Delta k})\) connect nodes across step sizes
+\(\Delta k \in \{1, 2, 3\}\) within a physical deflection cone
+(\(\|\Delta\mathbf{xy}\| \le 5.5\text{ mm}\)), with 12-dimensional edge
+features \(\mathbf{e}_{ij} \in \mathbb{R}^{12}\) capturing
+\(\Delta x, \Delta y, \Delta z\), chord slope, and alignment with the
+Stage 1 tangent field \((V_x, V_y)\).
+
+Because standard pairwise GNNs cannot penalize second-order trajectory
+kinks (bending energy \(\kappa_{ijk}\)), we design a \textbf{4-layer
+Triplet Message-Passing Neural Network (\texttt{NeedleSliceMPNN}, hidden
+dimension 64)} that computes collinearity-aware messages across
+consecutive edge triplets \((e_{ij}, e_{jk})\) spanning
+\((v_i^{z-1} \to v_j^z \to v_k^{z+1})\):
+\[\mathbf{m}_{ijk}^{(l)} = \phi_{\text{tri}}^{(l)}\!\left(\mathbf{h}_i^{(l)},\, \mathbf{h}_j^{(l)},\, \mathbf{h}_k^{(l)},\, \mathbf{e}_{ij}^{(l)},\, \mathbf{e}_{jk}^{(l)},\, \cos\theta_{ijk},\, \|\mathbf{s}_{ij} - \mathbf{s}_{jk}\|_2\right)\]
+where \(\cos\theta_{ijk}\) is the 3D cosine collinearity between
+incoming chord \(e_{ij}\) and outgoing chord \(e_{jk}\), and
+\(\|\mathbf{s}_{ij} - \mathbf{s}_{jk}\|_2\) is the slope discrepancy.
+Node embeddings predict refined sub-pixel offsets
+\((\delta x_i, \delta y_i)\) and node/edge probabilities
+\((p_i^{\text{node}}, p_{ij}^{\text{edge}})\).
+
+To resolve \textbf{catheter adhesion} where two shafts approach within
+\(\le 3.0\text{ mm}\) or cross on shared slices, we replace greedy
+single-track linking with \textbf{synchronous Hungarian cost-matrix
+tracking} across slices (Xiao, Liu, et al. 2026). At each slice
+transition \(z \to z+1\), active tracks \(\mathcal{T}_z\) and candidate
+slice detections \(\mathcal{D}_{z+1}\) are matched simultaneously by
+solving the linear assignment problem
+\(\min_{\Pi} \sum_{a,b} C_{a,b} \Pi_{a,b}\) with composite cost:
+\[C_{a,b} = w_{\text{dist}} \|\hat{\mathbf{p}}_a(z+1) - \mathbf{p}_b\|_2 + w_{\text{dir}}(1 - \cos\theta_{a,b}) - w_{\text{mpnn}} \log p_{a,b}^{\text{edge}}\]
+where \(\hat{\mathbf{p}}_a(z+1)\) is the linear-extrapolated position of
+track \(a\) using an intensity-weighted 6-slice local PCA direction
+vector.
+
+\subsubsection{\texorpdfstring{Stage 2B: Global Bundle Graph Transformer
+(\texttt{BundleGraphTransformer}) and Polynomial Regularization
+(\texttt{Poly3})}{Stage 2B: Global Bundle Graph Transformer (BundleGraphTransformer) and Polynomial Regularization (Poly3)}}\label{stage-2b-global-bundle-graph-transformer-bundlegraphtransformer-and-polynomial-regularization-poly3}
+
+While Stage 1 and Stage 2A achieve \(>95\%\) recall, candidate pools
+inevitably contain 10--25 short false-positive tracks per patient along
+pelvic blood vessels or obturator boundaries. Crucially, real
+interstitial catheters are inserted through a common perineal template
+or vaginal corridor and therefore share \textbf{global bundle-level
+geometric coherence}: their insertion angles are quasi-parallel to the
+central obturator axis, their lateral spacing respects template channel
+geometry (\(\ge 2.0\text{ mm}\)), and their distal tips form a coherent
+3D surface covering the target volume.
+
+We elevate each candidate 3D trajectory \(T_m\)
+(\(m \in \{1, \dots, N_c\}\)) to a \textbf{track token}
+\(\mathbf{u}_m \in \mathbb{R}^{18}\) encoding its tracked length
+\(L_m\), slice count, linear/polynomial fit RMSE, mean/max \(S_0\),
+\(P_{\text{mask}}\), \(P_{\text{peak}}\), \(P_{\text{obt}}\), and MPNN
+confidence, together with pairwise inter-track spatial relationship
+features \(\mathbf{r}_{mn} \in \mathbb{R}^6\) (minimum 3D shaft
+clearance, mean XY separation, angular divergence
+\(\arccos(\mathbf{d}_m \cdot \mathbf{d}_n)\), \(z\)-overlap ratio, and
+duplicate-overlap indicator). The \texttt{BundleGraphTransformer}
+applies \textbf{2 layers of Edge-Biased Graph Attention (GAT)} over
+spatial neighbor tracks followed by \textbf{2 layers of global Set
+Transformer self-attention} across the entire implant bundle to predict
+calibrated per-track probabilities \(p_m \in [0, 1]\). Tracks satisfying
+\(p_m \ge \tau\) (pre-specified default \(\tau = 50\%\)) are retained
+and smoothed via \textbf{3rd-order polynomial trajectory regularization
+(\texttt{Poly3})}, fitting \(x(z) = \sum_{d=0}^3 \alpha_d z^d\) and
+\(y(z) = \sum_{d=0}^3 \beta_d z^d\) to suppress high-frequency voxel
+staircasing across thick MRI slices.
+
+\FloatBarrier
+
+\section{Experimental Setup and Evaluation
+Protocol}\label{experimental-setup-and-evaluation-protocol}
+
+\subsection{Unified Apples-to-Apples 5-Fold Cross-Validation
+Protocol}\label{unified-apples-to-apples-5-fold-cross-validation-protocol}
+
+All deep learning models (\texttt{NeedleUNet3D},
+\texttt{AxialTransUNet3D}, \texttt{NeedleSliceMPNN},
+\texttt{BundleGraphTransformer}, and all external baselines) are trained
+and evaluated using \textbf{strict 5-fold patient-level out-of-fold
+(OOF) cross-validation} across the 54 clinical BWH patients
+(\texttt{1,063} total catheters; \texttt{759} long shafts). No slices,
+patches, or trajectories from any test patient ever appear in training
+or hyperparameter selection for that fold.
+
+To ensure fair comparison with the 2019--2026 literature, we implement
+and train three representative external baselines on the exact same
+5-fold splits:
+
+\begin{itemize}
+\tightlist
+\item
+  \textbf{\texttt{Baseline\ 1:\ PMB\ 2019\ 3D\ U-Net\ +\ DBSCAN/Skeleton}}
+  (Zaffino et al. 2019): Volumes are resampled to
+  \(1.0 \times 1.0 \times 1.0\text{ mm}^3\) isotropic resolution,
+  segmented via a 3D U-Net trained on \(64^3\) patches, and
+  post-processed via 2D Hough principal-axis estimation, DBSCAN
+  clustering, and B-spline fitting.
+\item
+  \textbf{\texttt{Baseline\ 2:\ Native\ 3D\ ResUNet\ +\ clDice\ +\ Skeleton}}
+  (Isensee et al. 2021; Shit et al. 2021): A native-resolution 3D
+  residual U-Net trained with combined BCE + soft-Dice + soft-skeleton
+  centerline-Dice (\texttt{clDice}, \(\alpha = 0.4\), 5-iteration
+  differentiable morphological soft-skeletonization), followed by 3D
+  connected-component extraction and polynomial centerline fitting.
+\item
+  \textbf{\texttt{Baseline\ 3:\ Xiao\ 2026\ Sync-Track}} (Xiao, Liu, et
+  al. 2026): Re-implements the July 2026 structure-aware catheter
+  digitization framework of Xiao \emph{et al.}
+  (\texttt{arXiv:2607.11290}), combining Implant-Region Gating (IRGM),
+  direction-constrained 3D Hough transform + intensity-weighted PCA
+  direction initialization, synchronous inward Hungarian cost-matrix
+  tracking, and 3rd-order polynomial regularization (\texttt{Poly3}).
+  Following Xiao \emph{et al.} (2026) Table 2, we evaluate this tracker
+  both \textbf{end-to-end on 5-fold OOF segmentation masks} (Part A) and
+  \textbf{on oracle ground-truth binary masks} (Part B).
+\end{itemize}
+
+\subsection{Quantitative Metrics and Statistical
+Testing}\label{quantitative-metrics-and-statistical-testing}
+
+For each patient volume, predicted 3D trajectories
+\(\{T_m\}_{m=1}^{N_p}\) and ground-truth trajectories
+\(\{G_n\}_{n=1}^{N_g}\) are matched via \textbf{strict one-to-one
+Hungarian bipartite assignment}
+(\texttt{scipy.optimize.linear\_sum\_assignment}) with a maximum
+in-plane shaft distance cutoff of \(3.5\text{ mm}\) across overlapping
+axial slices. We report:
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  \textbf{Detection Accuracy (\%):} Strict one-to-one Hungarian Recall
+  (\(\text{TP} / N_g\)), Precision (\(\text{TP} / N_p\)), and
+  \(\text{F1} = 2\text{TP}/(N_g + N_p)\).
+\item
+  \textbf{In-Plane Shaft Localization Error (\(E_{\text{shaft}}\), mm):}
+  Mean, standard deviation (SD), median, interquartile range (IQR), and
+  95th percentile (P95) of the 2D Euclidean distance
+  \(\|\hat{\mathbf{p}}(z) - \mathbf{g}(z)\|_{xy}\) across all shared
+  axial slices \(z\).
+\item
+  \textbf{Symmetric 3D Curve Distance (\(D_{\text{avg}}\), mm) and
+  95th-Percentile Hausdorff Distance (\(\text{HD}_{95}\), mm):}
+  Bidirectional 3D point-to-curve distance densely resampled at 50
+  points along each trajectory.
+\item
+  \textbf{3D Distal-Tip Error (\(E_{\text{tip}}\), mm):} 3D Euclidean
+  distance
+  \(\|\hat{\mathbf{p}}(z_{\text{tip}}) - \mathbf{g}(z_{\text{tip}})\|_2\)
+  at the cranial/distal catheter tip.
+\end{enumerate}
+
+Statistical significance between methods is assessed across all
+\(N = 54\) patients using \textbf{paired two-sided Wilcoxon signed-rank
+tests} alongside 1,000-iteration patient-level cluster bootstrap 95\%
+confidence intervals.
+
+\FloatBarrier
+
+\section{Results}\label{results}
+
+\subsection{End-to-End Catheter Reconstruction Accuracy and Controlled
+Ablations}\label{end-to-end-catheter-reconstruction-accuracy-and-controlled-ablations}
+
+\input{tables/tab2_main_results.tex}
+
+Table \ref{tbl:main} presents the primary 5-fold out-of-fold benchmark
+across all 54 patients (\texttt{1,063} catheters, Part A top) and the
+\textbf{Severe Catheter-Adhesion Subgroup} (\texttt{23} patients,
+\texttt{233} catheters approaching within \(\le 3.0\text{ mm}\), Part A
+bottom), followed by controlled architectural ablations on identical
+folds (Part B). Figure \ref{fig:raincloud} displays the complete
+per-catheter error distributions (\(E_{\text{shaft}}\),
+\(D_{\text{avg}}\), and \(E_{\text{tip}}\)) as horizontal raincloud
+plots (half-violin kernel density + IQR boxplot + P5--P95 whiskers +
+subsampled per-catheter rain) relative to the human inter-observer
+floor.
+
+\begin{figure}
+\centering
+\includegraphics[width=1\linewidth,height=\textheight,keepaspectratio]{../reports/figures/fig3_raincloud_distributions.pdf}
+\caption{\textbf{Per-catheter localization error distributions across
+(a) the whole cohort (54 patients, 1,063 catheters) and (b) the severe
+catheter-adhesion subgroup (23 patients, 233 catheters approaching
+within \(\le 3.0\text{ mm}\)).} Each horizontal raincloud displays the
+half-violin density (top), median and interquartile range (white box),
+5th--95th percentile whiskers (capped bar), mean (white diamond
+\(\diamond\)), and individual catheter errors (bottom jittered points).
+Right-aligned numbers report \texttt{median\ /\ P95} in millimeters. The
+vertical grey band and dashed black line denote the human inter-observer
+IQR (\(0.34\text{--}0.84\text{ mm}\)) and 95th percentile
+(\(2.02\text{ mm}\)) measured across 481 dual-annotated trajectory pairs
+(\texttt{CY} vs.~\texttt{LB}/\texttt{AMe}).}\label{fig:raincloud}
+\end{figure}
+
+Several key findings emerge from Table \ref{tbl:main} and Figure
+\ref{fig:raincloud}:
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  \textbf{Resolution of the Mask-Only Precision Bottleneck:}
+  \texttt{Baseline\ 2}
+  (\texttt{Native\ 3D\ ResUNet\ +\ clDice\ +\ Skeleton}) achieves high
+  one-to-one recall (\(90.4\%\) whole cohort; \(94.9\%\) adhesion
+  subgroup) and sub-millimeter shaft accuracy on matched fragments
+  (\(0.43\text{ mm}\) median), but suffers from catastrophic
+  \textbf{false-positive over-fragmentation (\(23.9\%\) precision,
+  \(37.9\%\) F1, generating 4,015 disconnected segments across 54
+  volumes)}. Because spin-echo T2W MRI exhibits localized signal
+  dropouts along plastic shafts and tubular susceptibility voids along
+  pelvic veins, morphological skeletonization breaks single catheters
+  into multiple short tracks while hallucinating false tracks in
+  vascular plexuses.
+\item
+  \textbf{Comparison with Structure-Aware Inward Tracking
+  (\texttt{Xiao\ 2026\ Sync-Track}):} When evaluated on \textbf{oracle
+  ground-truth binary masks} (Table \ref{tbl:main} Part B bottom row,
+  matching the experimental check of Xiao \emph{et al.} (2026) Table 2
+  Part B), \texttt{Xiao\ 2026\ Sync-Track} achieves \textbf{\(97.4\%\)
+  recall, \(89.7\%\) F1 (\(91.8\%\) obturator-adjusted F1 on long
+  shafts), and \(0.11\text{ mm}\) median shaft error}, confirming that
+  direction-constrained 3D Hough initialization and synchronous
+  Hungarian cost-matrix tracking accurately separate touching shafts
+  when the underlying mask is noise-free. When applied
+  \textbf{end-to-end on 5-fold OOF clinical 3T MRI masks} (Table
+  \ref{tbl:main} Part A), \texttt{Xiao\ 2026\ Sync-Track} boosts F1 by
+  \(+15.8\text{ pp}\) over morphological skeletonization
+  (\(37.9\% \to 53.7\%\) whole cohort; \(47.8\% \to 63.1\%\) adhesion
+  subgroup) by bridging single-slice mask gaps and suppressing
+  out-of-hull noise via IRGM. Nevertheless, without Stage 0 circular
+  dark-core symmetry verification and Stage 2B global bundle-level graph
+  pruning, unidirectional inward tracking still spawns false-positive
+  trajectories from intra-implant vascular and muscular structures,
+  limiting precision to \(38.9\%\) (\(53.7\%\) F1).
+\item
+  \textbf{Superiority of
+  \texttt{NeedleFinder\ 2026\ +\ IRGM\ +\ Poly3}:} At the pre-specified
+  \(\tau = 50\%\) operating point, \textbf{NeedleFinder 2026 + IRGM +
+  Poly3} achieves \textbf{\(89.8\%\) one-to-one recall, \(82.5\%\)
+  precision, and \(86.0\%\) F1} across all 1,063 catheters,
+  outperforming \texttt{PMB\ 2019\ 3D\ U-Net} by
+  \textbf{\(+4.7\text{ pp}\) F1 (\(p = 0.0085\))},
+  \texttt{Xiao\ 2026\ Sync-Track} by \textbf{\(+32.3\text{ pp}\) F1
+  (\(p = 3.97 \times 10^{-10}\))}, and \texttt{ResUNet\ +\ clDice} by
+  \textbf{\(+48.1\text{ pp}\) F1 (\(p = 1.98 \times 10^{-10}\))}.
+  Furthermore, \texttt{NeedleFinder\ 2026} reduces mean 3D distal-tip
+  error across all 1,063 catheters from \(10.72\text{ mm}\)
+  (\texttt{PMB\ 2019}, median \(3.35\text{ mm}\)) and
+  \(15.64\text{ mm}\) (\texttt{Xiao\ 2026}, median \(6.02\text{ mm}\))
+  to \textbf{\(8.70\text{ mm}\) (median \(2.82\text{ mm}\),
+  \(p = 2.66 \times 10^{-4}\) vs.~\texttt{PMB\ 2019} and
+  \(p = 8.19 \times 10^{-9}\) vs.~\texttt{Xiao\ 2026})}. On the 759
+  full-depth interstitial catheters (\(\ge 30\text{ mm}\)),
+  \texttt{NeedleFinder\ 2026} achieves \textbf{\(95.3\%\) one-to-one
+  recall (\(97.2\%\) closest recall), \(86.1\%\) obturator-adjusted F1,
+  \(0.43\text{ mm}\) median shaft error, and \(2.72\text{ mm}\) median
+  tip error}.
+\item
+  \textbf{Robustness on the Severe Catheter-Adhesion Subgroup:} Across
+  the 23 patients (\texttt{233} catheters) exhibiting severe shaft
+  adhesion (\(\le 3.0\text{ mm}\) separation across \(\ge 3\) slices),
+  \texttt{NeedleFinder\ 2026\ +\ IRGM\ +\ Poly3} achieves the highest
+  overall accuracy (\textbf{\(87.1\%\) F1, \(91.9\%\) recall, \(82.8\%\)
+  precision, \(0.45\text{ mm}\) median shaft error, and
+  \(3.33\text{ mm}\) median tip error}), outperforming
+  \texttt{PMB\ 2019} (\(85.9\%\) F1, \(3.68\text{ mm}\) median tip
+  error), \texttt{Xiao\ 2026\ Sync-Track} (\(63.1\%\) F1,
+  \(7.25\text{ mm}\) median tip error), and \texttt{ResUNet\ +\ clDice}
+  (\(47.8\%\) F1).
+\end{enumerate}
+
+\subsection{Precision--Recall Pareto Frontier and Few-Shot Clinical
+Annotation
+Efficiency}\label{precisionrecall-pareto-frontier-and-few-shot-clinical-annotation-efficiency}
+
+\begin{figure}
+\centering
+\includegraphics[width=1\linewidth,height=\textheight,keepaspectratio]{../reports/figures/fig4_pareto_and_fewshot.pdf}
+\caption{\textbf{(a) Strict 1-to-1 Hungarian Precision--Recall Pareto
+frontier} across all 1,063 catheters (54 patients, 5-fold OOF),
+comparing individual pipeline stages, external baselines, the
+\texttt{NeedleFinder\ 2026} confidence threshold sweep
+(\(\tau \in \{25\%, 35\%, 45\%, 50\%, 60\%\}\)), and the upgraded
+\texttt{NeedleFinder\ 2026\ +\ IRGM\ +\ Poly3} (\(\star\), \(86.0\%\)
+F1). Dashed grey curves denote iso-F1 contours. \textbf{(b) Few-shot
+clinical annotation efficiency curve} evaluating out-of-fold
+reconstruction accuracy when training on only
+\(k \in \{1, 5, 10, 20, 43\}\) annotated clinical patients per fold
+(shaded bands: 95\% bootstrap CI; dotted orange line: 0-shot analytical
+Stage 0 radial symmetry prior at \(74.0\%\) F1).}\label{fig:pareto}
+\end{figure}
+
+Figure \ref{fig:pareto}(a) illustrates the synergy of our multi-stage
+architecture in 1-to-1 Precision--Recall space. Stage 1
+\texttt{NeedleUNet3D\ +\ tangent\ tubes} and
+\texttt{AxialTransUNet3D\ +\ tangent\ tubes} achieve high one-to-one
+sensitivity (\(92.8\%\) and \(92.5\%\) recall) but moderate precision
+(\(62.6\%\) and \(60.3\%\)). Adding Stage 2A \texttt{NeedleSliceMPNN}
+triplet message passing raises precision by \(+15.1\text{ pp}\)
+(\(62.6\% \to 77.7\%\)) while tightening median shaft error to
+\(0.41\text{ mm}\). Adding Stage 2B \texttt{BundleGraphTransformer}
+shifts the entire operating curve onto a dominant Pareto frontier: at
+matched \(92.8\%\) one-to-one recall (\(\tau = 25\%\)),
+\texttt{BundleGraphTransformer} boosts precision by
+\textbf{\(+13.3\text{ pp}\) (\(62.6\% \to 75.9\%\), \(83.5\%\) F1)},
+while at \(\tau = 60\%\) it reaches \textbf{\(83.4\%\) precision
+(\(85.2\%\) F1)}, and integrating \texttt{IRGM\ +\ SyncTrack\ +\ Poly3}
+(\(\star\)) achieves \textbf{\(89.8\%\) recall and \(82.5\%\) precision
+(\(86.0\%\) F1)}.
+
+Figure \ref{fig:pareto}(b) evaluates \textbf{few-shot clinical
+annotation efficiency} across training budgets of
+\(k \in \{0, 1, 5, 10, 20, 43\}\) annotated patients per fold. Whereas
+Xiao \emph{et al.} (2026) rely on synthetic CT volume generation to
+pre-train a 3D U-Net before fine-tuning on \(k=5\) clinical scans, our
+analytical Stage 0 3D multi-radii circular dark-core symmetry prior
+(\(S_0\)) provides an immediate, domain-invariant physical inductive
+bias directly on real 3T T2W MRI:
+
+\begin{itemize}
+\tightlist
+\item
+  \textbf{Zero-Shot (\(k = 0\) clinical training scans):} Using the
+  analytical Stage 0 prior + geometric tracking alone achieves
+  \textbf{\(74.0\%\) 1-to-1 F1 (\(76.6\%\) obturator-adjusted F1 on long
+  shafts) and \(0.61\text{ mm}\) mean shaft error}.
+\item
+  \textbf{One-Shot (\(k = 1\) annotated patient):} Fine-tuning on a
+  single patient raises accuracy to \textbf{\(78.1\%\) F1
+  (\(0.57\text{ mm}\) mean shaft error)} even though the raw 3D U-Net
+  voxel Dice is only \(16.8\%\).
+\item
+  \textbf{Five-Shot (\(k = 5\) annotated patients):} Training on only 5
+  clinical patients achieves \textbf{\(84.0\%\) 1-to-1 F1 (\(83.3\%\)
+  obturator-adjusted F1 on long shafts, \(0.57\text{ mm}\) mean shaft
+  error)}---recovering \textbf{97.7\% of full 43-patient accuracy
+  (\(86.0\%\) F1)} without synthetic training data.
+\item
+  \textbf{Ten-Shot (\(k = 10\) annotated patients):} Reaches
+  \textbf{\(86.6\%\) F1 (\(86.3\%\) on long shafts)}, fully saturating
+  whole-cohort performance.
+\end{itemize}
+
+\begin{figure}
+\centering
+\includegraphics[width=1\linewidth,height=\textheight,keepaspectratio]{../reports/figures/fig5_qualitative_mri_3d.pdf}
+\caption{\textbf{Qualitative 3T T2W MRI catheter reconstruction on (a) a
+dense 26-catheter + obturator implant (Case 017) and (b) a severe
+catheter-adhesion implant (Case 031, 23 catheters with 5 adhering pairs
+approaching within \(\le 3.0\text{ mm}\)).} From left to right: axial 3T
+T2W MRI slice showing expert ground-truth intersections (white circles)
+and 5-fold OOF \texttt{NeedleFinder\ 2026} predictions (vermillion
+\(\times\)); Stage 0 analytical 3D circular dark-core symmetry prior
+\(S_0\); Stage 1 sub-voxel centerline peak probability
+\(P_{\text{peak}}\) (blue) with tubular mask contour (solid blue) and
+vaginal obturator gate (dashed orange); and 3D orthographic rendering of
+the reconstructed catheter bundle colored by per-catheter shaft error
+\(E_{\text{shaft}}\) (\texttt{0.18–1.35\ mm}, median \(0.45\text{ mm}\))
+over ghosted grey ground-truth trajectories.}\label{fig:qualitative}
+\end{figure}
+
+Figure \ref{fig:qualitative} visualizes the intermediate physical and
+neural representations on two challenging OOF test cases: a dense
+26-catheter implant with a central vaginal obturator
+(\texttt{Case\ 017}, row a) and a severe catheter-adhesion implant
+(\texttt{Case\ 031}, row b, containing 23 catheters with 5 adhering
+shaft pairs approaching within \(\le 3.0\text{ mm}\)). Notice how Stage
+0 \(S_0\) highlights circular dark lumen cores across the pelvis, while
+Stage 1 \texttt{NeedleUNet3D\ +\ IRGM} suppresses peripheral rectal and
+vascular responses outside the implant gate and resolves touching
+catheter lumens into distinct 2D Gaussian centerline peaks
+(\(P_{\text{peak}}\)), enabling Stage 2 to reconstruct smooth, unswapped
+3D catheter bundles.
+
+\FloatBarrier
+
+\subsection{Equivalence to Human Inter-Observer
+Variability}\label{equivalence-to-human-inter-observer-variability}
+
+\input{tables/tab3_interobserver.tex}
+
+Because plastic catheters appear on 3T T2W MRI as \(2.0\text{ mm}\)
+susceptibility signal voids spanning 3--5 in-plane pixels with
+\(1.6\text{--}3.0\text{ mm}\) slice thickness, human experts exhibit an
+intrinsic localization floor when clicking centerline points
+slice-by-slice. Table \ref{tbl:interobserver} compares the
+inter-observer agreement between independent expert teams \texttt{CY}
+(\(n=505\)) and \texttt{LB}/\texttt{AMe} (\(n=513\)) across the 40
+dual-contoured clinical scenes against \texttt{NeedleFinder\ 2026}
+out-of-fold predictions on the exact same 40 scenes:
+
+\begin{itemize}
+\tightlist
+\item
+  \textbf{Human Inter-Observer Floor (\texttt{CY}
+  vs.~\texttt{LB}/\texttt{AMe}):} Across 481 one-to-one Hungarian
+  matched trajectory pairs (\(\le 3.5\text{ mm}\)), human observers
+  agree on \textbf{\(93.8\%\) of trajectories} with a mean in-plane
+  shaft discrepancy of \textbf{\(0.71 \pm 0.58\text{ mm}\)
+  (\(0.51\text{ mm}\) median, \(0.50\text{ mm}\) IQR, \(2.02\text{ mm}\)
+  P95)}, a median slice Hausdorff distance of \(0.95\text{ mm}\), and a
+  median 3D distal-tip discrepancy of \(3.19\text{ mm}\)
+  (\(6.33 \pm 8.17\text{ mm}\) mean, reflecting partial-volume
+  uncertainty of \(\pm 1\text{--}2\) slices at the cranial signal-void
+  termination). On the 27 purely manual clinical treatment-planning
+  scenes, human inter-observer shaft discrepancy is
+  \(0.89 \pm 0.85\text{ mm}\) (median \(0.60\text{ mm}\), P95
+  \(2.64\text{ mm}\)).
+\item
+  \textbf{\texttt{NeedleFinder\ 2026} vs.~Both Independent Observers:}
+  Evaluated out-of-fold against primary observer \texttt{CY},
+  \texttt{NeedleFinder\ 2026} achieves a \textbf{\(96.2\%\) one-to-one
+  match rate} and a mean shaft error of
+  \textbf{\(0.55 \pm 0.36\text{ mm}\) (\(0.45\text{ mm}\) median,
+  \(0.33\text{ mm}\) IQR, \(1.19\text{ mm}\) P95)}---statistically
+  significantly lower than the human inter-observer discrepancy between
+  \texttt{CY} and \texttt{LB}/\texttt{AMe} (paired Wilcoxon
+  \(p < 10^{-4}\), cutting 95th-percentile tail error by \(41\%\)).
+  Evaluated against independent observer \texttt{LB}/\texttt{AMe} (whose
+  labels were never used to train Stage 1 or Stage 2),
+  \texttt{NeedleFinder\ 2026} achieves a mean shaft error of
+  \textbf{\(0.73 \pm 0.57\text{ mm}\) (\(0.51\text{ mm}\) median,
+  \(2.05\text{ mm}\) P95)}, matching the human inter-observer
+  distribution (\(0.71\text{ mm}\) mean, \(0.51\text{ mm}\) median,
+  \(2.02\text{ mm}\) P95) to within \(0.02\text{ mm}\).
+\end{itemize}
+
+\subsection{Out-of-Distribution Zero-Needle Specificity and
+Computational
+Runtime}\label{out-of-distribution-zero-needle-specificity-and-computational-runtime}
+
+\input{tables/tab4_specificity.tex}
+
+A critical requirement for clinical deployment is \textbf{specificity
+under distribution shift}: when applied to a pelvic T2W MRI scan
+containing few or zero needles (or large un-implanted pelvic FOVs), a
+detector must not hallucinate catheters inside periprostatic venous
+plexuses, internal iliac vessels, or obturator internus tendons. Table
+\ref{tbl:specificity} and Figure \ref{fig:spec_runtime}(a) report
+out-of-distribution specificity across all 48 needle-free clinical 3T
+pelvic T2W MRI volumes from \texttt{MSD\ Task05\_Prostate}:
+
+\begin{itemize}
+\tightlist
+\item
+  \textbf{Pruning by \texttt{BundleGraphTransformer}:} Without Stage 2B
+  set-level graph pruning, the raw candidate pool averages
+  \(20.52 \pm 8.91\) false-positive tracks per needle-free volume (985
+  total tracks; \(0\%\) patient specificity). Applying the
+  \texttt{BundleGraphTransformer} (\(\tau = 60\%\)) eliminates
+  \textbf{\(80.9\%\) of false-positive tracks}
+  (\(3.92 \pm 2.90\text{ FP/vol}\), median \(3.0\)).
+\item
+  \textbf{Near-Zero False Alarms with Stage 0 Radial Symmetry
+  Verification:} Requiring candidate tracks to exhibit consistent
+  analytical Stage 0 3D multi-radii circular dark-core symmetry
+  (\(S_0\)) alongside Stage 1 \texttt{NeedleUNet3D} probability
+  eliminates \textbf{\(98.2\%\) of all false-positive tracks
+  (\(985 \to 18\) across 48 volumes, \(0.38 \pm 0.53\text{ FP/vol}\),
+  median \(0.0\))}, achieving \textbf{\(64.6\%\) patient-level zero-FP
+  specificity (\(31/48\) patients with \(0\) false tracks) and
+  \(97.9\%\) specificity at \(\le 1\) false track (\(47/48\) patients)}.
+\end{itemize}
+
+\begin{figure}
+\centering
+\includegraphics[width=1\linewidth,height=\textheight,keepaspectratio]{../reports/figures/fig6_specificity_and_runtime.pdf}
+\caption{\textbf{(a) Cumulative patient-level specificity (ECDF)} across
+48 out-of-distribution needle-free 3T pelvic T2W MRI volumes
+(\texttt{MSD\ Task05\_Prostate}), showing the fraction of patients with
+\(\le x\) false-positive tracks. Enforcing the Stage 0 circular
+dark-core symmetry gate alongside Stage 1 \texttt{NeedleUNet3D} achieves
+\(64.6\%\) of volumes with \(0\) false positives and \(97.9\%\) with
+\(\le 1\) false positive (\(0.38\text{ FP/vol}\) mean, median \(0.0\)).
+\textbf{(b) End-to-end runtime per patient volume (\(\log_{10}\) scale)}
+compared against published MRI and CT catheter reconstruction pipelines.
+\textbf{(c) Linear stage runtime breakdown} of
+\texttt{NeedleFinder\ 2026} on an 8-core desktop CPU (\(0.61\text{ s}\))
+and single RTX 4090 GPU (\(0.35\text{ s}\)).}\label{fig:spec_runtime}
+\end{figure}
+
+Figures \ref{fig:spec_runtime}(b) and \ref{fig:spec_runtime}(c) detail
+computational performance. Because Stage 0 is implemented in native
+multi-threaded Rust/C++ (\(60\text{ ms}\)) and Stage 1--2 operate on an
+automatically cropped implant sub-volume
+(\(\sim 30 \times 160 \times 160\) voxels), \texttt{NeedleFinder\ 2026}
+completes end-to-end 3D reconstruction in \textbf{\(0.61\text{ s}\) on a
+standard 8-core desktop CPU} and \textbf{\(0.35\text{ s}\) on a single
+GPU}---representing a \textbf{\(147\times\text{--}257\times\) speedup}
+over our 2019 3D U-Net + DBSCAN pipeline (\(\sim 90\text{ s}\)) (Zaffino
+et al. 2019) and a \textbf{\(19\times\text{--}33\times\) speedup} over
+Xiao \emph{et al.} (2026) (\(11.6\text{ s}\)).
+
+\FloatBarrier
+
+\section{Discussion}\label{discussion}
+
+\input{tables/tab5_literature.tex}
+
+\subsection{Positioning Within the 2013--2026 Brachytherapy Digitization
+Literature}\label{positioning-within-the-20132026-brachytherapy-digitization-literature}
+
+Table \ref{tbl:literature} contextualizes \texttt{NeedleFinder\ 2026}
+within the broader landscape of automated brachytherapy catheter
+reconstruction across CT and MRI (2013--2026). A critical distinction
+highlighted by Table \ref{tbl:literature} is the physical
+signal-to-noise gap between planning CT (grey-shaded rows) and spin-echo
+pelvic T2W MRI (unshaded rows). In CT-guided brachytherapy (Dai et al.
+2020; Weishaupt et al. 2022; Aleong et al. 2024; Quetin et al. 2025;
+Xiao, Zhou, et al. 2026; Xiao, Liu, et al. 2026), metallic stylets or
+air-filled catheter lumens exhibit extreme Hounsfield contrast
+(\(\pm 500\text{ to }+3000\text{ HU}\)) at thin slice spacing
+(\(0.6\text{--}1.25\text{ mm}\)), enabling 3D U-Nets to achieve voxel
+Dice scores \(>0.85\) and shaft errors of
+\(0.22\text{--}0.67\text{ mm}\). By contrast, on clinical 3T T2W MRI
+without exogenous contrast markers (Pernelle et al. 2013; Zaffino et al.
+2019; Shaaer et al. 2022; Xie et al. 2023; Wang et al. 2024; Kostoulas
+et al. 2025), polymeric catheters appear only as \(2.0\text{ mm}\)
+signal voids indistinguishable in raw intensity from blood vessels,
+tendons, and signal dropouts across \(1.6\text{--}3.0\text{ mm}\) thick
+slices.
+
+Our controlled head-to-head evaluation on the 54-patient
+(1,063-catheter) BWH cohort (Table \ref{tbl:main}) demonstrates why
+neither pure 3D CNN segmentation (Zaffino et al. 2019; Isensee et al.
+2021; Shit et al. 2021) nor purely mask-driven inward tracking (Xiao,
+Liu, et al. 2026) suffices on clinical 3T T2W MRI:
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  \textbf{Why Voxel \texttt{clDice} + Skeletonization Fails on T2W MRI
+  (\texttt{37.9\%} F1):} While soft-skeleton \texttt{clDice} (Shit et
+  al. 2021) preserves centerline connectivity on continuous vascular
+  trees, brachytherapy catheters on T2W MRI frequently exhibit 1--2
+  slice signal dropouts where surrounding edematous tumor tissue is
+  similarly hypointense. Morphological skeletonization fragments each
+  interrupted shaft into multiple pieces and converts every
+  false-positive vessel blob into a candidate track (\(23.9\%\)
+  precision).
+\item
+  \textbf{Why Hybrid Physics + Multi-Head Centerline Regression + Graph
+  Attention Succeeds (\texttt{86.0\%} F1):} First, our analytical Stage
+  0 3D multi-radii circular dark-core symmetry prior (\(S_0\))
+  explicitly tests for \(360^\circ\) azimuthal contrast completeness,
+  rejecting planar tissue interfaces before neural inference begins.
+  Second, conditioning the Stage 1 Implant-Region Gating Module (IRGM)
+  on \(S_0\) and regressing sharp 2D Gaussian centerline peaks
+  (\(P_{\text{peak}}\)) alongside directional slopes \((V_x, V_y)\)
+  preserves distinct sub-pixel centers even when adjacent catheter masks
+  merge. Third, combining Stage 2A collinearity-aware triplet message
+  passing (\texttt{NeedleSliceMPNN}) and synchronous Hungarian
+  cost-matrix tracking with Stage 2B global
+  \texttt{BundleGraphTransformer} attention allows each candidate track
+  to be judged in the context of the entire 15--30 catheter implant
+  bundle.
+\end{enumerate}
+
+\subsection{Clinical Workflow Impact and
+Limitations}\label{clinical-workflow-impact-and-limitations}
+
+Implemented as a one-click module inside \textbf{3D Slicer} (Pernelle et
+al. 2013; Zaffino et al. 2019) with zero GPU dependency required for
+sub-second inference (\(0.61\text{ s}\) on CPU),
+\texttt{NeedleFinder\ 2026} transforms intraoperative MR-only catheter
+digitization from a 15--40 minute manual contouring task into a
+\textbf{1--2 minute verify-and-approve workflow}: the physicist clicks
+\emph{Detect Needles}, inspects the 3D bundle and axial intersections,
+and adjusts any residual distal tip or partial-FOV track. Because the
+in-plane shaft accuracy (\(0.46\text{ mm}\) median on all 1,063
+catheters; \(0.43\text{ mm}\) median on the 759 long shafts) lies well
+below both the \(1.0\text{ mm}\) AAPM TG-317 tolerance (Beaulieu et al.
+2025) and the \(0.51\text{ mm}\) human inter-observer median floor
+(Table \ref{tbl:interobserver}), automated shaft trajectories require
+virtually no manual in-plane editing.
+
+Two limitations merit discussion and motivate future work. First, while
+\texttt{NeedleFinder\ 2026} reduces mean 3D distal-tip error by 44\%
+compared to \texttt{Xiao\ 2026\ Sync-Track}
+(\(15.64 \to 8.70\text{ mm}\)) and achieves a median 3D tip error of
+\textbf{\(2.82\text{ mm}\) (\(2.72\text{ mm}\) on long shafts)}---within
+1 slice thickness (\(\Delta z = 2.5\text{ mm}\)) and comparable to the
+\(3.19\text{ mm}\) human inter-observer tip median---outliers still
+occur when a catheter tip terminates inside a dark signal-void pocket at
+the cranial uterine fundus or when short partial-FOV reference tracks
+exit the slab boundary. Incorporating thin-slice 3D isotropic T2W
+SPACE/VISTA acquisitions (\(\Delta z \le 1.0\text{ mm}\)) or
+multi-contrast T1W/T2W fusion is expected to further tighten cranial tip
+localization toward \(<1.5\text{ mm}\). Second, although our 54-patient
+BWH cohort (1,063 catheters) is the largest clinically annotated 3T MRI
+interstitial gynecologic brachytherapy cohort reported to date and is
+complemented by 48 external 3T pelvic MRI scans from
+\texttt{MSD\ Task05\_Prostate}, prospective multi-institutional
+validation across 1.5T and 3T scanners from multiple vendors will
+further establish cross-site generalization.
+
+\section{Conclusion}\label{conclusion}
+
+We have presented \textbf{NeedleFinder 2026}, a unified two-stage
+physics-informed deep learning and relational 3D graph architecture for
+automated catheter reconstruction in MR-guided interstitial gynecologic
+brachytherapy. By uniting an analytical 3D circular dark-core symmetry
+prior (\(S_0\)), a 5-head anisotropic 3D residual U-Net with
+Implant-Region Gating (IRGM), a synchronous adhesion-aware Triplet
+Message-Passing Neural Network (\texttt{NeedleSliceMPNN}), and a global
+\texttt{BundleGraphTransformer} with 3rd-order polynomial
+regularization, our framework achieves \textbf{89.8\% one-to-one recall,
+82.5\% precision, and 86.0\% F1} across 1,063 clinical catheters (and
+\textbf{95.3\% recall, 0.43 mm median shaft error, and 2.72 mm median
+tip error} on full-depth interstitial shafts) in
+\textbf{\(0.61\text{ s}\) on CPU (\(0.35\text{ s}\) on GPU)},
+outperforming state-of-the-art voxel segmentation and synchronous
+tracking baselines while matching human expert agreement within the
+inter-observer floor.
+
+\FloatBarrier
+
+\section*{References}\label{references}
+\addcontentsline{toc}{section}{References}
+
+\phantomsection\label{refs}
+\begin{CSLReferences}{1}{0}
+\bibitem[\citeproctext]{ref-aleong2024}
+Aleong, R., H. Chung, R. Weersink, L. Milot, L. Mendez, A. Ravi, and A.
+Rink. 2024. {``Automated Catheter Segmentation and Tip Localization in
+{MRI}-Guided High-Dose-Rate Prostate Brachytherapy.''} \emph{Medical
+Physics} 51 (8): 5361--75. \url{https://doi.org/10.1002/mp.17205}.
+
+\bibitem[\citeproctext]{ref-beaulieu2025}
+Beaulieu, Luc, Christoph Bert, M. Borot de Battisti, Robert A. Cormack,
+J. A. M. Cunha, Antonio L. Damato, Christopher L. Deufel, et al. 2025.
+{``{AAPM} Task Group 317 Report: A Joint {AAPM} and {ESTRO} Report on
+Brachytherapy Catheter, Needle, and Applicator Tracking Technology.''}
+\emph{Medical Physics} 52: e70037.
+
+\bibitem[\citeproctext]{ref-cantin2024}
+Cantin, A., M. Lavallée, E. Poulin, G. Hautvast, W. Foster, and Luc
+Beaulieu. 2024. {``Proof-of-Concept of Real-Time Electromagnetic
+Guidance for Gynecologic Interstitial Catheters in High Dose Rate
+Brachytherapy.''} \emph{Physics and Imaging in Radiation Oncology} 32:
+100661.
+
+\bibitem[\citeproctext]{ref-dai2020}
+Dai, Xianjin, Yang Lei, Yabo Zhang, Richard L. J. Qiu, Tonghe Wang,
+Samantha A. Dresser, Walter J. Curran, Pretesh Patel, Tian Liu, and
+Xiaofeng Yang. 2020. {``Automatic Multi-Catheter Detection Using Deeply
+Supervised Convolutional Neural Network in {MRI}-Guided High-Dose-Rate
+Prostate Brachytherapy.''} \emph{Medical Physics} 47 (9): 4116--24.
+\url{https://doi.org/10.1002/mp.14307}.
+
+\bibitem[\citeproctext]{ref-deufel2024}
+Deufel, Christopher L., E. E. Brost, J. M. Dupere, I. A. Petersen, M. G.
+Haddock, and A. E. Garda. 2024. {``{EMVision}: An Electromagnetic
+Tracking Guidance System for Accurate Placement of Interstitial
+Brachytherapy Applicators.''} \emph{Brachytherapy} 23 (6): 676--86.
+
+\bibitem[\citeproctext]{ref-isensee2021}
+Isensee, Fabian, Paul F. Jaeger, Simon A. A. Kohl, Jens Petersen, and
+Klaus H. Maier-Hein. 2021. {``{nnU-Net}: A Self-Configuring Method for
+Deep Learning-Based Biomedical Image Segmentation.''} \emph{Nature
+Methods} 18 (2): 203--11.
+\url{https://doi.org/10.1038/s41592-020-01008-z}.
+
+\bibitem[\citeproctext]{ref-jung2019}
+Jung, Hyunuk, Chenyang Shen, Yago Gonzalez, Kevin Albuquerque, and Xun
+Jia. 2019. {``Deep-Learning Assisted Automatic Digitization of
+Interstitial Needles in {3D} {CT} Image Based High Dose-Rate
+Brachytherapy of Gynecological Cancer.''} \emph{Physics in Medicine \&
+Biology} 64 (21): 215003.
+\url{https://doi.org/10.1088/1361-6560/ab4699}.
+
+\bibitem[\citeproctext]{ref-kostoulas2025}
+Kostoulas, E. et al. 2025. {``Centerline Heatmap Regression and
+Graph-Guided Tracking for Multi-Needle Localization in Pelvic {MRI}.''}
+In \emph{Proceedings of SPIE Medical Imaging: Image-Guided Procedures,
+Robotic Interventions, and Modeling}, 13408:134081L.
+\url{https://doi.org/10.1117/12.3046812}.
+
+\bibitem[\citeproctext]{ref-mastmeyer2017}
+Mastmeyer, André, Guillaume Pernelle, Regina Ma, Lauren Barber, and Tina
+Kapur. 2017. {``Accurate Model-Based Segmentation of Gynecologic
+Brachytherapy Catheter Collections in {MRI}-Images.''} \emph{Journal of
+Clinical Monitoring and Computing} 31 (2): 379--97.
+\url{https://doi.org/10.1007/s10877-016-9889-y}.
+
+\bibitem[\citeproctext]{ref-mehrtash2019}
+Mehrtash, Alireza, Mohsen Ghafoorian, Guillaume Pernelle, A. Ziaei, F.
+G. Heslinga, Kemal Tuncali, Andriy Fedorov, et al. 2019. {``Automatic
+Needle Segmentation and Localization in {MRI} with {3-D} Convolutional
+Neural Networks: Application to {MRI}-Targeted Prostate Biopsy.''}
+\emph{IEEE Transactions on Medical Imaging} 38 (4): 1026--36.
+\url{https://doi.org/10.1109/TMI.2018.2876796}.
+
+\bibitem[\citeproctext]{ref-moradi2025}
+Moradi, M. M., Z. Siavashpour, S. Takhtardeshir, E. Showkatian, R.
+Jaberi, R. Ghaderi, B. Mofid, and F. Taghizadeh-Hesary. 2025. {``Fully
+Automatic Reconstruction of Prostate High-Dose-Rate Brachytherapy
+Interstitial Needles Using Two-Phase Deep Learning-Based Segmentation
+and Object Tracking Algorithms.''} \emph{Clinical and Translational
+Radiation Oncology} 51: 100925.
+
+\bibitem[\citeproctext]{ref-pernelle2013}
+Pernelle, Guillaume, Alireza Mehrtash, Lauren Barber, Antonio Damato, W.
+Wang, Ravi Teja Seethamraju, Ehud J. Schmidt, et al. 2013. {``Validation
+of Catheter Segmentation for {MR}-Guided Gynecologic Cancer
+Brachytherapy.''} In \emph{Medical Image Computing and Computer-Assisted
+Intervention -- MICCAI 2013}, 8151:380--87. Lecture Notes in Computer
+Science. Springer. \url{https://doi.org/10.1007/978-3-642-40760-4_48}.
+
+\bibitem[\citeproctext]{ref-potter2018}
+Pötter, Richard, Kari Tanderup, Christian Kirisits, Astrid de Leeuw,
+Kathrin Kirchheiner, Remi Nout, Li Tee Tan, et al. 2018. {``The {EMBRACE
+II} Study: The Outcome and Prospect of Two Decades of Evolution Within
+the {GEC-ESTRO} Gynaecological Working Group and the {EMBRACE}
+Studies.''} \emph{Clinical and Translational Radiation Oncology} 9:
+48--60. \url{https://doi.org/10.1016/j.ctro.2018.01.001}.
+
+\bibitem[\citeproctext]{ref-potter2021}
+Pötter, Richard, Kari Tanderup, Maximilian P. Schmid, Ina
+Jürgenliemk-Schulz, Christine Haie-Meder, Lars U. Fokdal, Alina E.
+Sturdza, et al. 2021. {``{MRI}-Guided Adaptive Brachytherapy in Locally
+Advanced Cervical Cancer ({EMBRACE-I}): A Multicentre Prospective Cohort
+Study.''} \emph{The Lancet Oncology} 22 (4): 538--47.
+\url{https://doi.org/10.1016/S1470-2045(20)30753-1}.
+
+\bibitem[\citeproctext]{ref-quetin2025}
+Quetin, S., H. Jafarzadeh, J. Kalinowski, H. Bekerat, B. Bahoric, F.
+Maleki, and Shirin A. Enger. 2025. {``Automatic Catheter Digitization in
+Breast Brachytherapy.''} \emph{Medical Physics} 52 (9): e18107.
+
+\bibitem[\citeproctext]{ref-richardson2025}
+Richardson, Susan L., A. K. Baghwala, Gil'ad N. Cohen, C. Dempsey, B.
+Libby, Christopher S. Melhus, R. A. Miller, Daniel J. Scanderbeg, and
+Samantha J. Simiele. 2025. {``{AAPM} Medical Physics Practice Guideline
+13.a: {HDR} Brachytherapy, Part {B}.''} \emph{Journal of Applied
+Clinical Medical Physics} 26 (7): e70118.
+
+\bibitem[\citeproctext]{ref-schindel2013}
+Schindel, Jay, Wenjun Zhang, Sudershan K. Bhatia, Wenqing Sun, and
+Yusung Kim. 2013. {``Dosimetric Impacts of Applicator Displacements and
+Applicator Reconstruction-Uncertainties on {{[}192Ir{]}} High-Dose-Rate
+Cervical Brachytherapy.''} \emph{Medical Physics} 40 (11): 111720.
+\url{https://doi.org/10.1118/1.4824691}.
+
+\bibitem[\citeproctext]{ref-shaaer2022}
+Shaaer, A., M. R. Paudel, M. Smith, N. Tonlaar, and A. Ravi. 2022.
+{``Deep Learning-Assisted Segmentation of Interstitial Catheters in
+Magnetic Resonance-Based Cervical Cancer Brachytherapy.''} \emph{Journal
+of Applied Clinical Medical Physics} 23 (2): e13494.
+\url{https://doi.org/10.1002/acm2.13494}.
+
+\bibitem[\citeproctext]{ref-shit2021}
+Shit, Suprosanna, Johannes C. Paetzold, Anjany Sekuboyina, Ivan Ezhov,
+Alexander Unger, Andrey Zhylka, Josien P. W. Pluim, Ulrich Bauer, and
+Bjoern H. Menze. 2021. {``{clDice} -- a Novel Topology-Preserving Loss
+Function for Tubular Structure Segmentation.''} In \emph{Proceedings of
+the IEEE/CVF Conference on Computer Vision and Pattern Recognition
+(CVPR)}, 16560--69. \url{https://doi.org/10.1109/CVPR46437.2021.01629}.
+
+\bibitem[\citeproctext]{ref-tanderup2008}
+Tanderup, Kari, Taran Paulsen Hellebust, Stefan Lang, Jacob Granfeldt,
+Richard Pötter, Jacob Christian Lindegaard, and Christian Kirisits.
+2008. {``Consequences of Random and Systematic Reconstruction
+Uncertainties in {3D} Image Based Brachytherapy in Cervical Cancer.''}
+\emph{Radiotherapy and Oncology} 87 (2): 211--19.
+\url{https://doi.org/10.1016/j.radonc.2008.02.010}.
+
+\bibitem[\citeproctext]{ref-wang2024}
+Wang, Y., W. Jian, L. Zhu, C. Cai, B. Zhang, and X. Wang. 2024.
+{``Attention-Gated Deep-Learning-Based Automatic Digitization of
+Interstitial Needles in High-Dose-Rate Brachytherapy for Cervical
+Cancer.''} \emph{Advances in Radiation Oncology} 9 (1): 101340.
+
+\bibitem[\citeproctext]{ref-weishaupt2022}
+Weishaupt, L. L., H. Sayuri, S. A. Enger, and C. L. Deufel. 2022.
+{``Automatic Catheter Digitization in High-Dose-Rate Prostate
+Brachytherapy Using Deep Learning and Density-Based Clustering.''}
+\emph{Brachytherapy} 21 (4): 520--33.
+\url{https://doi.org/10.1016/j.brachy.2022.02.005}.
+
+\bibitem[\citeproctext]{ref-xiao2026}
+Xiao, Zhuo, Bo Liu, Jingjing Wang, Qinglong Yao, Haitao Sun, Fugen Zhou,
+Junjie Wang, Qiuwen Wu, and Ping Jiang. 2026. {``Multi-Catheter
+Digitization in Brachytherapy via Few-Shot Synthetic-to-Real Learning
+and Structure-Aware Tracking.''} \emph{arXiv Preprint arXiv:2607.11290}.
+\url{https://arxiv.org/abs/2607.11290}.
+
+\bibitem[\citeproctext]{ref-xiao2026jbhi}
+Xiao, Zhuo, Fugen Zhou, Jingjing Wang, C. He, Bo Liu, Haitao Sun, Z. Ji,
+Y. Jiang, Junjie Wang, and Qiuwen Wu. 2026. {``Multi-Needle Localization
+for Pelvic Seed Implant Brachytherapy Based on Tip-Handle Detection and
+Matching.''} \emph{IEEE Journal of Biomedical and Health Informatics},
+1--14.
+
+\bibitem[\citeproctext]{ref-xie2023}
+Xie, K., L. Wang, Y. Tang, et al. 2023. {``Deep Learning-Based Automatic
+Reconstruction of Interstitial Needles in Post-Operative Cervical Cancer
+Brachytherapy.''} \emph{Journal of Contemporary Brachytherapy} 15 (2):
+134--42. \url{https://doi.org/10.5114/jcb.2023.126508}.
+
+\bibitem[\citeproctext]{ref-zaffino2019}
+Zaffino, Paolo, Guillaume Pernelle, André Mastmeyer, Alireza Mehrtash,
+H. Zhang, Ron Kikinis, Tina Kapur, and Maria Francesca Spadea. 2019.
+{``Fully Automatic Catheter Segmentation in {MRI} with {3D}
+Convolutional Neural Networks: Application to {MRI}-Guided Gynecologic
+Brachytherapy.''} \emph{Physics in Medicine \& Biology} 64 (16): 165008.
+\url{https://doi.org/10.1088/1361-6560/ab2f47}.
+
+\bibitem[\citeproctext]{ref-zhou2024}
+Zhou, W., X. Li, F. Zabihollahy, D. S. Lu, and Holden H. Wu. 2024.
+{``Deep Learning-Based Automatic Pipeline for {3D} Needle Localization
+on Intra-Procedural {3D} {MRI}.''} \emph{International Journal of
+Computer Assisted Radiology and Surgery} 19 (11): 2227--37.
+
+\end{CSLReferences}
+
+\end{document}

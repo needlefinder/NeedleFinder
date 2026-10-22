@@ -1,0 +1,6 @@
+stage,cpu_sec,gpu_sec
+Stage 0: Rust 3D Radial Symmetry,0.06,0.06
+Stage 1: NeedleUNet3D + IRGM + Tubes,0.455,0.22
+Stage 2A: Triplet Slice MPNN,0.065,0.05
+Stage 2B: Bundle Graph Transformer,0.03,0.02
+Total End-to-End,0.61,0.35

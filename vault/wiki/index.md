@@ -1,0 +1,67 @@
+# Wiki Index (`OVNF`)
+
+> Master catalog of all wiki pages in the NeedleFinder Obsidian Vault (`OVNF`). Maintained automatically on every ingest, synthesis, or lint pass.
+
+---
+
+## Overview & Navigation
+- [[home|Home]] — Entry point, quick links, and publication lineage table
+- [[wiki/overview|Overview]] — High-level synthesis of the NeedleFinder project, clinical problem, and algorithmic evolution (2012–2026)
+- [[wiki/log|Chronological Log]] — Append-only timeline of ingests, benchmarks, and syntheses
+
+---
+
+## Research & Evaluations (`wiki/research/`)
+- [[wiki/research/2026-10-22-full-54case-unet-transformer-graphnet-benchmark|2026-10-22 Full 54-Case Benchmark (Physics, 3D U-Net, Axial TransUNet, Slice MPNN & Bundle Graph Transformer)]] — 5-fold cross-validation across all 54 BWH clinical cases (`1,063` needles: `759` CY long + `304` HT obturator) and runtime breakdown (`0.61 s` CPU / `0.35 s` GPU)
+- [[wiki/research/2026-10-22-literature-clinical-relevance-and-public-datasets|2026-10-22 Literature Survey, Clinical Relevance & Public Datasets (2013–2026)]] — EMBRACE-I/II clinical drivers, MR-only workflow bottleneck (`46 ± 10 min` manual), 2013–2026 SOTA comparison table, and public dataset audit (TCIA, Zenodo, RSNA `Case 050`)
+- [[wiki/research/2026-10-21-sota-nn-hybrid-needle-detection|2026-10-21 SOTA Deep Learning & Hybrid 3D CV Survey]] — Architectural survey and root-cause analysis of missed needles
+- [[wiki/research/2026-10-21-auto-needle-detection-evaluation|2026-10-21 Auto-Needle Detection Evaluation]] — Initial 4-dataset quantitative evaluation of `NeedleFinderLogic.autoDetectAllNeedles`
+- [[wiki/research/historical-dataset-splits-2013-2026|Historical Dataset Splits (2013–2026)]] — Provenance and case-level mapping across MICCAI 2013, MedIA 2017, RSNA 2016, PMB 2019 (`PMC6726393`), and 2026 benchmarks
+
+---
+
+## Syntheses & Paper Roadmaps (`wiki/syntheses/`)
+- [[wiki/syntheses/2026-10-22-multi-agent-paper-review-synthesis|2026-10-22 Multi-Agent Paper Review Synthesis (Codex Astra, Claude Opus 5.5, Claude Fable 5.1, AGY Argon)]] — Consolidated paper architecture, 3-scale curve-set formulation, 41-scene (`543`-needle) human inter-observer variability analysis, and 6 reviewer Q&A defenses
+- [[wiki/syntheses/2026-paper-roadmap-explainable-zero-shot-vs-3d-cnn|2026 Paper Roadmap: Explainable Zero-Shot Physics-Informed 3D Detection vs. 3D U-Net]] — Initial comparative thesis and venue analysis
+
+---
+
+## Concepts (`wiki/concepts/`)
+- [[wiki/concepts/3d-directional-radial-symmetry-filter|3D Directional Radial Symmetry Filter]] — Anisotropic 6-diameter + half-ring asymmetric susceptibility void detector with boundary clamp
+- [[wiki/concepts/bidirectional-seed-tracking-and-kalman-smoothing|Bidirectional Seed Tracking & Kalman Smoothing]] — Forward + backward 2D cross-sectional valley tracking with constant-velocity smoothing
+- [[wiki/concepts/anatomical-z-zone-priors-and-spatial-deduplication|Anatomical Z-Zone Priors & Spatial Deduplication]] — Pelvic insertion depth priors, obturator vs. interstitial length filtering, and greedy confidence-ranked 3D trajectory NMS
+- [[wiki/concepts/short-obturator-vs-long-interstitial-needles|Short Obturator vs. Long Interstitial Needles]] — Geometric and clinical distinction between short vaginal obturator needles (~70–90 mm) and long transperineal interstitial needles (240 mm)
+
+---
+
+## Entities (`wiki/entities/`)
+- [[wiki/entities/miccai-2013-pernelle|MICCAI 2013 (Pernelle et al.)]] — *Validation of Catheter Segmentation for MR-Guided Gynecologic Cancer Brachytherapy* (LNCS 8151, pp. 380–387)
+- [[wiki/entities/jcmc-2017-mastmeyer-pernelle|Medical Image Analysis 2017 (Mastmeyer, Pernelle et al., PMC5654713)]] — *Accurate model-based segmentation of gynecologic brachytherapy catheter collections in MRI-images* (*Med. Image Anal.* 42:173–188, 2017)
+- [[wiki/entities/pmb-2019-zaffino-pernelle-pmc6726393|PMB 2019 (Zaffino, Pernelle et al., PMC6726393)]] — *Fully automatic catheter segmentation in MRI with 3D convolutional neural networks: application to MRI-guided gynecologic brachytherapy* (*Phys. Med. Biol.* 64(16):165008)
+- [[wiki/entities/rsna-2016-dataset|RSNA 2016 Dataset (Case 050)]] — Standard 3D Slicer tutorial & calibration case (`Case 050`, 20 interstitial needles + 6 short obturator needles)
+- [[wiki/entities/bwh-54-case-gyn-cohort|Brigham & Women's Hospital 54-Case GYN Cohort]] — Complete AMIGO suite 3T T2W MRI dataset (`Cases 002–078`, `1,063` total needles = `759` CY long + `304` HT obturator, plus `543` dual-observer `LB`/`AMe` needles)
+
+---
+
+## Plans & Manuscript Drafts (`plans/` & `paper/`)
+- [[paper/manuscript|2026-10-22 NeedleFinder 2026 PMB Manuscript (`needlefinder_2026_pmb.pdf` & `.html`)]] — Publication-ready *Physics in Medicine & Biology* manuscript with 5 hand-crafted `booktabs` + `threeparttable` tables (`paper/tables/tab1..5.tex`) and 6 Claude Design System vector PDF/PNG/SVG figures (`reports/figures/fig1..6.pdf`)
+- [[plans/2026-10-22-pmb-scientific-design-system|2026-10-22 PMB Scientific Design System & Visual Architecture Spec]] — Okabe–Ito entity palette, booktabs/siunitx table macros (no longtables), 6-figure blueprint with anti-collision rules, and data blockers D1–D10 (adhesion subgroup, nnU-Net+clDice, Xiao modality, few-shot)
+- [[plans/2026-10-22-needlefinder-2026-manuscript-draft|2026-10-22 NeedleFinder 2026 Scientific Manuscript Draft & Visual Blueprint]] — Initial paper draft
+- [[plans/2026-10-21-new-paper-proposal|2026-10-21 New Paper Proposal]] — Initial execution plan
+
+---
+
+## Raw Sources & Reviews (`sources/` & `reports/`)
+- `sources/2026-10-22-unified-apples-to-apples-benchmark.json` — Complete 5-fold OOF benchmark across all 54 patients (`1,063` catheters), 23-patient Severe Catheter-Adhesion Subgroup (`233` catheters), and Few-Shot (`0, 1, 5, 10, 20, 43` shots) comparing `PMB 2019 3D U-Net + DBSCAN`, `Native 3D ResUNet + clDice + Skeleton`, `Xiao 2026 Sync-Track (arXiv:2607.11290)`, and `NeedleFinder 2026 + IRGM + Poly3`
+- `sources/2026-10-22-public-pelvic-mri-specificity-benchmark.json` — Out-of-distribution zero-needle specificity benchmark on 48 clinical 3T pelvic T2W MRI volumes (`MSD Task05_Prostate`)
+- [[sources/2013-miccai-summary|2013 MICCAI Paper Summary]]
+- [[sources/2019-pmb-pmc6726393-summary|2019 PMB (PMC6726393) Paper & Codebase Summary]]
+- [[sources/2026-10-22-review-codex-astra|2026-10-22 Paper Review by Codex Astra (`gpt-6-astra`)]]
+- [[sources/2026-10-22-review-opus-5-5|2026-10-22 Paper Review by Claude Opus 5.5 (`claude-opus-5-5`)]]
+- [[sources/2026-10-22-review-fable-5-1|2026-10-22 Paper Review by Claude Fable 5.1 (`claude-fable-5-1`)]]
+- `sources/2026-10-22-interobserver-543-benchmark.json` — Complete 41-scene (`543`-needle) `CY` vs. `LB`/`AMe` vs. `NeedleFinder 2026` inter-observer benchmark JSON
+- `sources/2026-10-21-54cases-benchmark.json` — Raw per-case 54-case benchmark JSON
+- `sources/2026-10-21-auto-needle-detection-benchmark.json` — Raw 4-case benchmark JSON
+- `reports/figures/fig1_pipeline_architecture.svg` — Publication architecture diagram
+- `reports/figures/fig2_pareto_precision_recall_f1.svg` — 5-Fold OOF Precision-Recall Pareto & confidence sweep figure
+- `reports/figures/fig3_shaft_error_and_runtime.svg` — Shaft error vs. inter-observer floor & sub-second runtime breakdown figure

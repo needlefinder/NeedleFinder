@@ -1,0 +1,8 @@
+{
+  "attachmentFolderPath": "sources/assets",
+  "alwaysUpdateLinks": true,
+  "newFileLocation": "folder",
+  "newFileFolderPath": "wiki",
+  "useMarkdownLinks": false,
+  "showFrontmatter": true
+}

@@ -1,0 +1,29 @@
+\begin{table}[tbp]
+\centering
+\begin{threeparttable}
+\caption{\textbf{Zero-needle out-of-distribution specificity on 48 public clinical 3T pelvic T2W MRI volumes (MSD \texttt{Task05\_Prostate}).}
+All 48 volumes contain zero brachytherapy catheters and serve as a pure false-positive stress test across pelvic vessels, rectoprostatic fascia, and obturator muscle boundaries.}
+\label{tbl:specificity}
+\footnotesize
+\begin{tabular}{@{}L
+ R R R R R
+ R R@{}}
+\toprule
+ & \multicolumn{5}{c}{False-positive tracks per volume ($n=48$)} & \multicolumn{2}{c}{Patient specificity (\%)}\\
+\cmidrule(lr){2-6}\cmidrule(l){7-8}
+Pipeline configuration & {Total} & {Mean} & {SD} & {Median} & {Max} & {$0$ FP} & {$\le 1$ FP}\\
+\midrule
+Unpruned candidate pool\tnote{a} & 985 & 20.52 & 8.91 & 19.5 & 49 & 0.0 & 0.0\\
+NeedleUNet3D + tangent tubes\tnote{b} & 306 & 6.38 & 4.72 & 6.0 & 19 & \second{14.6} & \second{22.9}\\
+\oursrow \NF{} ($\tau=60\,\%$)\tnote{c} & \second{188} & \second{3.92} & \second{2.90} & \second{3.0} & \second{11} & 10.4 & 22.9\\
+\oursrow \NF{} + Stage 0 radial gate\tnote{d} & \best{18} & \best{0.38} & \best{0.53} & \best{0.0} & \best{2} & \best{64.6} & \best{97.9}\\
+\bottomrule
+\end{tabular}
+\begin{tablenotes}[flushleft]\footnotesize
+\item[a] Raw Stage~0 + Stage~1 candidate tracks prior to Bundle Graph Transformer pruning.
+\item[b] Stage~1 \texttt{NeedleUNet3D} centerline probability peaks linked via directional tangent tubes without Stage~0 symmetry gating.
+\item[c] Full 2-stage \NF{} with Bundle Graph Transformer set-level pruning ($\tau=60\,\%$), eliminating $80.9\,\%$ of candidate false positives ($20.52 \to 3.92$\,FP/vol).
+\item[d] Enforcing the analytical Stage~0 3D multi-radii circular dark-core symmetry gate alongside Stage~1 \texttt{NeedleUNet3D} rejects asymmetric vascular and fascial interfaces, reducing false alarms by $98.2\,\%$ ($0.38 \pm 0.53$\,FP/vol, median $0.0$).
+\end{tablenotes}
+\end{threeparttable}
+\end{table}

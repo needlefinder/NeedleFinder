@@ -1,0 +1,31 @@
+{
+  "collapse-filter": false,
+  "search": "",
+  "showTags": true,
+  "showAttachments": false,
+  "hideUnresolved": false,
+  "showOrphans": true,
+  "collapse-color-groups": false,
+  "colorGroups": [
+    {
+      "query": "path:wiki/syntheses",
+      "color": { "a": 1, "rgb": 14701138 }
+    },
+    {
+      "query": "path:wiki/research",
+      "color": { "a": 1, "rgb": 3710183 }
+    },
+    {
+      "query": "path:wiki/concepts",
+      "color": { "a": 1, "rgb": 5431378 }
+    },
+    {
+      "query": "path:wiki/entities",
+      "color": { "a": 1, "rgb": 14725458 }
+    },
+    {
+      "query": "path:sources",
+      "color": { "a": 1, "rgb": 8947848 }
+    }
+  ]
+}

@@ -1,0 +1,36 @@
+\begin{table}[tbp]
+\centering
+\begin{threeparttable}
+\caption{\textbf{Human inter-observer agreement versus \NF{} across the 40 dual-annotated clinical 3T MRI scenes.}
+Expert teams \texttt{CY} ($n=505$) and \texttt{LB}/\texttt{AMe} ($n=513$) independently digitized the same volumes (481 Hungarian 1-to-1 matched pairs within $3.5$\,mm).}
+\label{tbl:interobserver}
+\footnotesize
+\begin{tabular}{@{}L
+ R R
+ R R R R R
+ R R@{}}
+\toprule
+ & \multicolumn{2}{c}{1-to-1 Match} & \multicolumn{5}{c}{\Eshaft{} (mm)} & {\HD{}$_{\text{slice}}$ (mm)} & {\Etip{} (mm)}\\
+\cmidrule(lr){2-3}\cmidrule(lr){4-8}\cmidrule(lr){9-9}\cmidrule(l){10-10}
+Comparison pair & {$n$} & {Rate (\%)} & {Mean} & {SD} & {Median} & {IQR} & {P95} & {Median} & {Median}\\
+\midrule
+\multicolumn{10}{@{}l}{\textit{Human inter-observer agreement (\texttt{CY} vs.\ \texttt{LB}/\texttt{AMe})}}\\
+\addlinespace[1pt]
+\quad All 40 dual scenes ($\le 3.5$\,mm) & 481 & 93.8 & 0.71 & 0.58 & 0.51 & 0.50 & 2.02 & 0.95 & \best{3.19}\\
+\quad All 40 dual scenes ($\le 5.0$\,mm) & 488 & 95.1 & 0.76 & 0.73 & 0.52 & 0.52 & 2.19 & 0.96 & 3.28\\
+\quad Manual clinical subset (27 pts)\tnote{a} & 347 & 92.5 & 0.89 & 0.85 & 0.60 & 0.62 & 2.64 & 1.08 & 3.54\\
+\quad Consensus subset (10 pts)\tnote{b} & 88 & \best{97.8} & 0.41 & 0.25 & 0.38 & 0.19 & 0.72 & 0.68 & 2.41\\
+\midrule
+\multicolumn{10}{@{}l}{\textit{Automated OOF predictions vs.\ each independent observer (40 scenes)}}\\
+\addlinespace[1pt]
+\oursrow \quad \NF{} vs.\ \texttt{CY} & 486 & \second{96.2} & \best{0.55} & \best{0.36} & \best{0.45} & \best{0.33} & \best{1.19} & \second{0.95} & 3.50\\
+\oursrow \quad \NF{} vs.\ \texttt{LB}/\texttt{AMe} & 472 & 92.0 & \second{0.73} & \second{0.57} & \second{0.51} & \second{0.58} & \second{2.05} & \best{0.94} & \second{3.42}\\
+\bottomrule
+\end{tabular}
+\begin{tablenotes}[flushleft]\footnotesize
+\item[a] Pure manual clinical contours digitized independently by observers \texttt{CY} and \texttt{LB} during clinical treatment planning.
+\item[b] Semi-automated template-verified consensus scenes from the MICCAI 2013 validation subset (2013).
+\item Across all 481 paired trajectories, \NF{} vs.\ \texttt{CY} achieves significantly lower shaft discrepancy and $41\,\%$ tighter 95th-percentile tail error than the inter-observer difference between \texttt{CY} and \texttt{LB}/\texttt{AMe} (paired Wilcoxon $p < 10^{-4}$).
+\end{tablenotes}
+\end{threeparttable}
+\end{table}

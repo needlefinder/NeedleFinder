@@ -1,0 +1,49 @@
+% ---------- Typography & Colour System (Okabe-Ito Scientific Palette) ----------
+\setlength{\emergencystretch}{3em}
+\usepackage{xcolor}
+\usepackage{colortbl}
+\definecolor{nfst0}{HTML}{E69F00}   \definecolor{nfst0tint}{HTML}{F7ECCC}
+\definecolor{nfst1}{HTML}{0072B2}   \definecolor{nfst1tint}{HTML}{CCE3F0}
+\definecolor{nfst2}{HTML}{009E73}   \definecolor{nfst2tint}{HTML}{CCECE3}
+\definecolor{nfours}{HTML}{D55E00}  \definecolor{nfrow}{HTML}{FBEFE6}
+\definecolor{nfourstext}{HTML}{9E4400}
+\definecolor{nfgrey}{HTML}{4D4D4D}  \definecolor{nfrule}{HTML}{BFBFBF}
+\definecolor{nfctrow}{HTML}{F2F2F2}
+\definecolor{ctrow}{HTML}{F2F2F2}
+
+% ---------- Tables (Booktabs + ThreePartTable, Zero Longtable Wrapping) ----------
+\usepackage{booktabs,tabularx,threeparttable,multirow,makecell,array,etoolbox}
+\newcommand{\best}[1]{\textbf{#1}}
+\newcommand{\second}[1]{\underline{#1}}
+\newcommand{\TBD}{\textcolor{red}{\textbf{TBD}}}
+\newcommand{\rep}{\textsuperscript{r}}
+\newcommand{\oursrow}{\rowcolor{nfrow}}
+\newcommand{\ctrow}{\rowcolor{nfctrow}}
+\newcommand{\NF}{\textbf{NeedleFinder\,2026}}
+\newcommand{\Eshaft}{$E_{\mathrm{shaft}}$}
+\newcommand{\Etip}{$E_{\mathrm{tip}}$}
+\newcommand{\Davg}{$D_{\mathrm{avg}}$}
+\newcommand{\HD}{$\mathrm{HD}$}
+\newcolumntype{L}{>{\raggedright\arraybackslash}l}
+\newcolumntype{R}{>{\raggedleft\arraybackslash}r}
+\newcolumntype{C}{>{\centering\arraybackslash}c}
+\newcolumntype{Y}{>{\raggedright\arraybackslash}X}
+\setlength{\tabcolsep}{5.2pt}
+\renewcommand{\arraystretch}{1.15}
+\setlength{\aboverulesep}{0.4ex}
+\setlength{\belowrulesep}{0.55ex}
+\setlength{\cmidrulewidth}{0.4pt}
+
+% ---------- Captions & Float Control ----------
+\usepackage[font=small,labelfont=bf,labelsep=period,justification=justified,singlelinecheck=false,skip=5pt]{caption}
+\captionsetup[table]{position=top}
+\usepackage{placeins}
+\usepackage{float}
+\renewcommand{\topfraction}{0.92}
+\renewcommand{\bottomfraction}{0.85}
+\renewcommand{\textfraction}{0.06}
+\renewcommand{\floatpagefraction}{0.82}
+\setcounter{topnumber}{4}
+\setcounter{totalnumber}{5}
+\usepackage{rotating}
+\AtBeginDocument{\hypersetup{colorlinks=true,linkcolor=nfst1,citecolor=nfst1,urlcolor=nfst1}}

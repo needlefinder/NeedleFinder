@@ -1,0 +1,15 @@
+method,tau,recall_1to1,precision_1to1,f1_1to1,shaft_mean_mm,shaft_med_mm,tip_med_mm
+Baseline 1: PMB 2019 Isotropic 1mm³ 3D U-Net + DBSCAN/Skeleton,,86.92,76.36,81.30,0.519,0.417,3.352
+Baseline 2: Native-Resolution 3D ResUNet + clDice + Skeleton (Mask-Only),,90.40,23.94,37.85,0.559,0.432,3.080
+Stage 0/1A: Pure Physics 3D CV + HybridNeedleNet,,76.76,64.05,69.83,0.618,0.477,3.045
+Stage 1B: Multi-Head NeedleUNet3D + Tangent Tube Tracking,,92.76,62.56,74.73,0.580,0.465,2.909
+Stage 1B: Hybrid AxialTransUNet3D + Tangent Tube Tracking,,92.47,60.31,73.00,0.577,0.471,2.984
+Stage 2A: Pure NeedleSliceMPNN (4-Layer Triplet GraphNet),,88.33,77.67,82.66,0.528,0.405,3.315
+Unified NeedleFinder 2026 (tau=25%),25,92.76,75.90,83.49,0.566,0.463,2.862
+Unified NeedleFinder 2026 (tau=35%),35,91.44,76.96,83.58,0.566,0.463,2.801
+Unified NeedleFinder 2026 (tau=45%),45,89.56,80.27,84.66,0.568,0.463,2.734
+Unified NeedleFinder 2026 (tau=50%),50,88.05,81.82,84.82,0.567,0.460,2.721
+Unified NeedleFinder 2026 (tau=60%),60,87.02,83.41,85.17,0.570,0.459,2.678
+Baseline 3: Xiao 2026 IRGM + 3D Hough + Sync Inward Tracking + Poly3,,86.92,38.87,53.72,0.659,0.475,6.025
+"Xiao 2026 3D Hough + Sync Inward Tracking + Poly3 (on Ground-Truth Masks, Table 2B)",,97.37,83.13,89.69,0.207,0.106,1.690
+Unified NeedleFinder 2026 + IRGM + SyncTrack + Poly3 (tau=50%),50,89.75,82.45,85.95,0.575,0.460,2.819
