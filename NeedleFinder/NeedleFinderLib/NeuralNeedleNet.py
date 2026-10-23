@@ -15,8 +15,11 @@ Stage 2: Constructs 3D needle trajectories from the predicted labelmap & tangent
 
 import math
 import os
+import time
 import numpy as np
 from scipy.ndimage import maximum_filter
+
+LAST_STAGE2_TIMINGS = {"s2a_mpnn_sec": 0.0, "s2b_bgt_poly3_sec": 0.0}
 
 _ORT_SESSION = None
 _ORT_MODEL_PATH = None
@@ -209,16 +212,20 @@ def run_nn_3d_segmentation(vol, sp_i, sp_j, sp_k, i0, i1, j0, j1, k0, K, resp_su
     p_obt_w = 1.0 / (1.0 + np.exp(-np.clip(out[4], -20.0, 20.0)))
 
     def _restore_full(arr_w):
-        if H_full > max_h or W_full > max_w:
-            arr_c = np.zeros((K_sub, H_full, W_full), dtype=np.float32)
-            arr_c[:, hc0:hc1, wc0:wc1] = arr_w
-        else:
-            arr_c = arr_w.astype(np.float32)
+        arr_u = arr_w.astype(np.float32)
         if stride_k == 2:
-            arr_c = _upsample_2x_k(arr_c, K_in)
+            arr_u = _upsample_2x_k(arr_u, K_in)
         if stride_xy == 2:
-            arr_c = _upsample_2x_xy(arr_c, H_in, W_in)
-        return arr_c
+            arr_u = _upsample_2x_xy(arr_u, (hc1 - hc0) * 2, (wc1 - wc0) * 2)
+        if H_full > max_h or W_full > max_w or arr_u.shape[1] != H_in or arr_u.shape[2] != W_in:
+            res = np.zeros((K_in, H_in, W_in), dtype=np.float32)
+            j_s = hc0 * stride_xy
+            i_s = wc0 * stride_xy
+            ch = min(H_in - j_s, arr_u.shape[1])
+            cw = min(W_in - i_s, arr_u.shape[2])
+            res[:, j_s:j_s + ch, i_s:i_s + cw] = arr_u[:, :ch, :cw]
+            return res
+        return arr_u
 
     return {
         "p_mask": _restore_full(p_mask_w),
@@ -334,11 +341,22 @@ def extract_nn_labelmap_tubes(
                 work_peak[kr, j0_p:j1_p, i0_p:i1_p][d_sub] = 0.0
 
     nms_px = max(1, int(round(1.35 / min(sp_i, sp_j))))
-    lm = work_peak == maximum_filter(work_peak, size=(1, 2 * nms_px + 1, 2 * nms_px + 1))
-    seed_mask = lm & (work_peak >= 0.42) & ((p_mask >= 0.45) | (p_obt >= 0.45))
-    sk, sj, si = np.where(seed_mask)
+    cand_fg = (work_peak >= 0.42) & ((p_mask >= 0.45) | (p_obt >= 0.45))
+    fg_k, fg_j, fg_i = np.where(cand_fg)
+    if len(fg_k) == 0:
+        return []
+    j_b0 = max(0, int(np.min(fg_j)) - nms_px - 1)
+    j_b1 = min(H, int(np.max(fg_j)) + nms_px + 2)
+    i_b0 = max(0, int(np.min(fg_i)) - nms_px - 1)
+    i_b1 = min(W, int(np.max(fg_i)) + nms_px + 2)
+    wp_sub = work_peak[:, j_b0:j_b1, i_b0:i_b1]
+    lm_sub = wp_sub == maximum_filter(wp_sub, size=(1, 2 * nms_px + 1, 2 * nms_px + 1))
+    seed_sub = lm_sub & cand_fg[:, j_b0:j_b1, i_b0:i_b1]
+    sk, sj_rel, si_rel = np.where(seed_sub)
     if len(sk) == 0:
         return []
+    sj = sj_rel + j_b0
+    si = si_rel + i_b0
 
     scores = work_peak[sk, sj, si]
     order_seeds = np.argsort(-scores)
@@ -791,9 +809,12 @@ def run_mpnn_and_graph_transformer(
     3. Runs the Trajectory-Level GATv2 + Set Transformer (`needle_graph_transformer.onnx`)
        to assign calibrated confidence scores and suppress duplicate/false-positive tracks.
     """
+    t_s2a_0 = time.perf_counter()
     W_dict = _get_graphnet_weights()
     gt_sess = _get_gt_ort_session()
     if W_dict is None or nn_preds is None or not candidate_trajs:
+        LAST_STAGE2_TIMINGS["s2a_mpnn_sec"] = 0.0
+        LAST_STAGE2_TIMINGS["s2b_bgt_poly3_sec"] = 0.0
         return candidate_trajs
 
     p_mask = nn_preds["p_mask"]
@@ -825,42 +846,58 @@ def run_mpnn_and_graph_transformer(
         rsym_s = rsym_roi[::st_k, ::st_xy, ::st_xy]
 
         Ks, Hs, Ws = pm_s.shape
-        nz = sub_v[sub_v > 0]
+        v_sub_s = sub_v[::2, ::2, ::2] if Ks > 24 else sub_v
+        nz = v_sub_s[v_sub_s > 0]
         p10 = float(np.percentile(nz, 10)) if len(nz) > 100 else 0.0
         p95 = float(np.percentile(nz, 95)) if len(nz) > 100 else 100.0
-        ch0 = np.clip((sub_v - p10) / max(1.0, p95 - p10), -0.5, 2.5).astype(np.float32)
-        pr = resp_s[resp_s > 0]
+        r_sub_s = resp_s[::2, ::2, ::2] if Ks > 24 else resp_s
+        pr = r_sub_s[r_sub_s > 0]
         r_sc = float(np.percentile(pr, 99)) if len(pr) > 20 else 50.0
-        ch1 = np.clip(np.log1p(np.maximum(0.0, resp_s)) / max(1.0, math.log1p(r_sc)), 0.0, 1.5).astype(np.float32)
-        pc = cs_s[cs_s > 0]
-        c_sc = float(np.percentile(pc, 99)) if len(pc) > 20 else 25.0
-        ch2 = np.clip(cs_s / max(1.0, c_sc), 0.0, 1.5).astype(np.float32)
-        ch3 = np.clip((rsym_s - sub_v) / (rsym_s + 15.0), -0.5, 1.0).astype(np.float32)
+        log_r_sc = max(1.0, math.log1p(r_sc))
+        c_sub_s = cs_s[::2, ::2, ::2] if Ks > 24 else cs_s
+        pc = c_sub_s[c_sub_s > 0]
+        c_sc = max(1.0, float(np.percentile(pc, 99)) if len(pc) > 20 else 25.0)
 
         sp_i_e, sp_j_e, sp_k_e = sp_i * st_xy, sp_j * st_xy, sp_k * st_k
-        score_vol = 0.48 * pp_s + 0.30 * pm_s + 0.14 * po_s + 0.12 * np.clip(ch1, 0.0, 1.2)
-        nms_r = max(1, int(round(1.35 / sp_i_e)))
-        loc_max = score_vol == maximum_filter(score_vol, size=(1, 2 * nms_r + 1, 2 * nms_r + 1))
-        pm_max3_vol = maximum_filter(pm_s, size=(1, 3, 3))
-        pp_max3_vol = maximum_filter(pp_s, size=(1, 3, 3))
-        yy_w, xx_w = np.mgrid[-1:2, -1:2]
-
+        cand_m = (pm_s >= 0.22) | (pp_s >= 0.20) | (po_s >= 0.25)
+        ck, cj, ci = np.where(cand_m)
         n_kr, n_ic, n_jc, n_si, n_sj = [], [], [], [], []
-        for kr in range(Ks):
-            mk = loc_max[kr] & (score_vol[kr] >= 0.20) & ((pm_s[kr] >= 0.22) | (pp_s[kr] >= 0.20) | (po_s[kr] >= 0.25))
-            mk[0, :] = False; mk[-1, :] = False; mk[:, 0] = False; mk[:, -1] = False
-            jj, ii = np.where(mk)
-            if len(ii) == 0:
-                continue
-            if len(ii) > 32:
-                order = np.argsort(-score_vol[kr, jj, ii])[:32]
-                jj, ii = jj[order], ii[order]
-            for jc, ic in zip(jj, ii):
-                wp = np.maximum(0.0, score_vol[kr, jc - 1:jc + 2, ic - 1:ic + 2])
-                ws = float(np.sum(wp))
-                si = float(ic) + float(np.sum(xx_w * wp)) / ws if ws > 1e-6 else float(ic)
-                sj = float(jc) + float(np.sum(yy_w * wp)) / ws if ws > 1e-6 else float(jc)
-                n_kr.append(kr); n_ic.append(ic); n_jc.append(jc); n_si.append(si); n_sj.append(sj)
+        if len(ck) >= 6:
+            nms_r = max(1, int(round(1.35 / sp_i_e)))
+            jb0 = max(0, int(np.min(cj)) - nms_r - 2)
+            jb1 = min(Hs, int(np.max(cj)) + nms_r + 3)
+            ib0 = max(0, int(np.min(ci)) - nms_r - 2)
+            ib1 = min(Ws, int(np.max(ci)) + nms_r + 3)
+            ch1_box = np.clip(np.log1p(np.maximum(0.0, resp_s[:, jb0:jb1, ib0:ib1])) / log_r_sc, 0.0, 1.5).astype(np.float32)
+            score_box = (
+                0.48 * pp_s[:, jb0:jb1, ib0:ib1]
+                + 0.30 * pm_s[:, jb0:jb1, ib0:ib1]
+                + 0.14 * po_s[:, jb0:jb1, ib0:ib1]
+                + 0.12 * np.clip(ch1_box, 0.0, 1.2)
+            )
+            loc_max_box = score_box == maximum_filter(score_box, size=(1, 2 * nms_r + 1, 2 * nms_r + 1))
+            yy_w, xx_w = np.mgrid[-1:2, -1:2]
+
+            for kr in range(Ks):
+                mk_box = loc_max_box[kr] & (score_box[kr] >= 0.20) & cand_m[kr, jb0:jb1, ib0:ib1]
+                jj_b, ii_b = np.where(mk_box)
+                if len(ii_b) == 0:
+                    continue
+                jj = jj_b + jb0
+                ii = ii_b + ib0
+                valid_b = (jj >= 1) & (jj < Hs - 1) & (ii >= 1) & (ii < Ws - 1)
+                jj, ii, jj_b, ii_b = jj[valid_b], ii[valid_b], jj_b[valid_b], ii_b[valid_b]
+                if len(ii) == 0:
+                    continue
+                if len(ii) > 32:
+                    order = np.argsort(-score_box[kr, jj_b, ii_b])[:32]
+                    jj, ii, jj_b, ii_b = jj[order], ii[order], jj_b[order], ii_b[order]
+                for jc, ic, jb, ib in zip(jj, ii, jj_b, ii_b):
+                    wp = np.maximum(0.0, score_box[kr, jb - 1:jb + 2, ib - 1:ib + 2])
+                    ws = float(np.sum(wp))
+                    si = float(ic) + float(np.sum(xx_w * wp)) / ws if ws > 1e-6 else float(ic)
+                    sj = float(jc) + float(np.sum(yy_w * wp)) / ws if ws > 1e-6 else float(jc)
+                    n_kr.append(kr); n_ic.append(ic); n_jc.append(jc); n_si.append(si); n_sj.append(sj)
 
         N = len(n_kr)
         if N >= 6:
@@ -878,8 +915,16 @@ def run_mpnn_and_graph_transformer(
             po_v = po_s[n_kr, n_jc, n_ic]
             vx_v = vx_s[n_kr, n_jc, n_ic]
             vy_v = vy_s[n_kr, n_jc, n_ic]
-            pm_m3 = pm_max3_vol[n_kr, n_jc, n_ic]
-            pp_m3 = pp_max3_vol[n_kr, n_jc, n_ic]
+            pm_m3 = np.array([float(np.max(pm_s[k_i, j_i - 1:j_i + 2, i_i - 1:i_i + 2])) for k_i, j_i, i_i in zip(n_kr, n_jc, n_ic)], dtype=np.float32)
+            pp_m3 = np.array([float(np.max(pp_s[k_i, j_i - 1:j_i + 2, i_i - 1:i_i + 2])) for k_i, j_i, i_i in zip(n_kr, n_jc, n_ic)], dtype=np.float32)
+            v_node = sub_v[n_kr, n_jc, n_ic]
+            r_node = resp_s[n_kr, n_jc, n_ic]
+            c_node = cs_s[n_kr, n_jc, n_ic]
+            rs_node = rsym_s[n_kr, n_jc, n_ic]
+            ch0_v = np.clip((v_node - p10) / max(1.0, p95 - p10), -0.5, 2.5).astype(np.float32)
+            ch1_v = np.clip(np.log1p(np.maximum(0.0, r_node)) / log_r_sc, 0.0, 1.5).astype(np.float32)
+            ch2_v = np.clip(c_node / c_sc, 0.0, 1.5).astype(np.float32)
+            ch3_v = np.clip((rs_node - v_node) / (rs_node + 15.0), -0.5, 1.0).astype(np.float32)
             r_mm = np.hypot((n_si - Ws * 0.5) * sp_i_e, (n_sj - Hs * 0.5) * sp_j_e) / 50.0
 
             nodes_feat = np.column_stack([
@@ -888,10 +933,10 @@ def run_mpnn_and_graph_transformer(
                 (nodes_ras[:, 2] - z_base_ras) / 80.0,
                 pm_v, pp_v, po_v, vx_v, vy_v,
                 pm_m3, pp_m3, 0.5 * (pm_v + pm_m3),
-                ch0[n_kr, n_jc, n_ic],
-                ch1[n_kr, n_jc, n_ic],
-                ch2[n_kr, n_jc, n_ic],
-                ch3[n_kr, n_jc, n_ic],
+                ch0_v,
+                ch1_v,
+                ch2_v,
+                ch3_v,
                 r_mm,
             ]).astype(np.float32)
 
@@ -1084,8 +1129,11 @@ def run_mpnn_and_graph_transformer(
                 "mpnn_pe": mt["mean_pe"],
             })
 
+    t_s2_split = time.perf_counter()
+    LAST_STAGE2_TIMINGS["s2a_mpnn_sec"] = t_s2_split - t_s2a_0
     M = len(pool)
     if M == 0 or gt_sess is None:
+        LAST_STAGE2_TIMINGS["s2b_bgt_poly3_sec"] = 0.0
         return [p["traj"] for p in pool if p["traj"].get("confidence", 0.0) >= float(min_confidence)]
 
     # 3. Build Trajectory-Level Bundle Graph & Run DenseGraphTransformer + TipAwareBundleGraphTransformer
@@ -1095,13 +1143,13 @@ def run_mpnn_and_graph_transformer(
     med_slope = np.median(slopes, axis=0)
 
     vol_roi_full = vol if vol.shape == (K_sub, H, W) else vol[k0:k0 + K_sub, j0:j0 + H, i0:i0 + W]
-    pos_r_f = resp_roi[resp_roi > 0]
+    r_sub_f = resp_roi[::2, ::2, ::2] if K_sub > 40 else resp_roi
+    pos_r_f = r_sub_f[r_sub_f > 0]
     r_sc_f = float(np.percentile(pos_r_f, 99)) if len(pos_r_f) > 20 else 50.0
-    sym_arr = np.clip(np.log1p(np.maximum(0.0, resp_roi)) / max(1.0, math.log1p(r_sc_f)), 0.0, 1.5).astype(np.float32)
-    pos_c_f = cs_roi[cs_roi > 0]
-    c_sc_f = float(np.percentile(pos_c_f, 99)) if len(pos_c_f) > 20 else 25.0
-    cs_arr = np.clip(cs_roi / max(1.0, c_sc_f), 0.0, 1.5).astype(np.float32)
-    rc_arr = np.clip((rsym_roi - vol_roi_full) / (rsym_roi + 15.0), -0.5, 1.0).astype(np.float32)
+    log_r_sc_f = max(1.0, math.log1p(r_sc_f))
+    c_sub_f = cs_roi[::2, ::2, ::2] if K_sub > 40 else cs_roi
+    pos_c_f = c_sub_f[c_sub_f > 0]
+    c_sc_f = max(1.0, float(np.percentile(pos_c_f, 99)) if len(pos_c_f) > 20 else 25.0)
 
     z_tops = np.array([float(p["ras"][-1, 2]) for p in pool], dtype=np.float32)
     z_bots = np.array([float(p["ras"][0, 2]) for p in pool], dtype=np.float32)
@@ -1122,9 +1170,13 @@ def run_mpnn_and_graph_transformer(
                 pm_l.append(float(np.max(p_mask[kc, jc - 1:jc + 2, ic - 1:ic + 2])))
                 pp_l.append(float(np.max(p_peak[kc, jc - 1:jc + 2, ic - 1:ic + 2])))
                 po_l.append(float(np.max(p_obt[kc, jc - 1:jc + 2, ic - 1:ic + 2])))
-                sym_l.append(float(np.max(sym_arr[kc, jc - 1:jc + 2, ic - 1:ic + 2])))
-                cs_l.append(float(np.max(cs_arr[kc, jc - 1:jc + 2, ic - 1:ic + 2])))
-                rc_l.append(float(np.max(rc_arr[kc, jc - 1:jc + 2, ic - 1:ic + 2])))
+                r_max = float(np.max(resp_roi[kc, jc - 1:jc + 2, ic - 1:ic + 2]))
+                sym_l.append(min(1.5, max(0.0, math.log1p(max(0.0, r_max)) / log_r_sc_f)))
+                c_max = float(np.max(cs_roi[kc, jc - 1:jc + 2, ic - 1:ic + 2]))
+                cs_l.append(min(1.5, max(0.0, c_max / c_sc_f)))
+                rs_p = rsym_roi[kc, jc - 1:jc + 2, ic - 1:ic + 2]
+                v_p = vol_roi_full[kc, jc - 1:jc + 2, ic - 1:ic + 2]
+                rc_l.append(float(np.clip(np.max((rs_p - v_p) / (rs_p + 15.0)), -0.5, 1.0)))
         mean_pm = float(np.mean(pm_l)) if pm_l else 0.0
         p75_pm = float(np.percentile(pm_l, 75)) if pm_l else 0.0
         mean_pp = float(np.mean(pp_l)) if pp_l else 0.0
@@ -1154,7 +1206,8 @@ def run_mpnn_and_graph_transformer(
                 m_v = float(np.max(p_mask[kc, jc - 1:jc + 2, ic - 1:ic + 2]))
                 p_v = float(np.max(p_peak[kc, jc - 1:jc + 2, ic - 1:ic + 2]))
                 o_v = float(np.max(p_obt[kc, jc - 1:jc + 2, ic - 1:ic + 2]))
-                s_v = float(np.max(sym_arr[kc, jc - 1:jc + 2, ic - 1:ic + 2]))
+                r_max = float(np.max(resp_roi[kc, jc - 1:jc + 2, ic - 1:ic + 2]))
+                s_v = min(1.5, max(0.0, math.log1p(max(0.0, r_max)) / log_r_sc_f))
                 support_p[idx_p] = 0.40 * max(m_v, o_v) + 0.35 * p_v + 0.25 * min(1.0, s_v)
         valid_sup = np.where(support_p >= 0.24)[0]
         z_prof_tip = float(z_probe[int(valid_sup[-1])]) if len(valid_sup) > 0 else z_top_cur
@@ -1309,5 +1362,6 @@ def run_mpnn_and_graph_transformer(
             cand["z_span_tracked"] = float(abs(pts_ref[-1, 2] - pts_ref[0, 2]))
         out_trajs.append(cand)
 
+    LAST_STAGE2_TIMINGS["s2b_bgt_poly3_sec"] = time.perf_counter() - t_s2_split
     return out_trajs
 
