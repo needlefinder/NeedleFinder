@@ -17,7 +17,9 @@ $endfor$
 <header class="masthead">
   <p class="kicker"><span>Research paper</span><span>Physics in Medicine &amp; Biology · Manuscript</span></p>
   <h1 class="title">$title$</h1>
+$if(author)$
   <p class="authors">$for(author)$$author$$sep$ $endfor$</p>
+$endif$
 $if(date)$
   <p class="date">$date$</p>
 $endif$

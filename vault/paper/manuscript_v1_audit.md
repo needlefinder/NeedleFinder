@@ -1,8 +1,5 @@
 ---
 title: "NeedleFinder 2026: Sub-Millimeter Catheter Reconstruction on MRI for Interstitial Gynecologic Brachytherapy in Seconds"
-author:
-  - "Guillaume Pernelle, Paolo Zaffino, Lauren Barber, Alireza Mehrtash,"
-  - "Christiane Yeung, Tina Kapur, and Collaborators"
 date: "October 2026 (Target Journal: *Physics in Medicine & Biology*)"
 abstract: |
   **Objective.** Interstitial gynecologic brachytherapy planned on MRI alone requires locating 15 to 30 thin plastic catheters on 3T T2-weighted images. Tracing them by hand takes tens of minutes while the patient is under anesthesia. Automatic methods based on voxel segmentation break catheters into fragments and mistake blood vessels for catheters. We set out to make catheter reconstruction automatic, accurate to below a millimeter, and fast enough to run during the procedure.
