@@ -427,7 +427,7 @@ STRUCTURAL_MACROS = {
 }
 PREAMBLE_MACROS = {"NF", "Eshaft", "Etip", "Davg", "HD", "rep", "best", "second", "tnote", "quad"}
 TEXT_MACROS = {"textbf", "textit", "emph", "texttt", "underline", "textsuperscript", "text", "ref", "href"}
-MATH_MACROS = {"mathrm", "text", "tau", "le", "ge", "times", "to", "pm", "Delta", "cdot", "sim", "approx", "gamma", "sigma", "rho", "alpha", "hat", "parallel", "perp"}
+MATH_MACROS = {"mathrm", "text", "tau", "le", "ge", "times", "to", "pm", "Delta", "cdot", "sim", "approx", "gamma", "sigma", "rho", "alpha", "hat", "parallel", "perp", "sqrt", "min"}
 KNOWN_ENVS = {"table", "threeparttable", "tabular", "tablenotes"}
 
 

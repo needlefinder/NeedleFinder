@@ -918,23 +918,24 @@ def make_fig7_calibration_and_reasons():
     ax1.grid(True, color="#E6E6E6", lw=0.4, zorder=0)
 
     # --- Panel b: reason-code audit (what each decision rule removes, and at what cost) ---
-    order = ["kept", "below_threshold", "duplicate_of_kept_track", "outside_implant_region", "low_dark_core_symmetry"]
-    names = ["kept", "below\nthreshold", "duplicate of\nkept track", "outside\nimplant region", "low dark-core\nsymmetry"]
+    order = ["kept", "below_threshold", "duplicate_of_kept_track"]
+    names = ["kept\n(p ≥ 50%)", "below\nthreshold", "duplicate of\nkept track"]
     a = d["reason_code_audit"]
     ypos = np.arange(len(order))[::-1]
     false_n = np.array([a[k]["n_false"] for k in order]); red_n = np.array([a[k]["n_real_redundant"] for k in order])
     lost_n = np.array([a[k]["n_real_lost"] for k in order]); kept_real = np.array([a[k]["n_real"] if k == "kept" else 0 for k in order])
-    ax2.barh(ypos, kept_real, color=C["nf"], height=0.6, label="real catheter, kept")
-    ax2.barh(ypos, false_n, left=kept_real, color="#BDBDBD", height=0.6, label="false track")
-    ax2.barh(ypos, red_n, left=kept_real + false_n, color=C["st2"], height=0.6, label="real, but already covered by a kept track")
-    ax2.barh(ypos, lost_n, left=kept_real + false_n + red_n, color="#B03F41", height=0.6, label="real catheter lost")
+    ax2.barh(ypos, kept_real, color=C["nf"], height=0.52, label="real catheter, kept (1,015)")
+    ax2.barh(ypos, false_n, left=kept_real, color="#BDBDBD", height=0.52, label="false track (>3.5 mm)")
+    ax2.barh(ypos, red_n, left=kept_real + false_n, color=C["st2"], height=0.52, label="real, redundant (already covered)")
+    ax2.barh(ypos, lost_n, left=kept_real + false_n + red_n, color="#B03F41", height=0.52, label="real catheter lost")
     for yy, k in zip(ypos, order):
-        ax2.text(a[k]["n"] + 8, yy, f"n = {a[k]['n']}", va="center", fontsize=6.0, color="#333333")
+        ax2.text(a[k]["n"] + 16, yy, f"n = {a[k]['n']}", va="center", fontsize=6.0, color="#333333")
     ax2.set_yticks(ypos); ax2.set_yticklabels(names, fontsize=6.3)
-    ax2.set_xlim(0, max(a[k]["n"] for k in order) * 1.22)
-    ax2.set_xlabel("candidate tracks (54 patients)", fontsize=7.5)
+    ax2.set_xlim(0, max(a[k]["n"] for k in order) * 1.24)
+    ax2.set_ylim(-0.55, len(order) - 0.35)
+    ax2.set_xlabel(f"stitched candidate tracks ({d['n_candidates']} across 54 patients)", fontsize=7.3)
     ax2.set_title("b   Reason-coded decisions at $\\tau = 50\\%$", fontsize=7.2, fontweight="bold", loc="left")
-    ax2.legend(loc="lower right", fontsize=5.4, frameon=True, facecolor="white", framealpha=0.9, edgecolor="none")
+    ax2.legend(loc="lower right", fontsize=5.3, frameon=True, facecolor="white", framealpha=0.9, edgecolor="none")
     ax2.grid(axis="x", color="#E6E6E6", lw=0.4, zorder=0)
 
     assert_no_overlap(fig, pad_px=1)
@@ -952,7 +953,7 @@ def make_fig8_clinical_translation_and_generalization():
     with open(os.path.join(SOURCES_DIR, "2026-10-23-exp4-4d-insertion-and-ct.json")) as f:
         e4 = json.load(f)
 
-    fig, axes = plt.subplots(2, 2, figsize=(W2, 118 * MM), constrained_layout=True)
+    fig, axes = plt.subplots(2, 2, figsize=(W2, 122 * MM), constrained_layout=True)
     ax_a, ax_b, ax_c, ax_d = axes[0, 0], axes[0, 1], axes[1, 0], axes[1, 1]
 
     # --- Panel a: AAPM TG-43U1 HDR 192Ir Dosimetric Impact ---
@@ -1010,9 +1011,10 @@ def make_fig8_clinical_translation_and_generalization():
     ax_b.legend(loc="upper right", fontsize=5.2, frameon=True, facecolor="white", framealpha=0.9, edgecolor="none")
     ax_b.grid(True, color="#E6E6E6", lw=0.4, zorder=0)
 
-    # --- Panel c: Cross-Organ, Multi-Sequence & Cross-Modality Generalization ---
+    # --- Panel c: Cross-Organ, Multi-Sequence, 4D & Cross-Modality Generalization ---
     p3a = e3["part_3a_prostate_zero_shot_transfer"]
     p3b = e3["part_3b_same_session_cross_sequence"]["cross_sequence_benchmarks"]
+    p4a = e4["part4a_4d_intraprocedural_tracking"]
     p4b = e4["part4b_paired_pelvic_ct_cross_modality"]
 
     items_c = [
@@ -1021,51 +1023,60 @@ def make_fig8_clinical_translation_and_generalization():
         ("Prostate MRI: 1-ch\nResUNet + clDice", p3a["operating_modes"]["reference_free_auto_klim40"]["baseline2_resunet_cldice_1ch"]["f1_1to1_pct"], C["b_nnu"], "71.8% F1 (11 false tracks)"),
         ("Prostate MRI: NF 2026\nPhysics X[1:4] = 0", p3a["physics_channel_ablations"]["reference_free_auto_klim40"]["stage1_physics_zeroed_X1to3_eq_0"]["f1_1to1_pct"], "#B03F41", "0.0% F1 (985x peak drop)"),
         ("3D wbSSFP / True-FISP\n(N=47 catheters)", p3b["AX_3D_wbSSFP_FISP"]["vs_dark_core_present_gt"]["nf2026_z_upsampled_1p6mm_full_stage2"]["f1_1to1_pct"], C["st2"], "92.9% F1 (97.9% recall)"),
-        ("Thick 2D AX TSE T2\n(49 scans, N=882)", p3b["2D_AX_TSE_T2"]["vs_dark_core_present_gt"]["nf2026_z_upsampled_1p6mm_full_stage2"]["recall_1to1_pct"], C["st1"], "88.4% rec (76.9% F1)"),
-        ("Paired Pelvic CT\n(38 pts, N=801, 0-shot)", p4b["cross_modality_ct_to_mri_registration_metrics"]["dual_polarity_matched_le_5p0mm_recall_pct"], C["st0"], "79.2% rec (52% extra MRI=CT)"),
+        ("4D Causal Kalman\n(Cases 68-71, N=108)", p4a["final_3d_confirmation_pooled_4cases_108_catheters"]["causal_4d_kalman"]["f1_1to1_pct"], C["nf"], "82.8% F1, 88.4% prec (C70: 93.3%)"),
+        ("Thick 2D AX TSE T2\n(49 scans, N=882)", p3b["2D_AX_TSE_T2"]["vs_dark_core_present_gt"]["nf2026_z_upsampled_1p6mm_full_stage2"]["f1_1to1_pct"], C["st1"], "76.9% F1 (88.4% recall)"),
+        ("Paired Pelvic CT\n(38 pts / 40 vols, N=801)", p4b["cross_modality_ct_to_mri_registration_metrics"]["dual_polarity_matched_le_5p0mm_recall_pct"], C["st0"], "79.2% rec (52% extra MRI=CT)"),
     ]
     y_c = np.arange(len(items_c))[::-1]
     vals_c = [it[1] for it in items_c]
     cols_c = [it[2] for it in items_c]
     ax_c.barh(y_c, vals_c, height=0.58, color=cols_c)
     for yy, val, it in zip(y_c, vals_c, items_c):
-        ax_c.text(val + 1.5, yy, it[3], va="center", fontsize=5.4, color="#222222")
+        ax_c.text(val + 1.5, yy, it[3], va="center", fontsize=5.1, color="#222222")
     ax_c.set_yticks(y_c)
-    ax_c.set_yticklabels([it[0] for it in items_c], fontsize=5.5)
-    ax_c.set_xlim(0, 148)
-    ax_c.set_xlabel("Detection F1 or recall (%)", fontsize=7.0)
-    ax_c.set_title("c   Cross-organ, multi-sequence & CT transfer", fontsize=7.2, fontweight="bold", loc="left")
+    ax_c.set_yticklabels([it[0] for it in items_c], fontsize=5.2)
+    ax_c.set_xlim(0, 154)
+    ax_c.set_xlabel("Detection F1 or recall (%)", fontsize=6.8)
+    ax_c.set_title("c   Cross-organ, multi-sequence, 4D & CT transfer", fontsize=7.0, fontweight="bold", loc="left")
     ax_c.grid(axis="x", color="#E6E6E6", lw=0.4, zorder=0)
 
-    # --- Panel d: 4D Intra-Procedural Insertion & Biomechanics ---
-    bend = e4["part4a_4d_intraprocedural_tracking"]["depth_dependent_bending_biomechanics"]["deflection_by_depth_bin"]
-    push = e4["part4a_4d_intraprocedural_tracking"]["tissue_push_biomechanics"]
+    # --- Panel d: 4D Intra-Procedural Insertion & Biomechanics (Dual X-Axes) ---
+    bend = p4a["depth_dependent_bending_biomechanics"]["deflection_by_depth_bin"]
+    push = p4a["tissue_push_biomechanics"]
     depth_bins = ["0_30mm", "30_60mm", "60_90mm", "gt_90mm"]
     depth_x = np.arange(len(depth_bins))
     bend_med = [bend[b]["median_deflection_mm"] for b in depth_bins]
     bend_mean = [bend[b]["mean_deflection_mm"] for b in depth_bins]
     bend_p90 = [bend[b]["p90_deflection_mm"] for b in depth_bins]
 
-    ax_d.plot(depth_x, bend_p90, color="#B03F41", lw=1.2, ls="--", marker="^", ms=3.5, label="Shaft deflection P90 (mm)")
-    ax_d.plot(depth_x, bend_mean, color=C["nf"], lw=1.5, marker="o", ms=4.0, label="Shaft deflection mean (mm)")
-    ax_d.plot(depth_x, bend_med, color=C["st2"], lw=1.4, marker="s", ms=3.6, label="Shaft deflection median (mm)")
+    ax_d.plot(depth_x, bend_p90, color="#B03F41", lw=1.2, ls="--", marker="^", ms=3.5, label="Depth deflection P90 (mm, bottom axis)")
+    ax_d.plot(depth_x, bend_mean, color=C["nf"], lw=1.5, marker="o", ms=4.0, label="Depth deflection mean (mm, bottom axis)")
+    ax_d.plot(depth_x, bend_med, color=C["st2"], lw=1.4, marker="s", ms=3.6, label="Depth deflection median (mm, bottom axis)")
 
-    push_x = np.array([0.3, 1.5, 2.7])
+    push_x = np.array([0.35, 1.5, 2.65])
     push_med = [
         push["near_newly_inserted_le_10mm"]["median_lateral_shift_mm"],
         push["intermediate_10_to_20mm"]["median_lateral_shift_mm"],
         push["far_from_newly_inserted_gt_20mm"]["median_lateral_shift_mm"],
     ]
-    ax_d.plot(push_x, push_med, color=C["st0"], lw=1.3, ls="-.", marker="D", ms=3.6,
-              label="Tissue-push shift ($\\leq$10 vs $>$20 mm: 1.41 vs 0.93 mm)")
+    ax_d.plot(push_x, push_med, color=C["st0"], lw=1.4, ls="-.", marker="D", ms=3.8,
+              label="Lateral push median (1.44 vs 1.00 mm, top axis)")
     ax_d.set_xticks(depth_x)
-    ax_d.set_xticklabels(["0-30 mm\n(near <=10)", "30-60 mm\n(10-20 mm)", "60-90 mm\n(far >20)", ">90 mm\ndeep tip"], fontsize=5.6)
+    ax_d.set_xticklabels(["0–30 mm", "30–60 mm", "60–90 mm", ">90 mm"], fontsize=5.8)
     ax_d.set_xlim(-0.3, 3.3)
-    ax_d.set_ylim(0, 10.5)
-    ax_d.set_xlabel("Insertion depth / neighbor distance bin (4D Kalman +8.2% F1)", fontsize=6.6)
-    ax_d.set_ylabel("Displacement / deflection (mm)", fontsize=7.0)
-    ax_d.set_title("d   4D insertion deflection & tissue-push biomechanics", fontsize=7.2, fontweight="bold", loc="left")
-    ax_d.legend(loc="upper left", fontsize=5.1, frameon=True, facecolor="white", framealpha=0.9, edgecolor="none")
+    ax_d.set_ylim(0, 12.2)
+    ax_d.set_xlabel("Insertion depth along track (mm)", fontsize=6.6, color="#222222")
+    ax_d.set_ylabel("Deflection / lateral shift (mm)", fontsize=6.8)
+
+    ax_d_top = ax_d.twiny()
+    ax_d_top.set_xlim(-0.3, 3.3)
+    ax_d_top.set_xticks(push_x)
+    ax_d_top.set_xticklabels(["Near ≤10 mm", "10–20 mm", "Far >20 mm"], fontsize=5.6, color=C["st0"])
+    ax_d_top.set_xlabel("Distance to newly inserted needle (mm)", fontsize=6.3, color=C["st0"], labelpad=3)
+    ax_d_top.tick_params(axis="x", colors=C["st0"], pad=1)
+
+    ax_d.set_title("d   4D depth deflection & lateral tissue-push", fontsize=7.0, fontweight="bold", loc="left", pad=22)
+    ax_d.legend(loc="upper left", fontsize=4.9, frameon=True, facecolor="white", framealpha=0.9, edgecolor="none")
     ax_d.grid(True, color="#E6E6E6", lw=0.4, zorder=0)
 
     assert_no_overlap(fig, pad_px=1)

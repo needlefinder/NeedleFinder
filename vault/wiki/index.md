@@ -53,7 +53,10 @@
 ---
 
 ## Raw Sources & Reviews (`sources/` & `reports/`)
-- `sources/2026-10-23-unified-clean-nested-benchmark.json` — Strictly nested $5 \times 5$ OOF benchmark across all 54 patients (`1,063` catheters), 759 long active-dwell shafts, 23-patient Severe Catheter-Adhesion Subgroup (`571` catheters), and leak-free Stage 2B Few-Shot (`0, 0_synth_zeroshot, 1, 5, 10, 20, 43` shots)
+- [[sources/2026-10-23-central-claim-verification-ledger|2026-10-23 Central Claim Verification & Reproducibility Ledger (`V-01`–`V-10`, 5-Agent Audit Squad)]] — Complete verification and resolution ledger across Verifiers 1–3 (`flash` subagents), Claude Haiku (`sources/2026-10-23-audit-haiku.md`), and Codex Luna (`sources/2026-10-23-audit-luna.md`), confirming 100% digit-for-digit agreement between code, JSON artifacts, tables, figures, and manuscript prose
+- [[sources/2026-10-23-audit-haiku|2026-10-23 Independent Full-Manuscript Audit by Claude Haiku (`claude-haiku`)]] — Internal consistency, statistical unit-of-analysis, and reader-clarity audit
+- [[sources/2026-10-23-audit-luna|2026-10-23 Independent JSON-to-Paper Verification Audit by Codex Luna (`gpt-6-luna`)]] — Independent cross-check of all JSON artifacts against manuscript claims and tables
+- `sources/2026-10-23-unified-clean-nested-benchmark.json` — Strictly nested $5 \times 5$ OOF benchmark across all 54 patients (`1,063` catheters), 759 long active-dwell shafts, 23-patient Severe Catheter-Adhesion Subgroup (`571` catheters, including paired Wilcoxon $p$-values), and leak-free Stage 2B Few-Shot (`0, 0_synth_zeroshot, 1, 5, 10, 20, 43` shots)
 - `sources/2026-10-23-table3-observers-and-nf-clean.json` — Complete 40/40 dual-observer benchmark (`CY+HT` 723 vs. `LB/AMe` 513 vs. union 759 vs. `NeedleFinder 2026`)
 - `sources/2026-10-23-public-pelvic-mri-specificity-clean.json` — Clean zero-needle specificity benchmark on 48 public pelvic MRI scans (`MSD Task05_Prostate`: `0.125 FP/scan` with SSL + Stage 0 gate, `0.33 FP/scan` frozen unified NF 2026 + dark-core gate)
 - `sources/2026-10-23-failure-analysis.json` — Categorized failure audit of all false positives, false negatives, and $>10\text{ mm}$ tip outliers across the 54 cases

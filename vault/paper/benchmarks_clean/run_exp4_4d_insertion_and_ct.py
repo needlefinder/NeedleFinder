@@ -294,11 +294,15 @@ def estimate_interscan_rigid_xy_z_shift(prev_tracks, curr_dets, prev_z_fov=None,
     p_mids = np.array([t["ras"][len(t["ras"]) // 2] for t in prev_tracks])
     c_mids = np.array([t["ras"][len(t["ras"]) // 2] for t in curr_dets])
 
-    # Search physiological inter-scan table/patient XY shift within [-6.0, +6.0] mm
-    best_dx, best_dy = 0.0, 0.0
+    cx0 = float(np.median(c_mids[:, 0]) - np.median(p_mids[:, 0])) if abs(dz_landmark) > 20.0 else 0.0
+    cy0 = float(np.median(c_mids[:, 1]) - np.median(p_mids[:, 1])) if abs(dz_landmark) > 20.0 else 0.0
+    search_rad = 18.0 if abs(dz_landmark) > 20.0 else 6.0
+    n_grid = 25 if abs(dz_landmark) > 20.0 else 13
+
+    best_dx, best_dy = cx0, cy0
     best_cost = 1e9
-    for gx in np.linspace(-6.0, 6.0, 13):
-        for gy in np.linspace(-6.0, 6.0, 13):
+    for gx in np.linspace(cx0 - search_rad, cx0 + search_rad, n_grid):
+        for gy in np.linspace(cy0 - search_rad, cy0 + search_rad, n_grid):
             dmat = np.hypot((p_mids[:, 0:1] + gx) - c_mids[None, :, 0], (p_mids[:, 1:2] + gy) - c_mids[None, :, 1])
             ri, ci = linear_sum_assignment(dmat)
             vals = np.sort(dmat[ri, ci])
@@ -379,10 +383,19 @@ def run_causal_4d_kalman_tracker(timepoint_records):
         prev_z_fov = timepoint_records[step_idx - 1]["z_fov_ras"]
         shift_xyz = estimate_interscan_rigid_xy_z_shift(active_tracks, curr_dets_50, prev_z_fov=prev_z_fov, curr_z_fov=(z_fov_min, z_fov_max))
 
-        prop_tracks = []
-        for tr in active_tracks:
-            p_shifted = tr["ras"] + shift_xyz[None, :]
-            prop_tracks.append(dict(tr, ras_prop=p_shifted))
+        # If scanner table landmark was reset between scans (|dz| > 40 mm), use full 6-DoF rigid bundle alignment
+        if abs(shift_xyz[2]) > 40.0 and len(active_tracks) >= 5 and len(curr_dets_50) >= 5:
+            aligned_prev, _, t_opt_6d, _ = register_ct_bundle_to_mri_bundle(active_tracks, [d["ras"] for d in curr_dets_50])
+            if aligned_prev:
+                prop_tracks = [dict(tr, ras_prop=aligned_prev[idx_t]["ras"]) for idx_t, tr in enumerate(active_tracks)]
+                shift_xyz = t_opt_6d
+            else:
+                prop_tracks = [dict(tr, ras_prop=tr["ras"] + shift_xyz[None, :]) for tr in active_tracks]
+        else:
+            prop_tracks = []
+            for tr in active_tracks:
+                p_shifted = tr["ras"] + shift_xyz[None, :]
+                prop_tracks.append(dict(tr, ras_prop=p_shifted))
 
         valid_cands = [
             c for c in curr_cands_32
@@ -472,7 +485,8 @@ def run_causal_4d_kalman_tracker(timepoint_records):
                     "lateral_shift_mm": lat_shift,
                 })
             else:
-                if tr["missed_count"] == 0 and tr["confidence"] >= 55.0:
+                is_space_vol = ("space" in rec["series_name"].lower())
+                if (not is_space_vol) and tr["missed_count"] == 0 and tr["confidence"] >= 55.0:
                     z_b = max(float(z_fov_min), float(p_pr[0, 2]))
                     z_t = min(float(z_fov_max), float(p_pr[-1, 2]))
                     if z_t > z_b + 10.0:
@@ -824,6 +838,9 @@ def main():
     all_final_3d_trajs = []
     indep_vs_causal_evals = []
     all_monitoring_runtimes = []
+    pooled_indep_final_4cases = []
+    pooled_causal_final_4cases = []
+    pooled_gt_final_4cases = []
 
     for cnum, s_list in case_series_4d.items():
         b_idx = bench_idx_by_cnum[cnum]
@@ -878,13 +895,22 @@ def main():
 
         # 1. Final 3D SPACE scan vs Rater 1+2 (CY + HT, clipped to pelvic ROI in benchmark)
         final_rec = tp_records[-1]
+        pooled_indep_final_4cases.append(final_rec["indep_preds_50"])
+        pooled_causal_final_4cases.append(final_rec["causal_4d_preds"])
+        pooled_gt_final_4cases.append(gts_cy_ht)
         res_indep_final, _ = evaluate_method_unified([final_rec["indep_preds_50"]], [gts_cy_ht], thresh=3.5, n_boot=50)
         res_causal_final, _ = evaluate_method_unified([final_rec["causal_4d_preds"]], [gts_cy_ht], thresh=3.5, n_boot=50)
         eval_annotations["final_3d_space_vs_cy_ht"] = {
             "n_gt": len(gts_cy_ht),
+            "indep_n_pred": res_indep_final["n_pred"],
+            "indep_matched_1to1": res_indep_final["hungarian_1to1_matched"],
             "indep_recall_pct": res_indep_final["hungarian_1to1_recall_pct"],
             "indep_precision_pct": res_indep_final["precision_1to1_pct"],
             "indep_f1_pct": res_indep_final["f1_1to1_pct"],
+            "indep_shaft_median_mm": round(float(res_indep_final["metrics"]["mean_shaft_xy"]["median"]), 3),
+            "indep_tip_median_mm": round(float(res_indep_final["metrics"]["tip_3d"]["median"]), 3),
+            "causal_4d_n_pred": res_causal_final["n_pred"],
+            "causal_4d_matched_1to1": res_causal_final["hungarian_1to1_matched"],
             "causal_4d_recall_pct": res_causal_final["hungarian_1to1_recall_pct"],
             "causal_4d_precision_pct": res_causal_final["precision_1to1_pct"],
             "causal_4d_f1_pct": res_causal_final["f1_1to1_pct"],
@@ -981,12 +1007,49 @@ def main():
     rho_push, p_push = spearmanr(dists_push, vals_push) if len(dists_push) >= 5 else (0.0, 1.0)
 
     overall_bending = analyze_depth_dependent_bending(all_final_3d_trajs)
+    pooled_indep_res, _ = evaluate_method_unified(pooled_indep_final_4cases, pooled_gt_final_4cases, thresh=3.5, n_boot=200)
+    pooled_causal_res, _ = evaluate_method_unified(pooled_causal_final_4cases, pooled_gt_final_4cases, thresh=3.5, n_boot=200)
 
     part4a_summary = {
         "n_patients_4d": 4,
         "patient_ids": ["Case 068", "Case 069", "Case 070", "Case 071"],
         "total_serial_scans_evaluated": sum(len(v) for v in case_series_4d.values()),
         "mean_monitoring_scan_runtime_sec": round(float(np.mean(all_monitoring_runtimes or [1.05])), 3),
+        "final_3d_confirmation_pooled_4cases_108_catheters": {
+            "n_cases": 4,
+            "n_gt_total": pooled_causal_res["n_gt"],
+            "independent_3d": {
+                "n_pred": pooled_indep_res["n_pred"],
+                "matched_1to1": pooled_indep_res["hungarian_1to1_matched"],
+                "recall_1to1_pct": pooled_indep_res["hungarian_1to1_recall_pct"],
+                "precision_1to1_pct": pooled_indep_res["precision_1to1_pct"],
+                "f1_1to1_pct": pooled_indep_res["f1_1to1_pct"],
+                "shaft_mean_mm": round(float(pooled_indep_res["metrics"]["mean_shaft_xy"]["mean"]), 3),
+                "shaft_median_mm": round(float(pooled_indep_res["metrics"]["mean_shaft_xy"]["median"]), 3),
+                "shaft_iqr_mm": round(float(pooled_indep_res["metrics"]["mean_shaft_xy"]["iqr"]), 3),
+                "tip_mean_mm": round(float(pooled_indep_res["metrics"]["tip_3d"]["mean"]), 2),
+                "tip_median_mm": round(float(pooled_indep_res["metrics"]["tip_3d"]["median"]), 2),
+                "tip_iqr_mm": round(float(pooled_indep_res["metrics"]["tip_3d"]["iqr"]), 2),
+            },
+            "causal_4d_kalman": {
+                "n_pred": pooled_causal_res["n_pred"],
+                "matched_1to1": pooled_causal_res["hungarian_1to1_matched"],
+                "recall_1to1_pct": pooled_causal_res["hungarian_1to1_recall_pct"],
+                "precision_1to1_pct": pooled_causal_res["precision_1to1_pct"],
+                "f1_1to1_pct": pooled_causal_res["f1_1to1_pct"],
+                "shaft_mean_mm": round(float(pooled_causal_res["metrics"]["mean_shaft_xy"]["mean"]), 3),
+                "shaft_median_mm": round(float(pooled_causal_res["metrics"]["mean_shaft_xy"]["median"]), 3),
+                "shaft_iqr_mm": round(float(pooled_causal_res["metrics"]["mean_shaft_xy"]["iqr"]), 3),
+                "tip_mean_mm": round(float(pooled_causal_res["metrics"]["tip_3d"]["mean"]), 2),
+                "tip_median_mm": round(float(pooled_causal_res["metrics"]["tip_3d"]["median"]), 2),
+                "tip_iqr_mm": round(float(pooled_causal_res["metrics"]["tip_3d"]["iqr"]), 2),
+            },
+            "f1_gain_causal_minus_indep_pct": round(float(pooled_causal_res["f1_1to1_pct"] - pooled_indep_res["f1_1to1_pct"]), 2),
+            "per_case_final_3d_space": {
+                k: v["annotation_evaluations"]["final_3d_space_vs_cy_ht"]
+                for k, v in part4a_patients.items()
+            },
+        },
         "tissue_push_biomechanics": {
             "total_persisted_catheter_transitions": len(all_4d_push_samples),
             "near_newly_inserted_le_10mm": {

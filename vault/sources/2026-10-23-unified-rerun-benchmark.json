@@ -7305,7 +7305,7 @@
           "median": 2.3958,
           "iqr": 5.8608,
           "q25": 1.1312,
-          "q75": 6.992,
+          "q75": 6.9919,
           "p95": 33.0057
         },
         "tip_z": {
@@ -7997,7 +7997,7 @@
             0.8837
           ],
           "hd_3d": [
-            2.7454,
+            2.7453,
             4.1081
           ],
           "hd95_3d": [
@@ -11249,6 +11249,1266 @@
           "wilcoxon_statistic": 731.0,
           "p_value": 0.9211243698669324,
           "p_value_formatted": "0.92112"
+        }
+      }
+    },
+    "cohort_adhesion_23cases_571_catheters": {
+      "NeedleFinder2026_tau35_vs_PMB2019_Iso1mm": {
+        "hung_recall_pct": {
+          "ref_patient_mean": 96.3464,
+          "base_patient_mean": 94.6467,
+          "mean_paired_diff": 1.6997,
+          "median_paired_diff": 0.0,
+          "wilcoxon_statistic": 15.0,
+          "p_value": 0.05964084015258795,
+          "p_value_formatted": "0.05964"
+        },
+        "closest_recall_pct": {
+          "ref_patient_mean": 96.9793,
+          "base_patient_mean": 95.7387,
+          "mean_paired_diff": 1.2407,
+          "median_paired_diff": 0.0,
+          "wilcoxon_statistic": 19.5,
+          "p_value": 0.22979392124549614,
+          "p_value_formatted": "0.22979"
+        },
+        "f1_1to1_pct": {
+          "ref_patient_mean": 89.6059,
+          "base_patient_mean": 86.7061,
+          "mean_paired_diff": 2.8999,
+          "median_paired_diff": 2.8049,
+          "wilcoxon_statistic": 20.0,
+          "p_value": 0.0009022546344924854,
+          "p_value_formatted": "9.023e-04"
+        },
+        "f1_1to1_adj_pct": {
+          "ref_patient_mean": 89.6059,
+          "base_patient_mean": 86.7061,
+          "mean_paired_diff": 2.8999,
+          "median_paired_diff": 2.8049,
+          "wilcoxon_statistic": 20.0,
+          "p_value": 0.0009022546344924854,
+          "p_value_formatted": "9.023e-04"
+        },
+        "mean_shaft_xy": {
+          "ref_patient_mean": 0.5776,
+          "base_patient_mean": 0.5304,
+          "mean_paired_diff": 0.0472,
+          "median_paired_diff": 0.0312,
+          "wilcoxon_statistic": 58.0,
+          "p_value": 0.013528585433959961,
+          "p_value_formatted": "0.01353"
+        },
+        "msd_3d": {
+          "ref_patient_mean": 3.5273,
+          "base_patient_mean": 3.2424,
+          "mean_paired_diff": 0.2848,
+          "median_paired_diff": -0.0268,
+          "wilcoxon_statistic": 128.0,
+          "p_value": 0.776785135269165,
+          "p_value_formatted": "0.77679"
+        },
+        "hd95_3d": {
+          "ref_patient_mean": 17.3328,
+          "base_patient_mean": 16.4017,
+          "mean_paired_diff": 0.9311,
+          "median_paired_diff": -0.0943,
+          "wilcoxon_statistic": 127.0,
+          "p_value": 0.7539846897125244,
+          "p_value_formatted": "0.75398"
+        },
+        "tip_3d": {
+          "ref_patient_mean": 7.5517,
+          "base_patient_mean": 11.5035,
+          "mean_paired_diff": -3.9518,
+          "median_paired_diff": -3.7944,
+          "wilcoxon_statistic": 15.0,
+          "p_value": 3.266334533691406e-05,
+          "p_value_formatted": "3.266e-05"
+        }
+      },
+      "NeedleFinder2026_tau35_vs_Native_clDice": {
+        "hung_recall_pct": {
+          "ref_patient_mean": 96.3464,
+          "base_patient_mean": 95.6036,
+          "mean_paired_diff": 0.7428,
+          "median_paired_diff": 0.0,
+          "wilcoxon_statistic": 32.0,
+          "p_value": 0.5826293850615643,
+          "p_value_formatted": "0.58263"
+        },
+        "closest_recall_pct": {
+          "ref_patient_mean": 96.9793,
+          "base_patient_mean": 96.9244,
+          "mean_paired_diff": 0.055,
+          "median_paired_diff": 0.0,
+          "wilcoxon_statistic": 32.0,
+          "p_value": 0.9290828384477927,
+          "p_value_formatted": "0.92908"
+        },
+        "f1_1to1_pct": {
+          "ref_patient_mean": 89.6059,
+          "base_patient_mean": 54.3606,
+          "mean_paired_diff": 35.2453,
+          "median_paired_diff": 33.2105,
+          "wilcoxon_statistic": 2.0,
+          "p_value": 7.152557373046875e-07,
+          "p_value_formatted": "7.153e-07"
+        },
+        "f1_1to1_adj_pct": {
+          "ref_patient_mean": 89.6059,
+          "base_patient_mean": 54.3606,
+          "mean_paired_diff": 35.2453,
+          "median_paired_diff": 33.2105,
+          "wilcoxon_statistic": 2.0,
+          "p_value": 7.152557373046875e-07,
+          "p_value_formatted": "7.153e-07"
+        },
+        "mean_shaft_xy": {
+          "ref_patient_mean": 0.5776,
+          "base_patient_mean": 0.5284,
+          "mean_paired_diff": 0.0493,
+          "median_paired_diff": 0.0483,
+          "wilcoxon_statistic": 90.0,
+          "p_value": 0.15107226371765137,
+          "p_value_formatted": "0.15107"
+        },
+        "msd_3d": {
+          "ref_patient_mean": 3.5273,
+          "base_patient_mean": 3.4722,
+          "mean_paired_diff": 0.055,
+          "median_paired_diff": 0.3888,
+          "wilcoxon_statistic": 126.0,
+          "p_value": 0.7313888072967529,
+          "p_value_formatted": "0.73139"
+        },
+        "hd95_3d": {
+          "ref_patient_mean": 17.3328,
+          "base_patient_mean": 17.3715,
+          "mean_paired_diff": -0.0387,
+          "median_paired_diff": 1.4478,
+          "wilcoxon_statistic": 133.0,
+          "p_value": 0.8932116031646729,
+          "p_value_formatted": "0.89321"
+        },
+        "tip_3d": {
+          "ref_patient_mean": 7.5517,
+          "base_patient_mean": 11.1144,
+          "mean_paired_diff": -3.5627,
+          "median_paired_diff": -2.6049,
+          "wilcoxon_statistic": 22.0,
+          "p_value": 0.0001277923583984375,
+          "p_value_formatted": "1.278e-04"
+        }
+      },
+      "NeedleFinder2026_tau50_vs_PMB2019_Iso1mm": {
+        "hung_recall_pct": {
+          "ref_patient_mean": 94.4057,
+          "base_patient_mean": 94.6467,
+          "mean_paired_diff": -0.241,
+          "median_paired_diff": 0.0,
+          "wilcoxon_statistic": 37.0,
+          "p_value": 0.8752340238797087,
+          "p_value_formatted": "0.87523"
+        },
+        "closest_recall_pct": {
+          "ref_patient_mean": 95.274,
+          "base_patient_mean": 95.7387,
+          "mean_paired_diff": -0.4647,
+          "median_paired_diff": 0.0,
+          "wilcoxon_statistic": 37.5,
+          "p_value": 0.9062575859866842,
+          "p_value_formatted": "0.90626"
+        },
+        "f1_1to1_pct": {
+          "ref_patient_mean": 90.6395,
+          "base_patient_mean": 86.7061,
+          "mean_paired_diff": 3.9335,
+          "median_paired_diff": 4.6512,
+          "wilcoxon_statistic": 22.0,
+          "p_value": 0.0011546984443107464,
+          "p_value_formatted": "0.00115"
+        },
+        "f1_1to1_adj_pct": {
+          "ref_patient_mean": 90.6395,
+          "base_patient_mean": 86.7061,
+          "mean_paired_diff": 3.9335,
+          "median_paired_diff": 4.6512,
+          "wilcoxon_statistic": 22.0,
+          "p_value": 0.0011546984443107464,
+          "p_value_formatted": "0.00115"
+        },
+        "mean_shaft_xy": {
+          "ref_patient_mean": 0.5707,
+          "base_patient_mean": 0.5304,
+          "mean_paired_diff": 0.0403,
+          "median_paired_diff": 0.038,
+          "wilcoxon_statistic": 73.0,
+          "p_value": 0.04844093322753906,
+          "p_value_formatted": "0.04844"
+        },
+        "msd_3d": {
+          "ref_patient_mean": 3.4144,
+          "base_patient_mean": 3.2424,
+          "mean_paired_diff": 0.172,
+          "median_paired_diff": -0.373,
+          "wilcoxon_statistic": 136.0,
+          "p_value": 0.9643125534057617,
+          "p_value_formatted": "0.96431"
+        },
+        "hd95_3d": {
+          "ref_patient_mean": 16.8245,
+          "base_patient_mean": 16.4017,
+          "mean_paired_diff": 0.4229,
+          "median_paired_diff": -2.1086,
+          "wilcoxon_statistic": 135.0,
+          "p_value": 0.9405548572540283,
+          "p_value_formatted": "0.94055"
+        },
+        "tip_3d": {
+          "ref_patient_mean": 6.985,
+          "base_patient_mean": 11.5035,
+          "mean_paired_diff": -4.5184,
+          "median_paired_diff": -4.1061,
+          "wilcoxon_statistic": 6.0,
+          "p_value": 3.337860107421875e-06,
+          "p_value_formatted": "3.338e-06"
+        }
+      },
+      "NeedleFinder2026_tau50_vs_Native_clDice": {
+        "hung_recall_pct": {
+          "ref_patient_mean": 94.4057,
+          "base_patient_mean": 95.6036,
+          "mean_paired_diff": -1.1978,
+          "median_paired_diff": 0.0,
+          "wilcoxon_statistic": 42.5,
+          "p_value": 0.3196692802025596,
+          "p_value_formatted": "0.31967"
+        },
+        "closest_recall_pct": {
+          "ref_patient_mean": 95.274,
+          "base_patient_mean": 96.9244,
+          "mean_paired_diff": -1.6504,
+          "median_paired_diff": 0.0,
+          "wilcoxon_statistic": 26.0,
+          "p_value": 0.17269254033127757,
+          "p_value_formatted": "0.17269"
+        },
+        "f1_1to1_pct": {
+          "ref_patient_mean": 90.6395,
+          "base_patient_mean": 54.3606,
+          "mean_paired_diff": 36.2789,
+          "median_paired_diff": 38.3833,
+          "wilcoxon_statistic": 2.0,
+          "p_value": 7.152557373046875e-07,
+          "p_value_formatted": "7.153e-07"
+        },
+        "f1_1to1_adj_pct": {
+          "ref_patient_mean": 90.6395,
+          "base_patient_mean": 54.3606,
+          "mean_paired_diff": 36.2789,
+          "median_paired_diff": 38.3833,
+          "wilcoxon_statistic": 2.0,
+          "p_value": 7.152557373046875e-07,
+          "p_value_formatted": "7.153e-07"
+        },
+        "mean_shaft_xy": {
+          "ref_patient_mean": 0.5707,
+          "base_patient_mean": 0.5284,
+          "mean_paired_diff": 0.0423,
+          "median_paired_diff": 0.0189,
+          "wilcoxon_statistic": 94.0,
+          "p_value": 0.18954229354858398,
+          "p_value_formatted": "0.18954"
+        },
+        "msd_3d": {
+          "ref_patient_mean": 3.4144,
+          "base_patient_mean": 3.4722,
+          "mean_paired_diff": -0.0578,
+          "median_paired_diff": -0.0055,
+          "wilcoxon_statistic": 133.0,
+          "p_value": 0.8932116031646729,
+          "p_value_formatted": "0.89321"
+        },
+        "hd95_3d": {
+          "ref_patient_mean": 16.8245,
+          "base_patient_mean": 17.3715,
+          "mean_paired_diff": -0.547,
+          "median_paired_diff": -0.3528,
+          "wilcoxon_statistic": 130.0,
+          "p_value": 0.8229274749755859,
+          "p_value_formatted": "0.82293"
+        },
+        "tip_3d": {
+          "ref_patient_mean": 6.985,
+          "base_patient_mean": 11.1144,
+          "mean_paired_diff": -4.1294,
+          "median_paired_diff": -2.943,
+          "wilcoxon_statistic": 7.0,
+          "p_value": 4.5299530029296875e-06,
+          "p_value_formatted": "4.530e-06"
+        }
+      },
+      "Stage1B_NeedleUNet3D_vs_Native_clDice": {
+        "hung_recall_pct": {
+          "ref_patient_mean": 95.9092,
+          "base_patient_mean": 95.6036,
+          "mean_paired_diff": 0.3057,
+          "median_paired_diff": 0.0,
+          "wilcoxon_statistic": 36.5,
+          "p_value": 0.8444010577369414,
+          "p_value_formatted": "0.84440"
+        },
+        "closest_recall_pct": {
+          "ref_patient_mean": 96.3421,
+          "base_patient_mean": 96.9244,
+          "mean_paired_diff": -0.5822,
+          "median_paired_diff": 0.0,
+          "wilcoxon_statistic": 31.0,
+          "p_value": 0.5299679515725745,
+          "p_value_formatted": "0.52997"
+        },
+        "f1_1to1_pct": {
+          "ref_patient_mean": 77.2594,
+          "base_patient_mean": 54.3606,
+          "mean_paired_diff": 22.8987,
+          "median_paired_diff": 24.221,
+          "wilcoxon_statistic": 11.0,
+          "p_value": 1.3113021850585938e-05,
+          "p_value_formatted": "1.311e-05"
+        },
+        "f1_1to1_adj_pct": {
+          "ref_patient_mean": 77.2594,
+          "base_patient_mean": 54.3606,
+          "mean_paired_diff": 22.8987,
+          "median_paired_diff": 24.221,
+          "wilcoxon_statistic": 11.0,
+          "p_value": 1.3113021850585938e-05,
+          "p_value_formatted": "1.311e-05"
+        },
+        "mean_shaft_xy": {
+          "ref_patient_mean": 0.5424,
+          "base_patient_mean": 0.5284,
+          "mean_paired_diff": 0.014,
+          "median_paired_diff": 0.0066,
+          "wilcoxon_statistic": 121.0,
+          "p_value": 0.6220676898956299,
+          "p_value_formatted": "0.62207"
+        },
+        "msd_3d": {
+          "ref_patient_mean": 3.6556,
+          "base_patient_mean": 3.4722,
+          "mean_paired_diff": 0.1833,
+          "median_paired_diff": 0.2154,
+          "wilcoxon_statistic": 107.0,
+          "p_value": 0.36039113998413086,
+          "p_value_formatted": "0.36039"
+        },
+        "hd95_3d": {
+          "ref_patient_mean": 18.3566,
+          "base_patient_mean": 17.3715,
+          "mean_paired_diff": 0.9851,
+          "median_paired_diff": 1.4177,
+          "wilcoxon_statistic": 106.0,
+          "p_value": 0.3446848392486572,
+          "p_value_formatted": "0.34468"
+        },
+        "tip_3d": {
+          "ref_patient_mean": 10.758,
+          "base_patient_mean": 11.1144,
+          "mean_paired_diff": -0.3564,
+          "median_paired_diff": -1.0039,
+          "wilcoxon_statistic": 111.0,
+          "p_value": 0.4274179935455322,
+          "p_value_formatted": "0.42742"
+        }
+      },
+      "NeedleFinder2026_tau50_vs_Xiao2026_SyncTrack": {
+        "hung_recall_pct": {
+          "ref_patient_mean": 94.4057,
+          "base_patient_mean": 91.5047,
+          "mean_paired_diff": 2.9011,
+          "median_paired_diff": 0.0,
+          "wilcoxon_statistic": 26.0,
+          "p_value": 0.17295491798842066,
+          "p_value_formatted": "0.17295"
+        },
+        "closest_recall_pct": {
+          "ref_patient_mean": 95.274,
+          "base_patient_mean": 92.8822,
+          "mean_paired_diff": 2.3918,
+          "median_paired_diff": 0.0,
+          "wilcoxon_statistic": 31.0,
+          "p_value": 0.17690062150398822,
+          "p_value_formatted": "0.17690"
+        },
+        "f1_1to1_pct": {
+          "ref_patient_mean": 90.6395,
+          "base_patient_mean": 64.2981,
+          "mean_paired_diff": 26.3415,
+          "median_paired_diff": 25.9487,
+          "wilcoxon_statistic": 2.0,
+          "p_value": 7.152557373046875e-07,
+          "p_value_formatted": "7.153e-07"
+        },
+        "f1_1to1_adj_pct": {
+          "ref_patient_mean": 90.6395,
+          "base_patient_mean": 64.2981,
+          "mean_paired_diff": 26.3415,
+          "median_paired_diff": 25.9487,
+          "wilcoxon_statistic": 2.0,
+          "p_value": 7.152557373046875e-07,
+          "p_value_formatted": "7.153e-07"
+        },
+        "mean_shaft_xy": {
+          "ref_patient_mean": 0.5707,
+          "base_patient_mean": 0.6612,
+          "mean_paired_diff": -0.0905,
+          "median_paired_diff": -0.0738,
+          "wilcoxon_statistic": 70.0,
+          "p_value": 0.03838014602661133,
+          "p_value_formatted": "0.03838"
+        },
+        "msd_3d": {
+          "ref_patient_mean": 3.4144,
+          "base_patient_mean": 4.9825,
+          "mean_paired_diff": -1.5681,
+          "median_paired_diff": -1.4741,
+          "wilcoxon_statistic": 16.0,
+          "p_value": 4.029273986816406e-05,
+          "p_value_formatted": "4.029e-05"
+        },
+        "hd95_3d": {
+          "ref_patient_mean": 16.8245,
+          "base_patient_mean": 25.2121,
+          "mean_paired_diff": -8.3876,
+          "median_paired_diff": -8.837,
+          "wilcoxon_statistic": 16.0,
+          "p_value": 4.029273986816406e-05,
+          "p_value_formatted": "4.029e-05"
+        },
+        "tip_3d": {
+          "ref_patient_mean": 6.985,
+          "base_patient_mean": 17.7504,
+          "mean_paired_diff": -10.7654,
+          "median_paired_diff": -8.6426,
+          "wilcoxon_statistic": 0.0,
+          "p_value": 2.384185791015625e-07,
+          "p_value_formatted": "2.384e-07"
+        }
+      },
+      "SynthBrachy3T_vs_PMB2019": {
+        "hung_recall_pct": {
+          "ref_patient_mean": 93.0284,
+          "base_patient_mean": 94.6467,
+          "mean_paired_diff": -1.6183,
+          "median_paired_diff": 0.0,
+          "wilcoxon_statistic": 31.5,
+          "p_value": 0.3277292332357783,
+          "p_value_formatted": "0.32773"
+        },
+        "closest_recall_pct": {
+          "ref_patient_mean": 94.3341,
+          "base_patient_mean": 95.7387,
+          "mean_paired_diff": -1.4046,
+          "median_paired_diff": 0.0,
+          "wilcoxon_statistic": 24.0,
+          "p_value": 0.4235963177660037,
+          "p_value_formatted": "0.42360"
+        },
+        "f1_1to1_pct": {
+          "ref_patient_mean": 91.0899,
+          "base_patient_mean": 86.7061,
+          "mean_paired_diff": 4.3839,
+          "median_paired_diff": 5.6859,
+          "wilcoxon_statistic": 27.0,
+          "p_value": 0.001236464609381248,
+          "p_value_formatted": "0.00124"
+        },
+        "f1_1to1_adj_pct": {
+          "ref_patient_mean": 91.0899,
+          "base_patient_mean": 86.7061,
+          "mean_paired_diff": 4.3839,
+          "median_paired_diff": 5.6859,
+          "wilcoxon_statistic": 27.0,
+          "p_value": 0.001236464609381248,
+          "p_value_formatted": "0.00124"
+        },
+        "mean_shaft_xy": {
+          "ref_patient_mean": 0.571,
+          "base_patient_mean": 0.5304,
+          "mean_paired_diff": 0.0406,
+          "median_paired_diff": 0.0369,
+          "wilcoxon_statistic": 72.0,
+          "p_value": 0.0448758602142334,
+          "p_value_formatted": "0.04488"
+        },
+        "msd_3d": {
+          "ref_patient_mean": 3.1292,
+          "base_patient_mean": 3.2424,
+          "mean_paired_diff": -0.1132,
+          "median_paired_diff": -0.1552,
+          "wilcoxon_statistic": 124.0,
+          "p_value": 0.6868791580200195,
+          "p_value_formatted": "0.68688"
+        },
+        "hd95_3d": {
+          "ref_patient_mean": 15.6923,
+          "base_patient_mean": 16.4017,
+          "mean_paired_diff": -0.7094,
+          "median_paired_diff": -0.5593,
+          "wilcoxon_statistic": 125.0,
+          "p_value": 0.7090141773223877,
+          "p_value_formatted": "0.70901"
+        },
+        "tip_3d": {
+          "ref_patient_mean": 7.0015,
+          "base_patient_mean": 11.5035,
+          "mean_paired_diff": -4.502,
+          "median_paired_diff": -4.132,
+          "wilcoxon_statistic": 7.0,
+          "p_value": 4.5299530029296875e-06,
+          "p_value_formatted": "4.530e-06"
+        }
+      },
+      "SynthBrachy3T_vs_Native_clDice": {
+        "hung_recall_pct": {
+          "ref_patient_mean": 93.0284,
+          "base_patient_mean": 95.6036,
+          "mean_paired_diff": -2.5752,
+          "median_paired_diff": 0.0,
+          "wilcoxon_statistic": 31.0,
+          "p_value": 0.05567841349193895,
+          "p_value_formatted": "0.05568"
+        },
+        "closest_recall_pct": {
+          "ref_patient_mean": 94.3341,
+          "base_patient_mean": 96.9244,
+          "mean_paired_diff": -2.5903,
+          "median_paired_diff": -2.381,
+          "wilcoxon_statistic": 24.0,
+          "p_value": 0.02284920348498641,
+          "p_value_formatted": "0.02285"
+        },
+        "f1_1to1_pct": {
+          "ref_patient_mean": 91.0899,
+          "base_patient_mean": 54.3606,
+          "mean_paired_diff": 36.7293,
+          "median_paired_diff": 37.6771,
+          "wilcoxon_statistic": 1.0,
+          "p_value": 4.76837158203125e-07,
+          "p_value_formatted": "4.768e-07"
+        },
+        "f1_1to1_adj_pct": {
+          "ref_patient_mean": 91.0899,
+          "base_patient_mean": 54.3606,
+          "mean_paired_diff": 36.7293,
+          "median_paired_diff": 37.6771,
+          "wilcoxon_statistic": 1.0,
+          "p_value": 4.76837158203125e-07,
+          "p_value_formatted": "4.768e-07"
+        },
+        "mean_shaft_xy": {
+          "ref_patient_mean": 0.571,
+          "base_patient_mean": 0.5284,
+          "mean_paired_diff": 0.0427,
+          "median_paired_diff": 0.045,
+          "wilcoxon_statistic": 89.0,
+          "p_value": 0.14241743087768555,
+          "p_value_formatted": "0.14242"
+        },
+        "msd_3d": {
+          "ref_patient_mean": 3.1292,
+          "base_patient_mean": 3.4722,
+          "mean_paired_diff": -0.343,
+          "median_paired_diff": -0.2855,
+          "wilcoxon_statistic": 105.0,
+          "p_value": 0.3294053077697754,
+          "p_value_formatted": "0.32941"
+        },
+        "hd95_3d": {
+          "ref_patient_mean": 15.6923,
+          "base_patient_mean": 17.3715,
+          "mean_paired_diff": -1.6792,
+          "median_paired_diff": -0.9601,
+          "wilcoxon_statistic": 107.0,
+          "p_value": 0.36039113998413086,
+          "p_value_formatted": "0.36039"
+        },
+        "tip_3d": {
+          "ref_patient_mean": 7.0015,
+          "base_patient_mean": 11.1144,
+          "mean_paired_diff": -4.1129,
+          "median_paired_diff": -2.7908,
+          "wilcoxon_statistic": 2.0,
+          "p_value": 7.152557373046875e-07,
+          "p_value_formatted": "7.153e-07"
+        }
+      },
+      "SynthBrachy3T_vs_Xiao2026": {
+        "hung_recall_pct": {
+          "ref_patient_mean": 93.0284,
+          "base_patient_mean": 91.5047,
+          "mean_paired_diff": 1.5237,
+          "median_paired_diff": 2.381,
+          "wilcoxon_statistic": 52.5,
+          "p_value": 0.2558420270268701,
+          "p_value_formatted": "0.25584"
+        },
+        "closest_recall_pct": {
+          "ref_patient_mean": 94.3341,
+          "base_patient_mean": 92.8822,
+          "mean_paired_diff": 1.4519,
+          "median_paired_diff": 0.0,
+          "wilcoxon_statistic": 41.5,
+          "p_value": 0.29328555139466594,
+          "p_value_formatted": "0.29329"
+        },
+        "f1_1to1_pct": {
+          "ref_patient_mean": 91.0899,
+          "base_patient_mean": 64.2981,
+          "mean_paired_diff": 26.7918,
+          "median_paired_diff": 30.5807,
+          "wilcoxon_statistic": 1.0,
+          "p_value": 4.76837158203125e-07,
+          "p_value_formatted": "4.768e-07"
+        },
+        "f1_1to1_adj_pct": {
+          "ref_patient_mean": 91.0899,
+          "base_patient_mean": 64.2981,
+          "mean_paired_diff": 26.7918,
+          "median_paired_diff": 30.5807,
+          "wilcoxon_statistic": 1.0,
+          "p_value": 4.76837158203125e-07,
+          "p_value_formatted": "4.768e-07"
+        },
+        "mean_shaft_xy": {
+          "ref_patient_mean": 0.571,
+          "base_patient_mean": 0.6612,
+          "mean_paired_diff": -0.0902,
+          "median_paired_diff": -0.0811,
+          "wilcoxon_statistic": 70.0,
+          "p_value": 0.03838014602661133,
+          "p_value_formatted": "0.03838"
+        },
+        "msd_3d": {
+          "ref_patient_mean": 3.1292,
+          "base_patient_mean": 4.9825,
+          "mean_paired_diff": -1.8533,
+          "median_paired_diff": -1.7436,
+          "wilcoxon_statistic": 15.0,
+          "p_value": 3.266334533691406e-05,
+          "p_value_formatted": "3.266e-05"
+        },
+        "hd95_3d": {
+          "ref_patient_mean": 15.6923,
+          "base_patient_mean": 25.2121,
+          "mean_paired_diff": -9.5198,
+          "median_paired_diff": -8.8398,
+          "wilcoxon_statistic": 13.0,
+          "p_value": 2.09808349609375e-05,
+          "p_value_formatted": "2.098e-05"
+        },
+        "tip_3d": {
+          "ref_patient_mean": 7.0015,
+          "base_patient_mean": 17.7504,
+          "mean_paired_diff": -10.7489,
+          "median_paired_diff": -8.1168,
+          "wilcoxon_statistic": 0.0,
+          "p_value": 2.384185791015625e-07,
+          "p_value_formatted": "2.384e-07"
+        }
+      },
+      "SynthBrachy3T_vs_No_SynthBrachy3T_tau50": {
+        "hung_recall_pct": {
+          "ref_patient_mean": 93.0284,
+          "base_patient_mean": 94.4057,
+          "mean_paired_diff": -1.3774,
+          "median_paired_diff": 0.0,
+          "wilcoxon_statistic": 20.0,
+          "p_value": 0.13594673509151767,
+          "p_value_formatted": "0.13595"
+        },
+        "closest_recall_pct": {
+          "ref_patient_mean": 94.3341,
+          "base_patient_mean": 95.274,
+          "mean_paired_diff": -0.9399,
+          "median_paired_diff": 0.0,
+          "wilcoxon_statistic": 19.0,
+          "p_value": 0.3862707203664827,
+          "p_value_formatted": "0.38627"
+        },
+        "f1_1to1_pct": {
+          "ref_patient_mean": 91.0899,
+          "base_patient_mean": 90.6395,
+          "mean_paired_diff": 0.4504,
+          "median_paired_diff": 0.0,
+          "wilcoxon_statistic": 55.0,
+          "p_value": 0.30878760631195334,
+          "p_value_formatted": "0.30879"
+        },
+        "f1_1to1_adj_pct": {
+          "ref_patient_mean": 91.0899,
+          "base_patient_mean": 90.6395,
+          "mean_paired_diff": 0.4504,
+          "median_paired_diff": 0.0,
+          "wilcoxon_statistic": 55.0,
+          "p_value": 0.30878760631195334,
+          "p_value_formatted": "0.30879"
+        },
+        "mean_shaft_xy": {
+          "ref_patient_mean": 0.571,
+          "base_patient_mean": 0.5707,
+          "mean_paired_diff": 0.0003,
+          "median_paired_diff": 0.0001,
+          "wilcoxon_statistic": 128.0,
+          "p_value": 0.776785135269165,
+          "p_value_formatted": "0.77679"
+        },
+        "msd_3d": {
+          "ref_patient_mean": 3.1292,
+          "base_patient_mean": 3.4144,
+          "mean_paired_diff": -0.2852,
+          "median_paired_diff": -0.0089,
+          "wilcoxon_statistic": 89.0,
+          "p_value": 0.14241743087768555,
+          "p_value_formatted": "0.14242"
+        },
+        "hd95_3d": {
+          "ref_patient_mean": 15.6923,
+          "base_patient_mean": 16.8245,
+          "mean_paired_diff": -1.1322,
+          "median_paired_diff": -0.0473,
+          "wilcoxon_statistic": 89.0,
+          "p_value": 0.14241743087768555,
+          "p_value_formatted": "0.14242"
+        },
+        "tip_3d": {
+          "ref_patient_mean": 7.0015,
+          "base_patient_mean": 6.985,
+          "mean_paired_diff": 0.0165,
+          "median_paired_diff": -0.0653,
+          "wilcoxon_statistic": 110.0,
+          "p_value": 0.41003966331481934,
+          "p_value_formatted": "0.41004"
+        }
+      },
+      "SynthBrachy3T_vs_Stage0_Physics": {
+        "hung_recall_pct": {
+          "ref_patient_mean": 93.0284,
+          "base_patient_mean": 86.1786,
+          "mean_paired_diff": 6.8498,
+          "median_paired_diff": 4.5455,
+          "wilcoxon_statistic": 16.0,
+          "p_value": 0.0014738888092525081,
+          "p_value_formatted": "0.00147"
+        },
+        "closest_recall_pct": {
+          "ref_patient_mean": 94.3341,
+          "base_patient_mean": 87.5592,
+          "mean_paired_diff": 6.7748,
+          "median_paired_diff": 5.2632,
+          "wilcoxon_statistic": 14.0,
+          "p_value": 0.0011143315296273401,
+          "p_value_formatted": "0.00111"
+        },
+        "f1_1to1_pct": {
+          "ref_patient_mean": 91.0899,
+          "base_patient_mean": 79.6414,
+          "mean_paired_diff": 11.4485,
+          "median_paired_diff": 10.9228,
+          "wilcoxon_statistic": 1.0,
+          "p_value": 4.76837158203125e-07,
+          "p_value_formatted": "4.768e-07"
+        },
+        "f1_1to1_adj_pct": {
+          "ref_patient_mean": 91.0899,
+          "base_patient_mean": 79.6414,
+          "mean_paired_diff": 11.4485,
+          "median_paired_diff": 10.9228,
+          "wilcoxon_statistic": 1.0,
+          "p_value": 4.76837158203125e-07,
+          "p_value_formatted": "4.768e-07"
+        },
+        "mean_shaft_xy": {
+          "ref_patient_mean": 0.571,
+          "base_patient_mean": 0.5916,
+          "mean_paired_diff": -0.0205,
+          "median_paired_diff": -0.0024,
+          "wilcoxon_statistic": 104.0,
+          "p_value": 0.31455397605895996,
+          "p_value_formatted": "0.31455"
+        },
+        "msd_3d": {
+          "ref_patient_mean": 3.1292,
+          "base_patient_mean": 3.117,
+          "mean_paired_diff": 0.0122,
+          "median_paired_diff": -0.0724,
+          "wilcoxon_statistic": 121.0,
+          "p_value": 0.6220676898956299,
+          "p_value_formatted": "0.62207"
+        },
+        "hd95_3d": {
+          "ref_patient_mean": 15.6923,
+          "base_patient_mean": 16.1587,
+          "mean_paired_diff": -0.4664,
+          "median_paired_diff": -1.134,
+          "wilcoxon_statistic": 104.0,
+          "p_value": 0.31455397605895996,
+          "p_value_formatted": "0.31455"
+        },
+        "tip_3d": {
+          "ref_patient_mean": 7.0015,
+          "base_patient_mean": 11.7376,
+          "mean_paired_diff": -4.7361,
+          "median_paired_diff": -3.5521,
+          "wilcoxon_statistic": 0.0,
+          "p_value": 2.384185791015625e-07,
+          "p_value_formatted": "2.384e-07"
+        }
+      },
+      "SynthBrachy3T_OOF_vs_InnerOOF_CrossFit_tau50": {
+        "hung_recall_pct": {
+          "ref_patient_mean": 93.0284,
+          "base_patient_mean": 94.4857,
+          "mean_paired_diff": -1.4573,
+          "median_paired_diff": 0.0,
+          "wilcoxon_statistic": 9.0,
+          "p_value": 0.10974463874701328,
+          "p_value_formatted": "0.10974"
+        },
+        "closest_recall_pct": {
+          "ref_patient_mean": 94.3341,
+          "base_patient_mean": 95.4466,
+          "mean_paired_diff": -1.1125,
+          "median_paired_diff": 0.0,
+          "wilcoxon_statistic": 7.0,
+          "p_value": 0.23672357063785732,
+          "p_value_formatted": "0.23672"
+        },
+        "f1_1to1_pct": {
+          "ref_patient_mean": 91.0899,
+          "base_patient_mean": 91.6323,
+          "mean_paired_diff": -0.5423,
+          "median_paired_diff": 0.0,
+          "wilcoxon_statistic": 46.0,
+          "p_value": 0.2552110754513822,
+          "p_value_formatted": "0.25521"
+        },
+        "f1_1to1_adj_pct": {
+          "ref_patient_mean": 91.0899,
+          "base_patient_mean": 91.6323,
+          "mean_paired_diff": -0.5423,
+          "median_paired_diff": 0.0,
+          "wilcoxon_statistic": 46.0,
+          "p_value": 0.2552110754513822,
+          "p_value_formatted": "0.25521"
+        },
+        "mean_shaft_xy": {
+          "ref_patient_mean": 0.571,
+          "base_patient_mean": 0.5644,
+          "mean_paired_diff": 0.0066,
+          "median_paired_diff": 0.0,
+          "wilcoxon_statistic": 115.0,
+          "p_value": 0.5009052753448486,
+          "p_value_formatted": "0.50091"
+        },
+        "msd_3d": {
+          "ref_patient_mean": 3.1292,
+          "base_patient_mean": 3.0658,
+          "mean_paired_diff": 0.0634,
+          "median_paired_diff": -0.003,
+          "wilcoxon_statistic": 134.0,
+          "p_value": 0.9168474674224854,
+          "p_value_formatted": "0.91685"
+        },
+        "hd95_3d": {
+          "ref_patient_mean": 15.6923,
+          "base_patient_mean": 15.4638,
+          "mean_paired_diff": 0.2285,
+          "median_paired_diff": -0.0053,
+          "wilcoxon_statistic": 134.0,
+          "p_value": 0.9168474674224854,
+          "p_value_formatted": "0.91685"
+        },
+        "tip_3d": {
+          "ref_patient_mean": 7.0015,
+          "base_patient_mean": 7.2284,
+          "mean_paired_diff": -0.2269,
+          "median_paired_diff": -0.0283,
+          "wilcoxon_statistic": 85.0,
+          "p_value": 0.11142587661743164,
+          "p_value_formatted": "0.11143"
+        }
+      },
+      "NF2026_4b_vs_PMB2019": {
+        "hung_recall_pct": {
+          "ref_patient_mean": 93.0284,
+          "base_patient_mean": 94.6467,
+          "mean_paired_diff": -1.6183,
+          "median_paired_diff": 0.0,
+          "wilcoxon_statistic": 31.5,
+          "p_value": 0.3277292332357783,
+          "p_value_formatted": "0.32773"
+        },
+        "closest_recall_pct": {
+          "ref_patient_mean": 94.3341,
+          "base_patient_mean": 95.7387,
+          "mean_paired_diff": -1.4046,
+          "median_paired_diff": 0.0,
+          "wilcoxon_statistic": 24.0,
+          "p_value": 0.4235963177660037,
+          "p_value_formatted": "0.42360"
+        },
+        "f1_1to1_pct": {
+          "ref_patient_mean": 91.0899,
+          "base_patient_mean": 86.7061,
+          "mean_paired_diff": 4.3839,
+          "median_paired_diff": 5.6859,
+          "wilcoxon_statistic": 27.0,
+          "p_value": 0.001236464609381248,
+          "p_value_formatted": "0.00124"
+        },
+        "f1_1to1_adj_pct": {
+          "ref_patient_mean": 91.0899,
+          "base_patient_mean": 86.7061,
+          "mean_paired_diff": 4.3839,
+          "median_paired_diff": 5.6859,
+          "wilcoxon_statistic": 27.0,
+          "p_value": 0.001236464609381248,
+          "p_value_formatted": "0.00124"
+        },
+        "mean_shaft_xy": {
+          "ref_patient_mean": 0.571,
+          "base_patient_mean": 0.5304,
+          "mean_paired_diff": 0.0406,
+          "median_paired_diff": 0.0369,
+          "wilcoxon_statistic": 72.0,
+          "p_value": 0.0448758602142334,
+          "p_value_formatted": "0.04488"
+        },
+        "msd_3d": {
+          "ref_patient_mean": 3.1292,
+          "base_patient_mean": 3.2424,
+          "mean_paired_diff": -0.1132,
+          "median_paired_diff": -0.1552,
+          "wilcoxon_statistic": 124.0,
+          "p_value": 0.6868791580200195,
+          "p_value_formatted": "0.68688"
+        },
+        "hd95_3d": {
+          "ref_patient_mean": 15.6923,
+          "base_patient_mean": 16.4017,
+          "mean_paired_diff": -0.7094,
+          "median_paired_diff": -0.5593,
+          "wilcoxon_statistic": 125.0,
+          "p_value": 0.7090141773223877,
+          "p_value_formatted": "0.70901"
+        },
+        "tip_3d": {
+          "ref_patient_mean": 7.0015,
+          "base_patient_mean": 11.5035,
+          "mean_paired_diff": -4.502,
+          "median_paired_diff": -4.132,
+          "wilcoxon_statistic": 7.0,
+          "p_value": 4.5299530029296875e-06,
+          "p_value_formatted": "4.530e-06"
+        }
+      },
+      "NF2026_4b_vs_ResUNet_clDice": {
+        "hung_recall_pct": {
+          "ref_patient_mean": 93.0284,
+          "base_patient_mean": 95.6036,
+          "mean_paired_diff": -2.5752,
+          "median_paired_diff": 0.0,
+          "wilcoxon_statistic": 31.0,
+          "p_value": 0.05567841349193895,
+          "p_value_formatted": "0.05568"
+        },
+        "closest_recall_pct": {
+          "ref_patient_mean": 94.3341,
+          "base_patient_mean": 96.9244,
+          "mean_paired_diff": -2.5903,
+          "median_paired_diff": -2.381,
+          "wilcoxon_statistic": 24.0,
+          "p_value": 0.02284920348498641,
+          "p_value_formatted": "0.02285"
+        },
+        "f1_1to1_pct": {
+          "ref_patient_mean": 91.0899,
+          "base_patient_mean": 54.3606,
+          "mean_paired_diff": 36.7293,
+          "median_paired_diff": 37.6771,
+          "wilcoxon_statistic": 1.0,
+          "p_value": 4.76837158203125e-07,
+          "p_value_formatted": "4.768e-07"
+        },
+        "f1_1to1_adj_pct": {
+          "ref_patient_mean": 91.0899,
+          "base_patient_mean": 54.3606,
+          "mean_paired_diff": 36.7293,
+          "median_paired_diff": 37.6771,
+          "wilcoxon_statistic": 1.0,
+          "p_value": 4.76837158203125e-07,
+          "p_value_formatted": "4.768e-07"
+        },
+        "mean_shaft_xy": {
+          "ref_patient_mean": 0.571,
+          "base_patient_mean": 0.5284,
+          "mean_paired_diff": 0.0427,
+          "median_paired_diff": 0.045,
+          "wilcoxon_statistic": 89.0,
+          "p_value": 0.14241743087768555,
+          "p_value_formatted": "0.14242"
+        },
+        "msd_3d": {
+          "ref_patient_mean": 3.1292,
+          "base_patient_mean": 3.4722,
+          "mean_paired_diff": -0.343,
+          "median_paired_diff": -0.2855,
+          "wilcoxon_statistic": 105.0,
+          "p_value": 0.3294053077697754,
+          "p_value_formatted": "0.32941"
+        },
+        "hd95_3d": {
+          "ref_patient_mean": 15.6923,
+          "base_patient_mean": 17.3715,
+          "mean_paired_diff": -1.6792,
+          "median_paired_diff": -0.9601,
+          "wilcoxon_statistic": 107.0,
+          "p_value": 0.36039113998413086,
+          "p_value_formatted": "0.36039"
+        },
+        "tip_3d": {
+          "ref_patient_mean": 7.0015,
+          "base_patient_mean": 11.1144,
+          "mean_paired_diff": -4.1129,
+          "median_paired_diff": -2.7908,
+          "wilcoxon_statistic": 2.0,
+          "p_value": 7.152557373046875e-07,
+          "p_value_formatted": "7.153e-07"
+        }
+      },
+      "NF2026_4b_vs_Xiao2026": {
+        "hung_recall_pct": {
+          "ref_patient_mean": 93.0284,
+          "base_patient_mean": 91.5047,
+          "mean_paired_diff": 1.5237,
+          "median_paired_diff": 2.381,
+          "wilcoxon_statistic": 52.5,
+          "p_value": 0.2558420270268701,
+          "p_value_formatted": "0.25584"
+        },
+        "closest_recall_pct": {
+          "ref_patient_mean": 94.3341,
+          "base_patient_mean": 92.8822,
+          "mean_paired_diff": 1.4519,
+          "median_paired_diff": 0.0,
+          "wilcoxon_statistic": 41.5,
+          "p_value": 0.29328555139466594,
+          "p_value_formatted": "0.29329"
+        },
+        "f1_1to1_pct": {
+          "ref_patient_mean": 91.0899,
+          "base_patient_mean": 64.2981,
+          "mean_paired_diff": 26.7918,
+          "median_paired_diff": 30.5807,
+          "wilcoxon_statistic": 1.0,
+          "p_value": 4.76837158203125e-07,
+          "p_value_formatted": "4.768e-07"
+        },
+        "f1_1to1_adj_pct": {
+          "ref_patient_mean": 91.0899,
+          "base_patient_mean": 64.2981,
+          "mean_paired_diff": 26.7918,
+          "median_paired_diff": 30.5807,
+          "wilcoxon_statistic": 1.0,
+          "p_value": 4.76837158203125e-07,
+          "p_value_formatted": "4.768e-07"
+        },
+        "mean_shaft_xy": {
+          "ref_patient_mean": 0.571,
+          "base_patient_mean": 0.6612,
+          "mean_paired_diff": -0.0902,
+          "median_paired_diff": -0.0811,
+          "wilcoxon_statistic": 70.0,
+          "p_value": 0.03838014602661133,
+          "p_value_formatted": "0.03838"
+        },
+        "msd_3d": {
+          "ref_patient_mean": 3.1292,
+          "base_patient_mean": 4.9825,
+          "mean_paired_diff": -1.8533,
+          "median_paired_diff": -1.7436,
+          "wilcoxon_statistic": 15.0,
+          "p_value": 3.266334533691406e-05,
+          "p_value_formatted": "3.266e-05"
+        },
+        "hd95_3d": {
+          "ref_patient_mean": 15.6923,
+          "base_patient_mean": 25.2121,
+          "mean_paired_diff": -9.5198,
+          "median_paired_diff": -8.8398,
+          "wilcoxon_statistic": 13.0,
+          "p_value": 2.09808349609375e-05,
+          "p_value_formatted": "2.098e-05"
+        },
+        "tip_3d": {
+          "ref_patient_mean": 7.0015,
+          "base_patient_mean": 17.7504,
+          "mean_paired_diff": -10.7489,
+          "median_paired_diff": -8.1168,
+          "wilcoxon_statistic": 0.0,
+          "p_value": 2.384185791015625e-07,
+          "p_value_formatted": "2.384e-07"
+        }
+      },
+      "NF2026_4b_vs_Stage0": {
+        "hung_recall_pct": {
+          "ref_patient_mean": 93.0284,
+          "base_patient_mean": 86.1786,
+          "mean_paired_diff": 6.8498,
+          "median_paired_diff": 4.5455,
+          "wilcoxon_statistic": 16.0,
+          "p_value": 0.0014738888092525081,
+          "p_value_formatted": "0.00147"
+        },
+        "closest_recall_pct": {
+          "ref_patient_mean": 94.3341,
+          "base_patient_mean": 87.5592,
+          "mean_paired_diff": 6.7748,
+          "median_paired_diff": 5.2632,
+          "wilcoxon_statistic": 14.0,
+          "p_value": 0.0011143315296273401,
+          "p_value_formatted": "0.00111"
+        },
+        "f1_1to1_pct": {
+          "ref_patient_mean": 91.0899,
+          "base_patient_mean": 79.6414,
+          "mean_paired_diff": 11.4485,
+          "median_paired_diff": 10.9228,
+          "wilcoxon_statistic": 1.0,
+          "p_value": 4.76837158203125e-07,
+          "p_value_formatted": "4.768e-07"
+        },
+        "f1_1to1_adj_pct": {
+          "ref_patient_mean": 91.0899,
+          "base_patient_mean": 79.6414,
+          "mean_paired_diff": 11.4485,
+          "median_paired_diff": 10.9228,
+          "wilcoxon_statistic": 1.0,
+          "p_value": 4.76837158203125e-07,
+          "p_value_formatted": "4.768e-07"
+        },
+        "mean_shaft_xy": {
+          "ref_patient_mean": 0.571,
+          "base_patient_mean": 0.5916,
+          "mean_paired_diff": -0.0205,
+          "median_paired_diff": -0.0024,
+          "wilcoxon_statistic": 104.0,
+          "p_value": 0.31455397605895996,
+          "p_value_formatted": "0.31455"
+        },
+        "msd_3d": {
+          "ref_patient_mean": 3.1292,
+          "base_patient_mean": 3.117,
+          "mean_paired_diff": 0.0122,
+          "median_paired_diff": -0.0724,
+          "wilcoxon_statistic": 121.0,
+          "p_value": 0.6220676898956299,
+          "p_value_formatted": "0.62207"
+        },
+        "hd95_3d": {
+          "ref_patient_mean": 15.6923,
+          "base_patient_mean": 16.1587,
+          "mean_paired_diff": -0.4664,
+          "median_paired_diff": -1.134,
+          "wilcoxon_statistic": 104.0,
+          "p_value": 0.31455397605895996,
+          "p_value_formatted": "0.31455"
+        },
+        "tip_3d": {
+          "ref_patient_mean": 7.0015,
+          "base_patient_mean": 11.7376,
+          "mean_paired_diff": -4.7361,
+          "median_paired_diff": -3.5521,
+          "wilcoxon_statistic": 0.0,
+          "p_value": 2.384185791015625e-07,
+          "p_value_formatted": "2.384e-07"
+        }
+      },
+      "NF2026_4b_vs_NoSynth_4a": {
+        "hung_recall_pct": {
+          "ref_patient_mean": 93.0284,
+          "base_patient_mean": 94.4057,
+          "mean_paired_diff": -1.3774,
+          "median_paired_diff": 0.0,
+          "wilcoxon_statistic": 20.0,
+          "p_value": 0.13594673509151767,
+          "p_value_formatted": "0.13595"
+        },
+        "closest_recall_pct": {
+          "ref_patient_mean": 94.3341,
+          "base_patient_mean": 95.274,
+          "mean_paired_diff": -0.9399,
+          "median_paired_diff": 0.0,
+          "wilcoxon_statistic": 19.0,
+          "p_value": 0.3862707203664827,
+          "p_value_formatted": "0.38627"
+        },
+        "f1_1to1_pct": {
+          "ref_patient_mean": 91.0899,
+          "base_patient_mean": 90.6395,
+          "mean_paired_diff": 0.4504,
+          "median_paired_diff": 0.0,
+          "wilcoxon_statistic": 55.0,
+          "p_value": 0.30878760631195334,
+          "p_value_formatted": "0.30879"
+        },
+        "f1_1to1_adj_pct": {
+          "ref_patient_mean": 91.0899,
+          "base_patient_mean": 90.6395,
+          "mean_paired_diff": 0.4504,
+          "median_paired_diff": 0.0,
+          "wilcoxon_statistic": 55.0,
+          "p_value": 0.30878760631195334,
+          "p_value_formatted": "0.30879"
+        },
+        "mean_shaft_xy": {
+          "ref_patient_mean": 0.571,
+          "base_patient_mean": 0.5707,
+          "mean_paired_diff": 0.0003,
+          "median_paired_diff": 0.0001,
+          "wilcoxon_statistic": 128.0,
+          "p_value": 0.776785135269165,
+          "p_value_formatted": "0.77679"
+        },
+        "msd_3d": {
+          "ref_patient_mean": 3.1292,
+          "base_patient_mean": 3.4144,
+          "mean_paired_diff": -0.2852,
+          "median_paired_diff": -0.0089,
+          "wilcoxon_statistic": 89.0,
+          "p_value": 0.14241743087768555,
+          "p_value_formatted": "0.14242"
+        },
+        "hd95_3d": {
+          "ref_patient_mean": 15.6923,
+          "base_patient_mean": 16.8245,
+          "mean_paired_diff": -1.1322,
+          "median_paired_diff": -0.0473,
+          "wilcoxon_statistic": 89.0,
+          "p_value": 0.14241743087768555,
+          "p_value_formatted": "0.14242"
+        },
+        "tip_3d": {
+          "ref_patient_mean": 7.0015,
+          "base_patient_mean": 6.985,
+          "mean_paired_diff": 0.0165,
+          "median_paired_diff": -0.0653,
+          "wilcoxon_statistic": 110.0,
+          "p_value": 0.41003966331481934,
+          "p_value_formatted": "0.41004"
         }
       }
     }
@@ -32460,7 +33720,7 @@
           5.1628,
           11.0379,
           2.6833,
-          6.992,
+          6.9919,
           0.6703,
           1.5245,
           0.6469,
@@ -34714,7 +35974,7 @@
           5.1628,
           11.0379,
           2.6833,
-          6.992,
+          6.9919,
           0.6703,
           1.5245,
           0.6469,
@@ -48880,7 +50140,7 @@
           5.1628,
           11.0379,
           2.6833,
-          6.992,
+          6.9919,
           0.6703,
           1.5245,
           0.6469,
@@ -50574,7 +51834,7 @@
           5.1628,
           11.0379,
           2.6833,
-          6.992,
+          6.9919,
           0.6703,
           1.5245,
           0.6469,

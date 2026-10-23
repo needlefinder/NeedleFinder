@@ -12,90 +12,191 @@
       "Case 071"
     ],
     "total_serial_scans_evaluated": 23,
-    "mean_monitoring_scan_runtime_sec": 1.205,
+    "mean_monitoring_scan_runtime_sec": 1.313,
+    "final_3d_confirmation_pooled_4cases_108_catheters": {
+      "n_cases": 4,
+      "n_gt_total": 108,
+      "independent_3d": {
+        "n_pred": 125,
+        "matched_1to1": 95,
+        "recall_1to1_pct": 87.96,
+        "precision_1to1_pct": 76.0,
+        "f1_1to1_pct": 81.55,
+        "shaft_mean_mm": 0.562,
+        "shaft_median_mm": 0.453,
+        "shaft_iqr_mm": 0.352,
+        "tip_mean_mm": 11.23,
+        "tip_median_mm": 2.71,
+        "tip_iqr_mm": 10.63
+      },
+      "causal_4d_kalman": {
+        "n_pred": 95,
+        "matched_1to1": 84,
+        "recall_1to1_pct": 77.78,
+        "precision_1to1_pct": 88.42,
+        "f1_1to1_pct": 82.76,
+        "shaft_mean_mm": 0.852,
+        "shaft_median_mm": 0.75,
+        "shaft_iqr_mm": 0.541,
+        "tip_mean_mm": 9.75,
+        "tip_median_mm": 3.57,
+        "tip_iqr_mm": 11.01
+      },
+      "f1_gain_causal_minus_indep_pct": 1.21,
+      "per_case_final_3d_space": {
+        "Case_068": {
+          "n_gt": 24,
+          "indep_n_pred": 33,
+          "indep_matched_1to1": 22,
+          "indep_recall_pct": 91.67,
+          "indep_precision_pct": 66.67,
+          "indep_f1_pct": 77.19,
+          "indep_shaft_median_mm": 0.493,
+          "indep_tip_median_mm": 1.428,
+          "causal_4d_n_pred": 29,
+          "causal_4d_matched_1to1": 22,
+          "causal_4d_recall_pct": 91.67,
+          "causal_4d_precision_pct": 75.86,
+          "causal_4d_f1_pct": 83.02,
+          "causal_4d_shaft_median_mm": 0.741,
+          "causal_4d_tip_median_mm": 1.76
+        },
+        "Case_069": {
+          "n_gt": 42,
+          "indep_n_pred": 43,
+          "indep_matched_1to1": 36,
+          "indep_recall_pct": 85.71,
+          "indep_precision_pct": 83.72,
+          "indep_f1_pct": 84.71,
+          "indep_shaft_median_mm": 0.468,
+          "indep_tip_median_mm": 5.758,
+          "causal_4d_n_pred": 33,
+          "causal_4d_matched_1to1": 31,
+          "causal_4d_recall_pct": 73.81,
+          "causal_4d_precision_pct": 93.94,
+          "causal_4d_f1_pct": 82.67,
+          "causal_4d_shaft_median_mm": 0.758,
+          "causal_4d_tip_median_mm": 7.751
+        },
+        "Case_070": {
+          "n_gt": 22,
+          "indep_n_pred": 27,
+          "indep_matched_1to1": 21,
+          "indep_recall_pct": 95.45,
+          "indep_precision_pct": 77.78,
+          "indep_f1_pct": 85.71,
+          "indep_shaft_median_mm": 0.392,
+          "indep_tip_median_mm": 1.967,
+          "causal_4d_n_pred": 23,
+          "causal_4d_matched_1to1": 21,
+          "causal_4d_recall_pct": 95.45,
+          "causal_4d_precision_pct": 91.3,
+          "causal_4d_f1_pct": 93.33,
+          "causal_4d_shaft_median_mm": 0.729,
+          "causal_4d_tip_median_mm": 4.818
+        },
+        "Case_071": {
+          "n_gt": 20,
+          "indep_n_pred": 22,
+          "indep_matched_1to1": 16,
+          "indep_recall_pct": 80.0,
+          "indep_precision_pct": 72.73,
+          "indep_f1_pct": 76.19,
+          "indep_shaft_median_mm": 0.485,
+          "indep_tip_median_mm": 2.722,
+          "causal_4d_n_pred": 10,
+          "causal_4d_matched_1to1": 10,
+          "causal_4d_recall_pct": 50.0,
+          "causal_4d_precision_pct": 100.0,
+          "causal_4d_f1_pct": 66.67,
+          "causal_4d_shaft_median_mm": 0.934,
+          "causal_4d_tip_median_mm": 3.014
+        }
+      }
+    },
     "tissue_push_biomechanics": {
-      "total_persisted_catheter_transitions": 204,
+      "total_persisted_catheter_transitions": 212,
       "near_newly_inserted_le_10mm": {
-        "n": 82,
-        "mean_lateral_shift_mm": 1.616,
-        "median_lateral_shift_mm": 1.414,
+        "n": 87,
+        "mean_lateral_shift_mm": 1.605,
+        "median_lateral_shift_mm": 1.444,
         "iqr_lateral_shift_mm": [
-          0.889,
-          2.119
+          0.951,
+          2.107
         ],
-        "p90_lateral_shift_mm": 3.189
+        "p90_lateral_shift_mm": 2.808
       },
       "intermediate_10_to_20mm": {
-        "n": 78,
-        "mean_lateral_shift_mm": 1.225,
-        "median_lateral_shift_mm": 1.033,
+        "n": 81,
+        "mean_lateral_shift_mm": 1.316,
+        "median_lateral_shift_mm": 1.098,
         "iqr_lateral_shift_mm": [
-          0.645,
-          1.57
+          0.71,
+          1.641
         ]
       },
       "far_from_newly_inserted_gt_20mm": {
         "n": 44,
-        "mean_lateral_shift_mm": 1.081,
-        "median_lateral_shift_mm": 0.932,
+        "mean_lateral_shift_mm": 1.19,
+        "median_lateral_shift_mm": 0.999,
         "iqr_lateral_shift_mm": [
-          0.581,
-          1.249
+          0.599,
+          1.429
         ]
       },
-      "mann_whitney_near_le_12mm_vs_far_gt_12mm_p": 0.0006113420352449186,
-      "spearman_distance_vs_lateral_push_r": -0.2598,
-      "spearman_distance_vs_lateral_push_p": 0.00017548824662959813
+      "mann_whitney_near_le_12mm_vs_far_gt_12mm_p": 0.0009971177231688803,
+      "spearman_distance_vs_lateral_push_r": -0.2257,
+      "spearman_distance_vs_lateral_push_p": 0.0009359452531679579
     },
     "depth_dependent_bending_biomechanics": {
-      "n_catheters_analyzed": 129,
+      "n_catheters_analyzed": 95,
       "deflection_by_depth_bin": {
         "0_30mm": {
-          "n_samples": 1312,
-          "mean_deflection_mm": 0.053,
+          "n_samples": 969,
+          "mean_deflection_mm": 0.058,
           "median_deflection_mm": 0.003,
           "iqr_deflection_mm": [
             0.0,
-            0.032
+            0.029
           ],
-          "p90_deflection_mm": 0.13
+          "p90_deflection_mm": 0.131
         },
         "30_60mm": {
-          "n_samples": 978,
-          "mean_deflection_mm": 0.467,
-          "median_deflection_mm": 0.19,
+          "n_samples": 723,
+          "mean_deflection_mm": 0.43,
+          "median_deflection_mm": 0.152,
           "iqr_deflection_mm": [
-            0.029,
-            0.719
+            0.018,
+            0.662
           ],
-          "p90_deflection_mm": 1.349
+          "p90_deflection_mm": 1.289
         },
         "60_90mm": {
-          "n_samples": 750,
-          "mean_deflection_mm": 1.677,
-          "median_deflection_mm": 1.215,
+          "n_samples": 555,
+          "mean_deflection_mm": 1.669,
+          "median_deflection_mm": 1.224,
           "iqr_deflection_mm": [
-            0.382,
-            2.501
+            0.315,
+            2.56
           ],
-          "p90_deflection_mm": 3.841
+          "p90_deflection_mm": 3.933
         },
         "gt_90mm": {
-          "n_samples": 830,
-          "mean_deflection_mm": 3.858,
-          "median_deflection_mm": 2.814,
+          "n_samples": 603,
+          "mean_deflection_mm": 4.564,
+          "median_deflection_mm": 3.293,
           "iqr_deflection_mm": [
-            1.061,
-            5.344
+            1.215,
+            6.465
           ],
-          "p90_deflection_mm": 8.617
+          "p90_deflection_mm": 10.493
         }
       },
-      "overall_tip_deflection_mean_mm": 4.098,
-      "overall_tip_deflection_median_mm": 2.515,
-      "overall_tip_deflection_p90_mm": 10.082,
-      "spearman_depth_vs_tip_deflection_r": 0.5136,
-      "spearman_p_value": 4.851238056762859e-10
+      "overall_tip_deflection_mean_mm": 4.656,
+      "overall_tip_deflection_median_mm": 2.914,
+      "overall_tip_deflection_p90_mm": 11.095,
+      "spearman_depth_vs_tip_deflection_r": 0.5545,
+      "spearman_p_value": 5.547600761593335e-09
     },
     "per_patient_4d_results": {
       "Case_068": {
@@ -180,10 +281,10 @@
             "step_index": 4,
             "series_name": "11 AX space trial 1.6 SLICE COVER TEMPLATE",
             "n_indep_50": 36,
-            "n_causal_4d": 34,
-            "n_persisted": 26,
+            "n_causal_4d": 29,
+            "n_persisted": 21,
             "n_newly_inserted": 8,
-            "n_recovered_dropout": 5,
+            "n_recovered_dropout": 0,
             "rigid_shift_xyz_mm": [
               1.9,
               -0.52,
@@ -198,89 +299,95 @@
             "step_index": 5,
             "series_name": "12 AX space trial 1.6 SLICE COVER TEMPLATE",
             "n_indep_50": 33,
-            "n_causal_4d": 51,
-            "n_persisted": 29,
-            "n_newly_inserted": 22,
-            "n_recovered_dropout": 22,
+            "n_causal_4d": 29,
+            "n_persisted": 13,
+            "n_newly_inserted": 16,
+            "n_recovered_dropout": 0,
             "rigid_shift_xyz_mm": [
-              4.38,
-              4.8,
-              -89.27
+              3.01,
+              2.42,
+              -55.19
             ],
-            "mean_tip_advance_mm": 32.88,
-            "max_tip_advance_mm": 54.53,
-            "tissue_push_near_le_12mm_median": 2.49,
-            "tissue_push_far_gt_12mm_median": null
+            "mean_tip_advance_mm": 2.76,
+            "max_tip_advance_mm": 21.18,
+            "tissue_push_near_le_12mm_median": 1.994,
+            "tissue_push_far_gt_12mm_median": 3.164
           }
         ],
         "annotation_evaluations": {
           "final_3d_space_vs_cy_ht": {
             "n_gt": 24,
+            "indep_n_pred": 33,
+            "indep_matched_1to1": 22,
             "indep_recall_pct": 91.67,
             "indep_precision_pct": 66.67,
             "indep_f1_pct": 77.19,
+            "indep_shaft_median_mm": 0.493,
+            "indep_tip_median_mm": 1.428,
+            "causal_4d_n_pred": 29,
+            "causal_4d_matched_1to1": 22,
             "causal_4d_recall_pct": 91.67,
-            "causal_4d_precision_pct": 43.14,
-            "causal_4d_f1_pct": 58.67,
-            "causal_4d_shaft_median_mm": 0.797,
-            "causal_4d_tip_median_mm": 2.086
+            "causal_4d_precision_pct": 75.86,
+            "causal_4d_f1_pct": 83.02,
+            "causal_4d_shaft_median_mm": 0.741,
+            "causal_4d_tip_median_mm": 1.76
           },
           "series_11_space_vs_manual_eh": {
             "n_gt_eh": 20,
-            "causal_4d_recall_pct": 100.0,
-            "causal_4d_f1_pct": 74.07,
-            "shaft_median_mm": 0.711
+            "causal_4d_recall_pct": 85.0,
+            "causal_4d_f1_pct": 69.39,
+            "shaft_median_mm": 0.676
           }
         },
         "bending_analysis": {
-          "n_catheters_analyzed": 50,
+          "n_catheters_analyzed": 29,
           "deflection_by_depth_bin": {
             "0_30mm": {
-              "n_samples": 428,
-              "mean_deflection_mm": 0.026,
+              "n_samples": 250,
+              "mean_deflection_mm": 0.022,
               "median_deflection_mm": 0.0,
               "iqr_deflection_mm": [
                 0.0,
-                0.02
+                0.014
               ],
-              "p90_deflection_mm": 0.078
+              "p90_deflection_mm": 0.096
             },
             "30_60mm": {
-              "n_samples": 353,
-              "mean_deflection_mm": 0.555,
-              "median_deflection_mm": 0.296,
+              "n_samples": 196,
+              "mean_deflection_mm": 0.586,
+              "median_deflection_mm": 0.365,
               "iqr_deflection_mm": [
-                0.051,
-                0.859
+                0.042,
+                0.873
               ],
-              "p90_deflection_mm": 1.489
+              "p90_deflection_mm": 1.588
             },
             "60_90mm": {
-              "n_samples": 334,
-              "mean_deflection_mm": 2.252,
-              "median_deflection_mm": 1.768,
+              "n_samples": 190,
+              "mean_deflection_mm": 2.552,
+              "median_deflection_mm": 2.257,
               "iqr_deflection_mm": [
-                0.774,
-                3.082
+                0.744,
+                3.745
               ],
-              "p90_deflection_mm": 4.6
+              "p90_deflection_mm": 5.342
             },
             "gt_90mm": {
-              "n_samples": 385,
-              "mean_deflection_mm": 5.287,
-              "median_deflection_mm": 4.129,
+              "n_samples": 234,
+              "mean_deflection_mm": 7.196,
+              "median_deflection_mm": 6.34,
               "iqr_deflection_mm": [
-                1.929,
-                7.354
+                2.955,
+                10.038
               ],
-              "p90_deflection_mm": 11.056
+              "p90_deflection_mm": 14.739
             }
           },
-          "overall_tip_deflection_mean_mm": 6.577,
-          "overall_tip_deflection_median_mm": 4.899,
-          "overall_tip_deflection_p90_mm": 16.231,
-          "spearman_depth_vs_tip_deflection_r": 0.3454,
-          "spearman_p_value": 0.014032503307768156
+          "overall_tip_deflection_mean_mm": 8.888,
+          "overall_tip_deflection_median_mm": 8.432,
+          "overall_tip_deflection_p90_mm": 17.356,
+          "spearman_depth_vs_tip_deflection_r": 0.3544,
+          "spearman_p_value": 0.05921702294645283
         }
       },
       "Case_069": {
@@ -365,10 +472,10 @@
             "step_index": 4,
             "series_name": "17 AX space trial 1.6 SLICE COVER TEMPLATE",
             "n_indep_50": 43,
-            "n_causal_4d": 42,
-            "n_persisted": 39,
+            "n_causal_4d": 33,
+            "n_persisted": 30,
             "n_newly_inserted": 3,
-            "n_recovered_dropout": 18,
+            "n_recovered_dropout": 9,
             "rigid_shift_xyz_mm": [
               0.94,
               -0.12,
@@ -383,14 +490,20 @@
         "annotation_evaluations": {
           "final_3d_space_vs_cy_ht": {
             "n_gt": 42,
+            "indep_n_pred": 43,
+            "indep_matched_1to1": 36,
             "indep_recall_pct": 85.71,
             "indep_precision_pct": 83.72,
             "indep_f1_pct": 84.71,
-            "causal_4d_recall_pct": 92.86,
-            "causal_4d_precision_pct": 92.86,
-            "causal_4d_f1_pct": 92.86,
-            "causal_4d_shaft_median_mm": 0.872,
-            "causal_4d_tip_median_mm": 10.844
+            "indep_shaft_median_mm": 0.468,
+            "indep_tip_median_mm": 5.758,
+            "causal_4d_n_pred": 33,
+            "causal_4d_matched_1to1": 31,
+            "causal_4d_recall_pct": 73.81,
+            "causal_4d_precision_pct": 93.94,
+            "causal_4d_f1_pct": 82.67,
+            "causal_4d_shaft_median_mm": 0.758,
+            "causal_4d_tip_median_mm": 7.751
           },
           "series_11_dropout_recovery_vs_series_9_bundle": {
             "n_series_9_bundle": 26,
@@ -399,54 +512,54 @@
           }
         },
         "bending_analysis": {
-          "n_catheters_analyzed": 42,
+          "n_catheters_analyzed": 33,
           "deflection_by_depth_bin": {
             "0_30mm": {
-              "n_samples": 446,
-              "mean_deflection_mm": 0.08,
+              "n_samples": 353,
+              "mean_deflection_mm": 0.09,
               "median_deflection_mm": 0.005,
               "iqr_deflection_mm": [
                 0.0,
-                0.027
+                0.025
               ],
-              "p90_deflection_mm": 0.177
+              "p90_deflection_mm": 0.191
             },
             "30_60mm": {
-              "n_samples": 324,
-              "mean_deflection_mm": 0.37,
-              "median_deflection_mm": 0.081,
+              "n_samples": 262,
+              "mean_deflection_mm": 0.342,
+              "median_deflection_mm": 0.06,
               "iqr_deflection_mm": [
-                0.022,
-                0.451
+                0.012,
+                0.354
               ],
-              "p90_deflection_mm": 1.307
+              "p90_deflection_mm": 1.239
             },
             "60_90mm": {
-              "n_samples": 232,
-              "mean_deflection_mm": 1.353,
-              "median_deflection_mm": 0.651,
+              "n_samples": 180,
+              "mean_deflection_mm": 1.403,
+              "median_deflection_mm": 0.865,
               "iqr_deflection_mm": [
-                0.168,
-                2.32
+                0.195,
+                2.317
               ],
-              "p90_deflection_mm": 3.69
+              "p90_deflection_mm": 3.645
             },
             "gt_90mm": {
-              "n_samples": 258,
-              "mean_deflection_mm": 3.405,
-              "median_deflection_mm": 3.079,
+              "n_samples": 195,
+              "mean_deflection_mm": 4.041,
+              "median_deflection_mm": 3.806,
               "iqr_deflection_mm": [
-                0.758,
-                4.741
+                1.303,
+                5.74
               ],
-              "p90_deflection_mm": 7.131
+              "p90_deflection_mm": 7.88
             }
           },
-          "overall_tip_deflection_mean_mm": 3.08,
-          "overall_tip_deflection_median_mm": 2.069,
-          "overall_tip_deflection_p90_mm": 7.338,
-          "spearman_depth_vs_tip_deflection_r": 0.6048,
-          "spearman_p_value": 2.2091208734522128e-05
+          "overall_tip_deflection_mean_mm": 3.634,
+          "overall_tip_deflection_median_mm": 2.421,
+          "overall_tip_deflection_p90_mm": 8.293,
+          "spearman_depth_vs_tip_deflection_r": 0.6555,
+          "spearman_p_value": 3.464297756254049e-05
         }
       },
       "Case_070": {
@@ -477,86 +590,92 @@
             "step_index": 1,
             "series_name": "11 AX TSE T2 MONITORING CATH PLACEMENT",
             "n_indep_50": 12,
-            "n_causal_4d": 19,
+            "n_causal_4d": 18,
             "n_persisted": 12,
-            "n_newly_inserted": 7,
-            "n_recovered_dropout": 10,
+            "n_newly_inserted": 6,
+            "n_recovered_dropout": 9,
             "rigid_shift_xyz_mm": [
-              -2.0,
-              6.0,
-              64.1
+              1.33,
+              10.06,
+              24.56
             ],
-            "mean_tip_advance_mm": 0.0,
-            "max_tip_advance_mm": 0.0,
-            "tissue_push_near_le_12mm_median": 1.915,
-            "tissue_push_far_gt_12mm_median": null
+            "mean_tip_advance_mm": 2.66,
+            "max_tip_advance_mm": 7.55,
+            "tissue_push_near_le_12mm_median": 1.526,
+            "tissue_push_far_gt_12mm_median": 1.428
           },
           {
             "step_index": 2,
             "series_name": "12 AX TSE T2 MONITORING CATH PLACEMENT",
             "n_indep_50": 15,
-            "n_causal_4d": 15,
+            "n_causal_4d": 14,
             "n_persisted": 10,
-            "n_newly_inserted": 5,
-            "n_recovered_dropout": 4,
+            "n_newly_inserted": 4,
+            "n_recovered_dropout": 3,
             "rigid_shift_xyz_mm": [
-              1.73,
-              3.96,
+              0.62,
+              3.66,
               0.0
             ],
-            "mean_tip_advance_mm": 0.38,
+            "mean_tip_advance_mm": 0.34,
             "max_tip_advance_mm": 2.21,
-            "tissue_push_near_le_12mm_median": 2.188,
-            "tissue_push_far_gt_12mm_median": 0.844
+            "tissue_push_near_le_12mm_median": 1.957,
+            "tissue_push_far_gt_12mm_median": 1.7
           },
           {
             "step_index": 3,
             "series_name": "13 AX TSE T2 MONITORING CATH PLACEMENT",
             "n_indep_50": 20,
-            "n_causal_4d": 18,
-            "n_persisted": 12,
+            "n_causal_4d": 19,
+            "n_persisted": 13,
             "n_newly_inserted": 6,
-            "n_recovered_dropout": 1,
+            "n_recovered_dropout": 2,
             "rigid_shift_xyz_mm": [
-              2.22,
-              -2.02,
+              1.52,
+              -1.86,
               0.0
             ],
-            "mean_tip_advance_mm": 3.58,
+            "mean_tip_advance_mm": 4.17,
             "max_tip_advance_mm": 9.69,
-            "tissue_push_near_le_12mm_median": 0.934,
-            "tissue_push_far_gt_12mm_median": 1.351
+            "tissue_push_near_le_12mm_median": 1.355,
+            "tissue_push_far_gt_12mm_median": 2.024
           },
           {
             "step_index": 4,
             "series_name": "14 AX space trial 1.6 SLICE COVER TEMPLATE",
             "n_indep_50": 27,
-            "n_causal_4d": 24,
+            "n_causal_4d": 23,
             "n_persisted": 17,
-            "n_newly_inserted": 7,
-            "n_recovered_dropout": 1,
+            "n_newly_inserted": 6,
+            "n_recovered_dropout": 0,
             "rigid_shift_xyz_mm": [
-              0.35,
-              1.86,
+              1.39,
+              1.64,
               0.0
             ],
-            "mean_tip_advance_mm": 3.1,
+            "mean_tip_advance_mm": 2.38,
             "max_tip_advance_mm": 20.11,
-            "tissue_push_near_le_12mm_median": 1.125,
-            "tissue_push_far_gt_12mm_median": 1.188
+            "tissue_push_near_le_12mm_median": 1.387,
+            "tissue_push_far_gt_12mm_median": 1.261
           }
         ],
         "annotation_evaluations": {
           "final_3d_space_vs_cy_ht": {
             "n_gt": 22,
+            "indep_n_pred": 27,
+            "indep_matched_1to1": 21,
             "indep_recall_pct": 95.45,
             "indep_precision_pct": 77.78,
             "indep_f1_pct": 85.71,
+            "indep_shaft_median_mm": 0.392,
+            "indep_tip_median_mm": 1.967,
+            "causal_4d_n_pred": 23,
+            "causal_4d_matched_1to1": 21,
             "causal_4d_recall_pct": 95.45,
-            "causal_4d_precision_pct": 87.5,
-            "causal_4d_f1_pct": 91.3,
-            "causal_4d_shaft_median_mm": 0.552,
-            "causal_4d_tip_median_mm": 4.785
+            "causal_4d_precision_pct": 91.3,
+            "causal_4d_f1_pct": 93.33,
+            "causal_4d_shaft_median_mm": 0.729,
+            "causal_4d_tip_median_mm": 4.818
           },
           "series_6_monitoring_vs_ht_10_needles": {
             "n_gt_annotated_subset": 10,
@@ -570,51 +689,51 @@
           "n_catheters_analyzed": 23,
           "deflection_by_depth_bin": {
             "0_30mm": {
-              "n_samples": 235,
-              "mean_deflection_mm": 0.043,
-              "median_deflection_mm": 0.007,
+              "n_samples": 232,
+              "mean_deflection_mm": 0.067,
+              "median_deflection_mm": 0.014,
               "iqr_deflection_mm": [
-                0.0,
-                0.048
+                0.002,
+                0.081
               ],
-              "p90_deflection_mm": 0.113
+              "p90_deflection_mm": 0.185
             },
             "30_60mm": {
-              "n_samples": 163,
-              "mean_deflection_mm": 0.381,
-              "median_deflection_mm": 0.178,
+              "n_samples": 176,
+              "mean_deflection_mm": 0.402,
+              "median_deflection_mm": 0.188,
               "iqr_deflection_mm": [
-                0.04,
-                0.553
+                0.041,
+                0.629
               ],
-              "p90_deflection_mm": 1.072
+              "p90_deflection_mm": 1.164
             },
             "60_90mm": {
-              "n_samples": 122,
-              "mean_deflection_mm": 0.91,
-              "median_deflection_mm": 0.481,
+              "n_samples": 125,
+              "mean_deflection_mm": 0.905,
+              "median_deflection_mm": 0.475,
               "iqr_deflection_mm": [
-                0.206,
-                1.264
+                0.188,
+                1.427
               ],
-              "p90_deflection_mm": 2.426
+              "p90_deflection_mm": 2.364
             },
             "gt_90mm": {
-              "n_samples": 170,
-              "mean_deflection_mm": 1.477,
-              "median_deflection_mm": 0.949,
+              "n_samples": 157,
+              "mean_deflection_mm": 1.549,
+              "median_deflection_mm": 1.061,
               "iqr_deflection_mm": [
-                0.404,
-                2.074
+                0.418,
+                2.166
               ],
-              "p90_deflection_mm": 3.726
+              "p90_deflection_mm": 3.795
             }
           },
-          "overall_tip_deflection_mean_mm": 2.156,
+          "overall_tip_deflection_mean_mm": 2.134,
           "overall_tip_deflection_median_mm": 1.426,
           "overall_tip_deflection_p90_mm": 5.174,
-          "spearman_depth_vs_tip_deflection_r": 0.2199,
-          "spearman_p_value": 0.31332131674008434
+          "spearman_depth_vs_tip_deflection_r": 0.1482,
+          "spearman_p_value": 0.49970970261304026
         }
       },
       "Case_071": {
@@ -735,10 +854,10 @@
             "step_index": 6,
             "series_name": "19 AX space trial 1.6 SLICE COVER TEMPLATE",
             "n_indep_50": 22,
-            "n_causal_4d": 14,
-            "n_persisted": 13,
+            "n_causal_4d": 10,
+            "n_persisted": 9,
             "n_newly_inserted": 1,
-            "n_recovered_dropout": 5,
+            "n_recovered_dropout": 1,
             "rigid_shift_xyz_mm": [
               0.71,
               -0.79,
@@ -753,14 +872,20 @@
         "annotation_evaluations": {
           "final_3d_space_vs_cy_ht": {
             "n_gt": 20,
+            "indep_n_pred": 22,
+            "indep_matched_1to1": 16,
             "indep_recall_pct": 80.0,
             "indep_precision_pct": 72.73,
             "indep_f1_pct": 76.19,
-            "causal_4d_recall_pct": 65.0,
-            "causal_4d_precision_pct": 92.86,
-            "causal_4d_f1_pct": 76.47,
-            "causal_4d_shaft_median_mm": 0.876,
-            "causal_4d_tip_median_mm": 3.411
+            "indep_shaft_median_mm": 0.485,
+            "indep_tip_median_mm": 2.722,
+            "causal_4d_n_pred": 10,
+            "causal_4d_matched_1to1": 10,
+            "causal_4d_recall_pct": 50.0,
+            "causal_4d_precision_pct": 100.0,
+            "causal_4d_f1_pct": 66.67,
+            "causal_4d_shaft_median_mm": 0.934,
+            "causal_4d_tip_median_mm": 3.014
           },
           "series_9_monitoring_vs_ht_6_obturator_needles": {
             "n_gt_annotated_subset": 6,
@@ -776,42 +901,42 @@
           },
           "series_19_vs_ht_4_tracked_needles": {
             "n_gt_annotated_subset": 4,
-            "recall_pct": 50.0,
-            "shaft_median_mm": 2.081
+            "recall_pct": 25.0,
+            "shaft_median_mm": 0.667
           }
         },
         "bending_analysis": {
-          "n_catheters_analyzed": 14,
+          "n_catheters_analyzed": 10,
           "deflection_by_depth_bin": {
             "0_30mm": {
-              "n_samples": 203,
-              "mean_deflection_mm": 0.065,
-              "median_deflection_mm": 0.021,
+              "n_samples": 134,
+              "mean_deflection_mm": 0.021,
+              "median_deflection_mm": 0.0,
               "iqr_deflection_mm": [
                 0.0,
-                0.078
+                0.026
               ],
-              "p90_deflection_mm": 0.181
+              "p90_deflection_mm": 0.049
             },
             "30_60mm": {
-              "n_samples": 138,
-              "mean_deflection_mm": 0.567,
-              "median_deflection_mm": 0.433,
+              "n_samples": 89,
+              "mean_deflection_mm": 0.396,
+              "median_deflection_mm": 0.239,
               "iqr_deflection_mm": [
-                0.021,
-                0.958
+                0.0,
+                0.698
               ],
-              "p90_deflection_mm": 1.367
+              "p90_deflection_mm": 1.04
             },
             "60_90mm": {
-              "n_samples": 62,
-              "mean_deflection_mm": 1.301,
-              "median_deflection_mm": 1.302,
+              "n_samples": 60,
+              "mean_deflection_mm": 1.259,
+              "median_deflection_mm": 1.252,
               "iqr_deflection_mm": [
-                0.663,
-                1.903
+                0.645,
+                1.847
               ],
-              "p90_deflection_mm": 2.471
+              "p90_deflection_mm": 2.253
             },
             "gt_90mm": {
               "n_samples": 17,
@@ -824,11 +949,11 @@
               "p90_deflection_mm": 3.077
             }
           },
-          "overall_tip_deflection_mean_mm": 1.484,
+          "overall_tip_deflection_mean_mm": 1.561,
           "overall_tip_deflection_median_mm": 1.275,
-          "overall_tip_deflection_p90_mm": 2.928,
-          "spearman_depth_vs_tip_deflection_r": 0.7011,
-          "spearman_p_value": 0.005211861769946939
+          "overall_tip_deflection_p90_mm": 2.991,
+          "spearman_depth_vs_tip_deflection_r": 0.6848,
+          "spearman_p_value": 0.02888279750673276
         }
       }
     }

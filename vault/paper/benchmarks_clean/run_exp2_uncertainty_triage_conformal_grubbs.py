@@ -1268,12 +1268,45 @@ def run_part2d_grubbs_and_tost(meta_list, preds_all_tau50, preds_all_tau35):
             p_lower_t = None
             p_tost = None
 
-        # Nonparametric Wilcoxon one-sided non-inferiority test on (diffs - margin_delta < 0)
+        # Nonparametric Wilcoxon one-sided non-inferiority test on (diffs - margin_delta < 0) across N=432 catheters
         res_w_up = wilcoxon(diffs - margin_delta, alternative="less")
         p_upper_wilcox = float(res_w_up.pvalue)
         res_w_lo = wilcoxon(diffs + margin_delta, alternative="greater")
         p_lower_wilcox = float(res_w_lo.pvalue)
         p_tost_wilcox = max(p_upper_wilcox, p_lower_wilcox)
+        p_two_sided_wilcox_catheter = float(wilcoxon(diffs).pvalue)
+
+        # Patient-level paired one-sided Wilcoxon non-inferiority test across the N=40 dual-traced patients (V-02)
+        pat_nf_vals = []
+        pat_hu_vals = []
+        for s_i in range(40):
+            s_recs = by_scene[s_i]
+            if not s_recs:
+                continue
+            if "shaft" in label:
+                vn = [r["shaft_xy_13"] for r in s_recs]
+                vh = [r["shaft_xy_12"] for r in s_recs]
+            elif "vs_rater2_ref" in label:
+                vn = [r["tip_3d_23"] for r in s_recs]
+                vh = [r["tip_3d_12"] for r in s_recs]
+            else:
+                vn = [r["tip_3d_13"] for r in s_recs]
+                vh = [r["tip_3d_12"] for r in s_recs]
+            if stat_mode == "median":
+                pat_nf_vals.append(float(np.median(vn)))
+                pat_hu_vals.append(float(np.median(vh)))
+            else:
+                pat_nf_vals.append(float(np.mean(vn)))
+                pat_hu_vals.append(float(np.mean(vh)))
+
+        pat_diffs = np.asarray(pat_nf_vals, dtype=np.float64) - np.asarray(pat_hu_vals, dtype=np.float64)
+        n_pat = len(pat_diffs)
+        p_upper_wilcox_patient = float(wilcoxon(pat_diffs - margin_delta, alternative="less").pvalue)
+        p_lower_wilcox_patient = float(wilcoxon(pat_diffs + margin_delta, alternative="greater").pvalue)
+        p_tost_wilcox_patient = max(p_upper_wilcox_patient, p_lower_wilcox_patient)
+        p_two_sided_wilcox_patient = float(wilcoxon(pat_diffs).pvalue)
+        se_pat = float(np.std(pat_diffs, ddof=1) / math.sqrt(max(1, n_pat)))
+        p_upper_t_patient = float(norm.cdf((float(np.mean(pat_diffs)) - margin_delta) / max(1e-9, se_pat)))
 
         # 10,000-resample patient-clustered bootstrap for 90% CI (TOST standard) and 95% CI
         rng_b = np.random.default_rng(909)
@@ -1305,11 +1338,21 @@ def run_part2d_grubbs_and_tost(meta_list, preds_all_tau50, preds_all_tau35):
             "label": label,
             "statistic_mode": stat_mode,
             "margin_delta_mm": margin_delta,
+            "n_patients": n_pat,
+            "n_catheters": n,
             "nf2026_value_mm": round(float(np.mean(err_nf) if stat_mode == "mean" else np.median(err_nf)), 4),
             "human_interobserver_value_mm": round(float(np.mean(err_human) if stat_mode == "mean" else np.median(err_human)), 4),
             "paired_difference_nf_minus_human_mm": round(point_diff, 4),
+            "patient_level_mean_diff_mm": round(float(np.mean(pat_diffs)), 4),
+            "patient_level_median_diff_mm": round(float(np.median(pat_diffs)), 4),
             "ci90_patient_bootstrap_mm": ci90,
             "ci95_patient_bootstrap_mm": ci95,
+            "non_inferiority_p_value_wilcoxon_patient_40": p_upper_wilcox_patient,
+            "tost_equivalence_p_value_wilcoxon_patient_40": p_tost_wilcox_patient,
+            "two_sided_superiority_p_value_wilcoxon_patient_40": p_two_sided_wilcox_patient,
+            "non_inferiority_p_value_parametric_patient_40": p_upper_t_patient,
+            "non_inferiority_p_value_wilcoxon_catheter_432": p_upper_wilcox,
+            "two_sided_superiority_p_value_wilcoxon_catheter_432": p_two_sided_wilcox_catheter,
             "non_inferiority_p_value_wilcoxon": p_upper_wilcox,
             "tost_equivalence_p_value_wilcoxon": p_tost_wilcox,
             "non_inferiority_p_value_parametric": p_upper_t,
@@ -1362,7 +1405,8 @@ def run_part2d_grubbs_and_tost(meta_list, preds_all_tau50, preds_all_tau35):
         print(
             f"    - {k_t:42s}: NF={tv['nf2026_value_mm']:.3f}mm vs Human={tv['human_interobserver_value_mm']:.3f}mm, "
             f"diff={tv['paired_difference_nf_minus_human_mm']:+.3f}mm (90% CI {tv['ci90_patient_bootstrap_mm']}), "
-            f"margin={tv['margin_delta_mm']:.2f}mm, p_noninf_wilcox={tv['non_inferiority_p_value_wilcoxon']:.3e}, "
+            f"margin={tv['margin_delta_mm']:.2f}mm, p_noninf_pat40={tv['non_inferiority_p_value_wilcoxon_patient_40']:.3e}, "
+            f"p_noninf_cath432={tv['non_inferiority_p_value_wilcoxon']:.3e}, "
             f"non_inferior={tv['is_non_inferior_at_alpha_0p05']}"
         )
 

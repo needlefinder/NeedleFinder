@@ -2079,12 +2079,12 @@ def derive_unstitched_and_base_bgs(stitched_enriched_bgs):
 
 def main():
     parser = argparse.ArgumentParser(description="Clean Nested Stage 2 + 1D Tip Localizer + Fragment Stitcher")
-    parser.add_argument("--cache-dir", type=str, default="/tmp/needle_unet3d_cache")
-    parser.add_argument("--oof-dir", type=str, default="/home/guillaume/github/needlefinder/nn_models_eval")
-    parser.add_argument("--meta-path", type=str, default="/tmp/cases_meta_54.pkl")
-    parser.add_argument("--base-trajs-path", type=str, default="/tmp/base_trajs_54cases.pkl")
-    parser.add_argument("--out-json", type=str, default="/home/guillaume/github/needlefinder/vault/sources/2026-10-23-stage2-and-tip-clean-eval.json")
-    parser.add_argument("--out-preds-pkl", type=str, default="/home/guillaume/github/needlefinder/vault/sources/2026-10-23-stage2-clean-oof-predictions.pkl")
+    parser.add_argument("--cache-dir", type=str, default="/tmp/needle_unet3d_cache_clean")
+    parser.add_argument("--oof-dir", type=str, default="/home/guillaume/github/needlefinder/nn_models_clean")
+    parser.add_argument("--meta-path", type=str, default="/tmp/cases_meta_54_clean.pkl")
+    parser.add_argument("--base-trajs-path", type=str, default="/tmp/base_trajs_54cases_clean.pkl")
+    parser.add_argument("--out-json", type=str, default="/home/guillaume/github/needlefinder/vault/sources/2026-10-23-stage2-and-tip-clean-final.json")
+    parser.add_argument("--out-preds-pkl", type=str, default="/home/guillaume/github/needlefinder/vault/sources/2026-10-23-stage2-clean-final-oof-predictions.pkl")
     parser.add_argument("--device", type=str, default="cuda:0" if torch.cuda.is_available() else "cpu")
     parser.add_argument("--rebuild-bundles", action="store_true", help="Force rebuilding slice graphs & bundle pools even if cached")
     parser.add_argument("--use-inner-oof-crossfit", action="store_true", help="Use inner_oof_f{f_out}_case_{i:02d}.npz as primary Stage 2B training features")

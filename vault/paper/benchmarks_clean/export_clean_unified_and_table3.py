@@ -607,7 +607,7 @@ def main():
     parser.add_argument("--out-table3-clean-json", type=str, default="/home/guillaume/github/needlefinder/vault/sources/2026-10-23-table3-observers-and-nf-clean.json")
     parser.add_argument("--out-table3-rerun-json", type=str, default="/home/guillaume/github/needlefinder/vault/sources/2026-10-23-table3-observers-and-nf-rerun.json")
     parser.add_argument("--out-qual-npz", type=str, default="/home/guillaume/github/needlefinder/vault/reports/figures/data/qualitative_predictions.npz")
-    parser.add_argument("--device", type=str, default="cuda:1" if torch.cuda.is_available() else "cpu")
+    parser.add_argument("--device", type=str, default="cuda:0" if torch.cuda.is_available() else "cpu")
     args = parser.parse_args()
 
     t0 = time.time()
@@ -645,7 +645,7 @@ def main():
     bundle_cache_path = f"/tmp/stage2_clean_bundles_{oof_tag}.pkl"
     bundle_cache = pickle.load(open(bundle_cache_path, "rb"))
 
-    stitched_enriched_bgs = s2_preds_data["stitched_enriched_bgs"]
+    stitched_enriched_bgs = s2_preds_data.get("stitched_enriched_bgs") or bundle_cache["stitched_enriched_bgs"]
     _, _, stitched_base_bgs, _ = derive_unstitched_and_base_bgs(stitched_enriched_bgs)
 
     graphs = bundle_cache["graphs"]
@@ -816,9 +816,26 @@ def main():
             w["SynthBrachy3T_OOF_vs_InnerOOF_CrossFit_tau50"] = compute_wilcoxon_comparison(ppm[syn50_k], ppm[in_k])
         return w
 
+    pp_adh_map = {
+        m_k: {
+            k: ([v[i] for i in adh_idx] if isinstance(v, (list, np.ndarray)) and len(v) == 54 else v)
+            for k, v in pp_v.items()
+        }
+        for m_k, pp_v in pp_all_map.items()
+    }
+    w_adh = _build_wilcoxon_dict(pp_adh_map)
+    w_adh.update({
+        "NF2026_4b_vs_PMB2019": compute_wilcoxon_comparison(pp_adh_map[syn50_k], pp_adh_map[b1_k]),
+        "NF2026_4b_vs_ResUNet_clDice": compute_wilcoxon_comparison(pp_adh_map[syn50_k], pp_adh_map[b2_k]),
+        "NF2026_4b_vs_Xiao2026": compute_wilcoxon_comparison(pp_adh_map[syn50_k], pp_adh_map[b3_k]),
+        "NF2026_4b_vs_Stage0": compute_wilcoxon_comparison(pp_adh_map[syn50_k], pp_adh_map[s0_k]),
+        "NF2026_4b_vs_NoSynth_4a": compute_wilcoxon_comparison(pp_adh_map[syn50_k], pp_adh_map[nf50_k]),
+    })
+
     wilcoxon_54 = {
         "cohort_all_1063_catheters": _build_wilcoxon_dict(pp_all_map),
         "cohort_long_759_cy_catheters": _build_wilcoxon_dict(pp_long_map),
+        "cohort_adhesion_23cases_571_catheters": w_adh,
     }
 
     # Run Leak-Free Few-Shot Clinical Annotation Budget (AUD-500)
