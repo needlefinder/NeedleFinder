@@ -1,0 +1,2889 @@
+{
+  "benchmark": "Public Clinical Pelvic 3T T2W MRI Zero-Needle Specificity Benchmark (MSD Task05_Prostate)",
+  "date": "2026-10-23",
+  "dataset": {
+    "name": "Medical Segmentation Decathlon (MSD) Task05_Prostate",
+    "source": "s3://msd-for-monai/Task05_Prostate.tar (CC-BY-SA 4.0, Radboudumc Nijmegen)",
+    "modality": "3T Axial T2-Weighted TSE Pelvic MRI (0 brachytherapy needles)",
+    "total_volumes": 48,
+    "imagesTr_volumes": 32,
+    "imagesTs_volumes": 16,
+    "in_plane_resolution_mm": "0.60 - 0.75 mm",
+    "slice_thickness_mm": "3.0 - 4.0 mm"
+  },
+  "methods_compared": {
+    "1_raw_stage1_unet_tangent_tubes_no_physics_or_gt": {
+      "description": "Raw Stage 1 NeedleUNet3D + Tangent Tube Tracking (without Stage 0 symmetry gate or Stage 2B DenseGraphTransformer)",
+      "total_fp_tracks": 306,
+      "mean_fp_per_volume": 6.375,
+      "mean_fp_ci95": [
+        5.041,
+        7.73
+      ],
+      "sd_fp_per_volume": 4.765,
+      "pop_sd_fp_per_volume": 4.715,
+      "median_fp_per_volume": 6.0,
+      "iqr_fp_per_volume": [
+        3.0,
+        9.0
+      ],
+      "max_fp_per_volume": 19,
+      "zero_fp_patients": 7,
+      "patient_level_specificity_pct": 14.58,
+      "le_1_fp_patients": 9,
+      "le_1_fp_specificity_pct": 18.75
+    },
+    "2_candidate_pool_before_graph_transformer": {
+      "description": "Stage 0 Physics + Stage 1 NeedleUNet3D + Tangent Tubes Candidate Pool (without Stage 2B DenseGraphTransformer pruning)",
+      "total_fp_tracks": 294,
+      "mean_fp_per_volume": 6.125,
+      "mean_fp_ci95": [
+        4.833,
+        7.521
+      ],
+      "sd_fp_per_volume": 4.698,
+      "pop_sd_fp_per_volume": 4.649,
+      "median_fp_per_volume": 5.0,
+      "iqr_fp_per_volume": [
+        3.0,
+        8.0
+      ],
+      "max_fp_per_volume": 23,
+      "zero_fp_patients": 2,
+      "patient_level_specificity_pct": 4.17,
+      "le_1_fp_patients": 5,
+      "le_1_fp_specificity_pct": 10.42
+    },
+    "3_stage1_unet_with_stage0_sym_gate_only": {
+      "description": "Stage 1 NeedleUNet3D + Tangent Tubes gated by Stage 0 Rust 3D Radial Symmetry (without DenseGraphTransformer)",
+      "total_fp_tracks": 18,
+      "mean_fp_per_volume": 0.375,
+      "mean_fp_ci95": [
+        0.229,
+        0.521
+      ],
+      "sd_fp_per_volume": 0.531,
+      "pop_sd_fp_per_volume": 0.525,
+      "median_fp_per_volume": 0.0,
+      "iqr_fp_per_volume": [
+        0.0,
+        1.0
+      ],
+      "max_fp_per_volume": 2,
+      "zero_fp_patients": 31,
+      "patient_level_specificity_pct": 64.58,
+      "le_1_fp_patients": 47,
+      "le_1_fp_specificity_pct": 97.92
+    },
+    "3b_clean_ssl_stage1_with_stage0_sym_gate_only": {
+      "description": "Clean SSL + Multi-Rater Stage 1 NeedleUNet3D + Tangent Tubes gated by Stage 0 Rust 3D Radial Symmetry",
+      "total_fp_tracks": 6,
+      "mean_fp_per_volume": 0.125,
+      "mean_fp_ci95": [
+        0.042,
+        0.229
+      ],
+      "sd_fp_per_volume": 0.334,
+      "pop_sd_fp_per_volume": 0.331,
+      "median_fp_per_volume": 0.0,
+      "iqr_fp_per_volume": [
+        0.0,
+        0.0
+      ],
+      "max_fp_per_volume": 1,
+      "zero_fp_patients": 42,
+      "patient_level_specificity_pct": 87.5,
+      "le_1_fp_patients": 48,
+      "le_1_fp_specificity_pct": 100.0
+    },
+    "4_unified_needlefinder_2026_by_threshold": {
+      "tau_25pct": {
+        "confidence_threshold_pct": 25.0,
+        "total_fp_tracks": 276,
+        "mean_fp_per_volume": 5.75,
+        "mean_fp_ci95": [
+          4.521,
+          7.104
+        ],
+        "sd_fp_per_volume": 4.47,
+        "pop_sd_fp_per_volume": 4.423,
+        "median_fp_per_volume": 4.5,
+        "iqr_fp_per_volume": [
+          3.0,
+          7.25
+        ],
+        "max_fp_per_volume": 23,
+        "zero_fp_patients": 3,
+        "patient_level_specificity_pct": 6.25,
+        "le_1_fp_patients": 5,
+        "le_1_fp_specificity_pct": 10.42
+      },
+      "tau_35pct": {
+        "confidence_threshold_pct": 35.0,
+        "total_fp_tracks": 254,
+        "mean_fp_per_volume": 5.292,
+        "mean_fp_ci95": [
+          4.124,
+          6.626
+        ],
+        "sd_fp_per_volume": 4.342,
+        "pop_sd_fp_per_volume": 4.296,
+        "median_fp_per_volume": 4.0,
+        "iqr_fp_per_volume": [
+          3.0,
+          6.25
+        ],
+        "max_fp_per_volume": 23,
+        "zero_fp_patients": 3,
+        "patient_level_specificity_pct": 6.25,
+        "le_1_fp_patients": 5,
+        "le_1_fp_specificity_pct": 10.42
+      },
+      "tau_45pct": {
+        "confidence_threshold_pct": 45.0,
+        "total_fp_tracks": 203,
+        "mean_fp_per_volume": 4.229,
+        "mean_fp_ci95": [
+          3.062,
+          5.542
+        ],
+        "sd_fp_per_volume": 4.445,
+        "pop_sd_fp_per_volume": 4.398,
+        "median_fp_per_volume": 3.0,
+        "iqr_fp_per_volume": [
+          1.0,
+          5.0
+        ],
+        "max_fp_per_volume": 23,
+        "zero_fp_patients": 6,
+        "patient_level_specificity_pct": 12.5,
+        "le_1_fp_patients": 13,
+        "le_1_fp_specificity_pct": 27.08
+      },
+      "tau_50pct": {
+        "confidence_threshold_pct": 50.0,
+        "total_fp_tracks": 197,
+        "mean_fp_per_volume": 4.104,
+        "mean_fp_ci95": [
+          2.896,
+          5.376
+        ],
+        "sd_fp_per_volume": 4.449,
+        "pop_sd_fp_per_volume": 4.403,
+        "median_fp_per_volume": 3.0,
+        "iqr_fp_per_volume": [
+          1.0,
+          5.0
+        ],
+        "max_fp_per_volume": 23,
+        "zero_fp_patients": 8,
+        "patient_level_specificity_pct": 16.67,
+        "le_1_fp_patients": 13,
+        "le_1_fp_specificity_pct": 27.08
+      },
+      "tau_55pct": {
+        "confidence_threshold_pct": 55.0,
+        "total_fp_tracks": 185,
+        "mean_fp_per_volume": 3.854,
+        "mean_fp_ci95": [
+          2.792,
+          5.0
+        ],
+        "sd_fp_per_volume": 3.865,
+        "pop_sd_fp_per_volume": 3.824,
+        "median_fp_per_volume": 3.0,
+        "iqr_fp_per_volume": [
+          1.0,
+          5.0
+        ],
+        "max_fp_per_volume": 19,
+        "zero_fp_patients": 8,
+        "patient_level_specificity_pct": 16.67,
+        "le_1_fp_patients": 13,
+        "le_1_fp_specificity_pct": 27.08
+      },
+      "tau_60pct": {
+        "confidence_threshold_pct": 60.0,
+        "total_fp_tracks": 171,
+        "mean_fp_per_volume": 3.562,
+        "mean_fp_ci95": [
+          2.604,
+          4.584
+        ],
+        "sd_fp_per_volume": 3.482,
+        "pop_sd_fp_per_volume": 3.445,
+        "median_fp_per_volume": 3.0,
+        "iqr_fp_per_volume": [
+          1.0,
+          5.0
+        ],
+        "max_fp_per_volume": 17,
+        "zero_fp_patients": 8,
+        "patient_level_specificity_pct": 16.67,
+        "le_1_fp_patients": 14,
+        "le_1_fp_specificity_pct": 29.17
+      }
+    },
+    "5_unified_needlefinder_2026_sym_gated_by_threshold": {
+      "tau_25pct": {
+        "confidence_threshold_pct": 25.0,
+        "total_fp_tracks": 17,
+        "mean_fp_per_volume": 0.354,
+        "mean_fp_ci95": [
+          0.146,
+          0.583
+        ],
+        "sd_fp_per_volume": 0.785,
+        "pop_sd_fp_per_volume": 0.777,
+        "median_fp_per_volume": 0.0,
+        "iqr_fp_per_volume": [
+          0.0,
+          0.0
+        ],
+        "max_fp_per_volume": 3,
+        "zero_fp_patients": 38,
+        "patient_level_specificity_pct": 79.17,
+        "le_1_fp_patients": 43,
+        "le_1_fp_specificity_pct": 89.58
+      },
+      "tau_35pct": {
+        "confidence_threshold_pct": 35.0,
+        "total_fp_tracks": 17,
+        "mean_fp_per_volume": 0.354,
+        "mean_fp_ci95": [
+          0.146,
+          0.583
+        ],
+        "sd_fp_per_volume": 0.785,
+        "pop_sd_fp_per_volume": 0.777,
+        "median_fp_per_volume": 0.0,
+        "iqr_fp_per_volume": [
+          0.0,
+          0.0
+        ],
+        "max_fp_per_volume": 3,
+        "zero_fp_patients": 38,
+        "patient_level_specificity_pct": 79.17,
+        "le_1_fp_patients": 43,
+        "le_1_fp_specificity_pct": 89.58
+      },
+      "tau_45pct": {
+        "confidence_threshold_pct": 45.0,
+        "total_fp_tracks": 17,
+        "mean_fp_per_volume": 0.354,
+        "mean_fp_ci95": [
+          0.146,
+          0.583
+        ],
+        "sd_fp_per_volume": 0.785,
+        "pop_sd_fp_per_volume": 0.777,
+        "median_fp_per_volume": 0.0,
+        "iqr_fp_per_volume": [
+          0.0,
+          0.0
+        ],
+        "max_fp_per_volume": 3,
+        "zero_fp_patients": 38,
+        "patient_level_specificity_pct": 79.17,
+        "le_1_fp_patients": 43,
+        "le_1_fp_specificity_pct": 89.58
+      },
+      "tau_50pct": {
+        "confidence_threshold_pct": 50.0,
+        "total_fp_tracks": 16,
+        "mean_fp_per_volume": 0.333,
+        "mean_fp_ci95": [
+          0.125,
+          0.562
+        ],
+        "sd_fp_per_volume": 0.753,
+        "pop_sd_fp_per_volume": 0.745,
+        "median_fp_per_volume": 0.0,
+        "iqr_fp_per_volume": [
+          0.0,
+          0.0
+        ],
+        "max_fp_per_volume": 3,
+        "zero_fp_patients": 38,
+        "patient_level_specificity_pct": 79.17,
+        "le_1_fp_patients": 44,
+        "le_1_fp_specificity_pct": 91.67
+      },
+      "tau_55pct": {
+        "confidence_threshold_pct": 55.0,
+        "total_fp_tracks": 16,
+        "mean_fp_per_volume": 0.333,
+        "mean_fp_ci95": [
+          0.125,
+          0.562
+        ],
+        "sd_fp_per_volume": 0.753,
+        "pop_sd_fp_per_volume": 0.745,
+        "median_fp_per_volume": 0.0,
+        "iqr_fp_per_volume": [
+          0.0,
+          0.0
+        ],
+        "max_fp_per_volume": 3,
+        "zero_fp_patients": 38,
+        "patient_level_specificity_pct": 79.17,
+        "le_1_fp_patients": 44,
+        "le_1_fp_specificity_pct": 91.67
+      },
+      "tau_60pct": {
+        "confidence_threshold_pct": 60.0,
+        "total_fp_tracks": 16,
+        "mean_fp_per_volume": 0.333,
+        "mean_fp_ci95": [
+          0.125,
+          0.562
+        ],
+        "sd_fp_per_volume": 0.753,
+        "pop_sd_fp_per_volume": 0.745,
+        "median_fp_per_volume": 0.0,
+        "iqr_fp_per_volume": [
+          0.0,
+          0.0
+        ],
+        "max_fp_per_volume": 3,
+        "zero_fp_patients": 38,
+        "patient_level_specificity_pct": 79.17,
+        "le_1_fp_patients": 44,
+        "le_1_fp_specificity_pct": 91.67
+      }
+    }
+  },
+  "mean_runtime_sec_per_volume": 1.996,
+  "median_runtime_sec_per_volume": 2.216,
+  "per_case_results": [
+    {
+      "case_id": "prostate_00",
+      "split": "imagesTr",
+      "shape_kji": [
+        15,
+        320,
+        320
+      ],
+      "spacing_ras_mm": [
+        0.6,
+        0.6,
+        4.0
+      ],
+      "runtime_sec": 1.1314,
+      "vox_p_mask_ge_50_frac": 0.001063,
+      "vox_p_obt_ge_50_frac": 0.000714,
+      "raw_unet_tubes_no_physics_or_gt": 5,
+      "stage1_unet_sym_tubes_only": 0,
+      "clean_ssl_stage1_sym_tubes_only": 0,
+      "candidate_pool_before_graph_transformer": 0,
+      "pure_physics_hybridnet_by_tau": {
+        "25": 0,
+        "35": 0,
+        "45": 0,
+        "50": 0,
+        "55": 0,
+        "60": 0
+      },
+      "unified_needlefinder_2026_by_tau": {
+        "25": 0,
+        "35": 0,
+        "45": 0,
+        "50": 0,
+        "55": 0,
+        "60": 0
+      },
+      "unified_needlefinder_2026_sym_gated_by_tau": {
+        "25": 0,
+        "35": 0,
+        "45": 0,
+        "50": 0,
+        "55": 0,
+        "60": 0
+      },
+      "detected_confs_unified": []
+    },
+    {
+      "case_id": "prostate_01",
+      "split": "imagesTr",
+      "shape_kji": [
+        20,
+        320,
+        320
+      ],
+      "spacing_ras_mm": [
+        0.625,
+        0.625,
+        3.6
+      ],
+      "runtime_sec": 2.3055,
+      "vox_p_mask_ge_50_frac": 0.000877,
+      "vox_p_obt_ge_50_frac": 0.000584,
+      "raw_unet_tubes_no_physics_or_gt": 8,
+      "stage1_unet_sym_tubes_only": 0,
+      "clean_ssl_stage1_sym_tubes_only": 1,
+      "candidate_pool_before_graph_transformer": 3,
+      "pure_physics_hybridnet_by_tau": {
+        "25": 3,
+        "35": 3,
+        "45": 3,
+        "50": 3,
+        "55": 3,
+        "60": 3
+      },
+      "unified_needlefinder_2026_by_tau": {
+        "25": 3,
+        "35": 3,
+        "45": 3,
+        "50": 3,
+        "55": 3,
+        "60": 3
+      },
+      "unified_needlefinder_2026_sym_gated_by_tau": {
+        "25": 0,
+        "35": 0,
+        "45": 0,
+        "50": 0,
+        "55": 0,
+        "60": 0
+      },
+      "detected_confs_unified": [
+        99.71,
+        99.57,
+        89.21
+      ]
+    },
+    {
+      "case_id": "prostate_02",
+      "split": "imagesTr",
+      "shape_kji": [
+        24,
+        320,
+        320
+      ],
+      "spacing_ras_mm": [
+        0.625,
+        0.625,
+        3.6
+      ],
+      "runtime_sec": 1.9791,
+      "vox_p_mask_ge_50_frac": 0.000723,
+      "vox_p_obt_ge_50_frac": 0.000432,
+      "raw_unet_tubes_no_physics_or_gt": 10,
+      "stage1_unet_sym_tubes_only": 1,
+      "clean_ssl_stage1_sym_tubes_only": 0,
+      "candidate_pool_before_graph_transformer": 12,
+      "pure_physics_hybridnet_by_tau": {
+        "25": 11,
+        "35": 9,
+        "45": 5,
+        "50": 4,
+        "55": 4,
+        "60": 4
+      },
+      "unified_needlefinder_2026_by_tau": {
+        "25": 11,
+        "35": 9,
+        "45": 5,
+        "50": 4,
+        "55": 4,
+        "60": 4
+      },
+      "unified_needlefinder_2026_sym_gated_by_tau": {
+        "25": 2,
+        "35": 2,
+        "45": 2,
+        "50": 1,
+        "55": 1,
+        "60": 1
+      },
+      "detected_confs_unified": [
+        99.83,
+        99.74,
+        74.66,
+        73.52,
+        48.24,
+        41.79,
+        41.66,
+        41.4,
+        37.54,
+        34.01,
+        27.88
+      ]
+    },
+    {
+      "case_id": "prostate_04",
+      "split": "imagesTr",
+      "shape_kji": [
+        15,
+        320,
+        320
+      ],
+      "spacing_ras_mm": [
+        0.6,
+        0.6,
+        4.0
+      ],
+      "runtime_sec": 0.9949,
+      "vox_p_mask_ge_50_frac": 0.001539,
+      "vox_p_obt_ge_50_frac": 0.001035,
+      "raw_unet_tubes_no_physics_or_gt": 6,
+      "stage1_unet_sym_tubes_only": 0,
+      "clean_ssl_stage1_sym_tubes_only": 0,
+      "candidate_pool_before_graph_transformer": 8,
+      "pure_physics_hybridnet_by_tau": {
+        "25": 8,
+        "35": 8,
+        "45": 8,
+        "50": 7,
+        "55": 7,
+        "60": 7
+      },
+      "unified_needlefinder_2026_by_tau": {
+        "25": 8,
+        "35": 8,
+        "45": 8,
+        "50": 7,
+        "55": 7,
+        "60": 7
+      },
+      "unified_needlefinder_2026_sym_gated_by_tau": {
+        "25": 0,
+        "35": 0,
+        "45": 0,
+        "50": 0,
+        "55": 0,
+        "60": 0
+      },
+      "detected_confs_unified": [
+        99.9,
+        99.62,
+        98.31,
+        92.71,
+        89.42,
+        67.15,
+        66.43,
+        47.51
+      ]
+    },
+    {
+      "case_id": "prostate_06",
+      "split": "imagesTr",
+      "shape_kji": [
+        20,
+        320,
+        320
+      ],
+      "spacing_ras_mm": [
+        0.625,
+        0.625,
+        3.6
+      ],
+      "runtime_sec": 2.5713,
+      "vox_p_mask_ge_50_frac": 0.00096,
+      "vox_p_obt_ge_50_frac": 0.000637,
+      "raw_unet_tubes_no_physics_or_gt": 7,
+      "stage1_unet_sym_tubes_only": 1,
+      "clean_ssl_stage1_sym_tubes_only": 0,
+      "candidate_pool_before_graph_transformer": 5,
+      "pure_physics_hybridnet_by_tau": {
+        "25": 4,
+        "35": 4,
+        "45": 4,
+        "50": 4,
+        "55": 3,
+        "60": 3
+      },
+      "unified_needlefinder_2026_by_tau": {
+        "25": 4,
+        "35": 4,
+        "45": 4,
+        "50": 4,
+        "55": 3,
+        "60": 3
+      },
+      "unified_needlefinder_2026_sym_gated_by_tau": {
+        "25": 2,
+        "35": 2,
+        "45": 2,
+        "50": 2,
+        "55": 2,
+        "60": 2
+      },
+      "detected_confs_unified": [
+        99.18,
+        99.16,
+        85.74,
+        54.31
+      ]
+    },
+    {
+      "case_id": "prostate_07",
+      "split": "imagesTr",
+      "shape_kji": [
+        20,
+        320,
+        320
+      ],
+      "spacing_ras_mm": [
+        0.625,
+        0.625,
+        3.6
+      ],
+      "runtime_sec": 2.863,
+      "vox_p_mask_ge_50_frac": 0.001216,
+      "vox_p_obt_ge_50_frac": 0.000733,
+      "raw_unet_tubes_no_physics_or_gt": 5,
+      "stage1_unet_sym_tubes_only": 0,
+      "clean_ssl_stage1_sym_tubes_only": 0,
+      "candidate_pool_before_graph_transformer": 5,
+      "pure_physics_hybridnet_by_tau": {
+        "25": 5,
+        "35": 4,
+        "45": 1,
+        "50": 0,
+        "55": 0,
+        "60": 0
+      },
+      "unified_needlefinder_2026_by_tau": {
+        "25": 5,
+        "35": 4,
+        "45": 1,
+        "50": 0,
+        "55": 0,
+        "60": 0
+      },
+      "unified_needlefinder_2026_sym_gated_by_tau": {
+        "25": 0,
+        "35": 0,
+        "45": 0,
+        "50": 0,
+        "55": 0,
+        "60": 0
+      },
+      "detected_confs_unified": [
+        46.88,
+        41.99,
+        41.92,
+        41.91,
+        25.13
+      ]
+    },
+    {
+      "case_id": "prostate_10",
+      "split": "imagesTr",
+      "shape_kji": [
+        20,
+        320,
+        320
+      ],
+      "spacing_ras_mm": [
+        0.625,
+        0.625,
+        3.6
+      ],
+      "runtime_sec": 2.3308,
+      "vox_p_mask_ge_50_frac": 0.000722,
+      "vox_p_obt_ge_50_frac": 0.000531,
+      "raw_unet_tubes_no_physics_or_gt": 9,
+      "stage1_unet_sym_tubes_only": 0,
+      "clean_ssl_stage1_sym_tubes_only": 0,
+      "candidate_pool_before_graph_transformer": 4,
+      "pure_physics_hybridnet_by_tau": {
+        "25": 4,
+        "35": 4,
+        "45": 2,
+        "50": 2,
+        "55": 2,
+        "60": 2
+      },
+      "unified_needlefinder_2026_by_tau": {
+        "25": 4,
+        "35": 4,
+        "45": 2,
+        "50": 2,
+        "55": 2,
+        "60": 2
+      },
+      "unified_needlefinder_2026_sym_gated_by_tau": {
+        "25": 0,
+        "35": 0,
+        "45": 0,
+        "50": 0,
+        "55": 0,
+        "60": 0
+      },
+      "detected_confs_unified": [
+        99.9,
+        88.64,
+        40.04,
+        37.19
+      ]
+    },
+    {
+      "case_id": "prostate_13",
+      "split": "imagesTr",
+      "shape_kji": [
+        20,
+        320,
+        320
+      ],
+      "spacing_ras_mm": [
+        0.625,
+        0.625,
+        3.6
+      ],
+      "runtime_sec": 2.2103,
+      "vox_p_mask_ge_50_frac": 0.000912,
+      "vox_p_obt_ge_50_frac": 0.000453,
+      "raw_unet_tubes_no_physics_or_gt": 0,
+      "stage1_unet_sym_tubes_only": 0,
+      "clean_ssl_stage1_sym_tubes_only": 0,
+      "candidate_pool_before_graph_transformer": 4,
+      "pure_physics_hybridnet_by_tau": {
+        "25": 4,
+        "35": 3,
+        "45": 1,
+        "50": 1,
+        "55": 1,
+        "60": 1
+      },
+      "unified_needlefinder_2026_by_tau": {
+        "25": 4,
+        "35": 3,
+        "45": 1,
+        "50": 1,
+        "55": 1,
+        "60": 1
+      },
+      "unified_needlefinder_2026_sym_gated_by_tau": {
+        "25": 0,
+        "35": 0,
+        "45": 0,
+        "50": 0,
+        "55": 0,
+        "60": 0
+      },
+      "detected_confs_unified": [
+        75.79,
+        41.05,
+        37.67,
+        34.82
+      ]
+    },
+    {
+      "case_id": "prostate_14",
+      "split": "imagesTr",
+      "shape_kji": [
+        20,
+        320,
+        320
+      ],
+      "spacing_ras_mm": [
+        0.625,
+        0.625,
+        3.6
+      ],
+      "runtime_sec": 2.5699,
+      "vox_p_mask_ge_50_frac": 0.00096,
+      "vox_p_obt_ge_50_frac": 0.000531,
+      "raw_unet_tubes_no_physics_or_gt": 5,
+      "stage1_unet_sym_tubes_only": 1,
+      "clean_ssl_stage1_sym_tubes_only": 0,
+      "candidate_pool_before_graph_transformer": 10,
+      "pure_physics_hybridnet_by_tau": {
+        "25": 9,
+        "35": 6,
+        "45": 5,
+        "50": 5,
+        "55": 5,
+        "60": 5
+      },
+      "unified_needlefinder_2026_by_tau": {
+        "25": 9,
+        "35": 6,
+        "45": 5,
+        "50": 5,
+        "55": 5,
+        "60": 5
+      },
+      "unified_needlefinder_2026_sym_gated_by_tau": {
+        "25": 0,
+        "35": 0,
+        "45": 0,
+        "50": 0,
+        "55": 0,
+        "60": 0
+      },
+      "detected_confs_unified": [
+        99.85,
+        96.73,
+        83.75,
+        83.12,
+        66.24,
+        41.61,
+        28.55,
+        27.15,
+        26.18
+      ]
+    },
+    {
+      "case_id": "prostate_16",
+      "split": "imagesTr",
+      "shape_kji": [
+        20,
+        320,
+        320
+      ],
+      "spacing_ras_mm": [
+        0.625,
+        0.625,
+        3.6
+      ],
+      "runtime_sec": 2.0278,
+      "vox_p_mask_ge_50_frac": 0.000552,
+      "vox_p_obt_ge_50_frac": 0.0003,
+      "raw_unet_tubes_no_physics_or_gt": 6,
+      "stage1_unet_sym_tubes_only": 0,
+      "clean_ssl_stage1_sym_tubes_only": 0,
+      "candidate_pool_before_graph_transformer": 11,
+      "pure_physics_hybridnet_by_tau": {
+        "25": 11,
+        "35": 10,
+        "45": 10,
+        "50": 10,
+        "55": 8,
+        "60": 5
+      },
+      "unified_needlefinder_2026_by_tau": {
+        "25": 11,
+        "35": 10,
+        "45": 10,
+        "50": 10,
+        "55": 8,
+        "60": 5
+      },
+      "unified_needlefinder_2026_sym_gated_by_tau": {
+        "25": 0,
+        "35": 0,
+        "45": 0,
+        "50": 0,
+        "55": 0,
+        "60": 0
+      },
+      "detected_confs_unified": [
+        68.2,
+        64.93,
+        64.92,
+        64.3,
+        62.69,
+        58.78,
+        57.37,
+        55.54,
+        54.76,
+        51.48,
+        28.66
+      ]
+    },
+    {
+      "case_id": "prostate_17",
+      "split": "imagesTr",
+      "shape_kji": [
+        20,
+        320,
+        320
+      ],
+      "spacing_ras_mm": [
+        0.625,
+        0.625,
+        3.6
+      ],
+      "runtime_sec": 2.1131,
+      "vox_p_mask_ge_50_frac": 0.00139,
+      "vox_p_obt_ge_50_frac": 0.00087,
+      "raw_unet_tubes_no_physics_or_gt": 17,
+      "stage1_unet_sym_tubes_only": 1,
+      "clean_ssl_stage1_sym_tubes_only": 0,
+      "candidate_pool_before_graph_transformer": 9,
+      "pure_physics_hybridnet_by_tau": {
+        "25": 8,
+        "35": 7,
+        "45": 5,
+        "50": 5,
+        "55": 5,
+        "60": 4
+      },
+      "unified_needlefinder_2026_by_tau": {
+        "25": 8,
+        "35": 7,
+        "45": 5,
+        "50": 5,
+        "55": 5,
+        "60": 4
+      },
+      "unified_needlefinder_2026_sym_gated_by_tau": {
+        "25": 0,
+        "35": 0,
+        "45": 0,
+        "50": 0,
+        "55": 0,
+        "60": 0
+      },
+      "detected_confs_unified": [
+        99.9,
+        98.25,
+        74.97,
+        65.62,
+        58.93,
+        41.95,
+        37.23,
+        29.26
+      ]
+    },
+    {
+      "case_id": "prostate_18",
+      "split": "imagesTr",
+      "shape_kji": [
+        18,
+        256,
+        256
+      ],
+      "spacing_ras_mm": [
+        0.75,
+        0.75,
+        4.0
+      ],
+      "runtime_sec": 1.0968,
+      "vox_p_mask_ge_50_frac": 0.001043,
+      "vox_p_obt_ge_50_frac": 0.000769,
+      "raw_unet_tubes_no_physics_or_gt": 19,
+      "stage1_unet_sym_tubes_only": 0,
+      "clean_ssl_stage1_sym_tubes_only": 0,
+      "candidate_pool_before_graph_transformer": 6,
+      "pure_physics_hybridnet_by_tau": {
+        "25": 6,
+        "35": 6,
+        "45": 6,
+        "50": 5,
+        "55": 5,
+        "60": 5
+      },
+      "unified_needlefinder_2026_by_tau": {
+        "25": 6,
+        "35": 6,
+        "45": 6,
+        "50": 5,
+        "55": 5,
+        "60": 5
+      },
+      "unified_needlefinder_2026_sym_gated_by_tau": {
+        "25": 0,
+        "35": 0,
+        "45": 0,
+        "50": 0,
+        "55": 0,
+        "60": 0
+      },
+      "detected_confs_unified": [
+        73.88,
+        70.79,
+        69.36,
+        65.24,
+        63.53,
+        45.48
+      ]
+    },
+    {
+      "case_id": "prostate_20",
+      "split": "imagesTr",
+      "shape_kji": [
+        20,
+        320,
+        320
+      ],
+      "spacing_ras_mm": [
+        0.625,
+        0.625,
+        3.6
+      ],
+      "runtime_sec": 2.3569,
+      "vox_p_mask_ge_50_frac": 0.001064,
+      "vox_p_obt_ge_50_frac": 0.00064,
+      "raw_unet_tubes_no_physics_or_gt": 2,
+      "stage1_unet_sym_tubes_only": 0,
+      "clean_ssl_stage1_sym_tubes_only": 0,
+      "candidate_pool_before_graph_transformer": 1,
+      "pure_physics_hybridnet_by_tau": {
+        "25": 1,
+        "35": 1,
+        "45": 1,
+        "50": 1,
+        "55": 1,
+        "60": 1
+      },
+      "unified_needlefinder_2026_by_tau": {
+        "25": 1,
+        "35": 1,
+        "45": 1,
+        "50": 1,
+        "55": 1,
+        "60": 1
+      },
+      "unified_needlefinder_2026_sym_gated_by_tau": {
+        "25": 0,
+        "35": 0,
+        "45": 0,
+        "50": 0,
+        "55": 0,
+        "60": 0
+      },
+      "detected_confs_unified": [
+        99.76
+      ]
+    },
+    {
+      "case_id": "prostate_21",
+      "split": "imagesTr",
+      "shape_kji": [
+        20,
+        320,
+        320
+      ],
+      "spacing_ras_mm": [
+        0.625,
+        0.625,
+        3.6
+      ],
+      "runtime_sec": 2.0466,
+      "vox_p_mask_ge_50_frac": 0.000654,
+      "vox_p_obt_ge_50_frac": 0.000372,
+      "raw_unet_tubes_no_physics_or_gt": 1,
+      "stage1_unet_sym_tubes_only": 0,
+      "clean_ssl_stage1_sym_tubes_only": 0,
+      "candidate_pool_before_graph_transformer": 7,
+      "pure_physics_hybridnet_by_tau": {
+        "25": 7,
+        "35": 7,
+        "45": 5,
+        "50": 5,
+        "55": 5,
+        "60": 5
+      },
+      "unified_needlefinder_2026_by_tau": {
+        "25": 7,
+        "35": 7,
+        "45": 5,
+        "50": 5,
+        "55": 5,
+        "60": 5
+      },
+      "unified_needlefinder_2026_sym_gated_by_tau": {
+        "25": 0,
+        "35": 0,
+        "45": 0,
+        "50": 0,
+        "55": 0,
+        "60": 0
+      },
+      "detected_confs_unified": [
+        99.8,
+        98.78,
+        95.38,
+        88.68,
+        88.45,
+        42.48,
+        41.83
+      ]
+    },
+    {
+      "case_id": "prostate_24",
+      "split": "imagesTr",
+      "shape_kji": [
+        20,
+        320,
+        320
+      ],
+      "spacing_ras_mm": [
+        0.625,
+        0.625,
+        3.6
+      ],
+      "runtime_sec": 2.1848,
+      "vox_p_mask_ge_50_frac": 0.000742,
+      "vox_p_obt_ge_50_frac": 0.000448,
+      "raw_unet_tubes_no_physics_or_gt": 13,
+      "stage1_unet_sym_tubes_only": 0,
+      "clean_ssl_stage1_sym_tubes_only": 0,
+      "candidate_pool_before_graph_transformer": 3,
+      "pure_physics_hybridnet_by_tau": {
+        "25": 3,
+        "35": 2,
+        "45": 0,
+        "50": 0,
+        "55": 0,
+        "60": 0
+      },
+      "unified_needlefinder_2026_by_tau": {
+        "25": 3,
+        "35": 2,
+        "45": 0,
+        "50": 0,
+        "55": 0,
+        "60": 0
+      },
+      "unified_needlefinder_2026_sym_gated_by_tau": {
+        "25": 0,
+        "35": 0,
+        "45": 0,
+        "50": 0,
+        "55": 0,
+        "60": 0
+      },
+      "detected_confs_unified": [
+        40.2,
+        38.16,
+        33.4
+      ]
+    },
+    {
+      "case_id": "prostate_25",
+      "split": "imagesTr",
+      "shape_kji": [
+        19,
+        320,
+        320
+      ],
+      "spacing_ras_mm": [
+        0.625,
+        0.625,
+        3.6
+      ],
+      "runtime_sec": 2.223,
+      "vox_p_mask_ge_50_frac": 0.001387,
+      "vox_p_obt_ge_50_frac": 0.000937,
+      "raw_unet_tubes_no_physics_or_gt": 16,
+      "stage1_unet_sym_tubes_only": 1,
+      "clean_ssl_stage1_sym_tubes_only": 0,
+      "candidate_pool_before_graph_transformer": 12,
+      "pure_physics_hybridnet_by_tau": {
+        "25": 11,
+        "35": 11,
+        "45": 8,
+        "50": 8,
+        "55": 8,
+        "60": 8
+      },
+      "unified_needlefinder_2026_by_tau": {
+        "25": 11,
+        "35": 11,
+        "45": 8,
+        "50": 8,
+        "55": 8,
+        "60": 8
+      },
+      "unified_needlefinder_2026_sym_gated_by_tau": {
+        "25": 0,
+        "35": 0,
+        "45": 0,
+        "50": 0,
+        "55": 0,
+        "60": 0
+      },
+      "detected_confs_unified": [
+        99.9,
+        98.76,
+        98.72,
+        98.44,
+        97.37,
+        74.33,
+        74.32,
+        64.67,
+        41.87,
+        41.66,
+        40.41
+      ]
+    },
+    {
+      "case_id": "prostate_28",
+      "split": "imagesTr",
+      "shape_kji": [
+        11,
+        384,
+        384
+      ],
+      "spacing_ras_mm": [
+        0.6042,
+        0.6042,
+        4.0
+      ],
+      "runtime_sec": 0.9572,
+      "vox_p_mask_ge_50_frac": 0.000494,
+      "vox_p_obt_ge_50_frac": 0.000316,
+      "raw_unet_tubes_no_physics_or_gt": 4,
+      "stage1_unet_sym_tubes_only": 1,
+      "clean_ssl_stage1_sym_tubes_only": 1,
+      "candidate_pool_before_graph_transformer": 5,
+      "pure_physics_hybridnet_by_tau": {
+        "25": 4,
+        "35": 4,
+        "45": 4,
+        "50": 4,
+        "55": 4,
+        "60": 4
+      },
+      "unified_needlefinder_2026_by_tau": {
+        "25": 4,
+        "35": 4,
+        "45": 4,
+        "50": 4,
+        "55": 4,
+        "60": 4
+      },
+      "unified_needlefinder_2026_sym_gated_by_tau": {
+        "25": 1,
+        "35": 1,
+        "45": 1,
+        "50": 1,
+        "55": 1,
+        "60": 1
+      },
+      "detected_confs_unified": [
+        99.86,
+        98.3,
+        83.3,
+        72.17
+      ]
+    },
+    {
+      "case_id": "prostate_29",
+      "split": "imagesTr",
+      "shape_kji": [
+        15,
+        320,
+        320
+      ],
+      "spacing_ras_mm": [
+        0.6,
+        0.6,
+        4.0
+      ],
+      "runtime_sec": 1.187,
+      "vox_p_mask_ge_50_frac": 0.001137,
+      "vox_p_obt_ge_50_frac": 0.000712,
+      "raw_unet_tubes_no_physics_or_gt": 3,
+      "stage1_unet_sym_tubes_only": 0,
+      "clean_ssl_stage1_sym_tubes_only": 0,
+      "candidate_pool_before_graph_transformer": 2,
+      "pure_physics_hybridnet_by_tau": {
+        "25": 2,
+        "35": 2,
+        "45": 1,
+        "50": 1,
+        "55": 1,
+        "60": 1
+      },
+      "unified_needlefinder_2026_by_tau": {
+        "25": 2,
+        "35": 2,
+        "45": 1,
+        "50": 1,
+        "55": 1,
+        "60": 1
+      },
+      "unified_needlefinder_2026_sym_gated_by_tau": {
+        "25": 0,
+        "35": 0,
+        "45": 0,
+        "50": 0,
+        "55": 0,
+        "60": 0
+      },
+      "detected_confs_unified": [
+        97.76,
+        35.62
+      ]
+    },
+    {
+      "case_id": "prostate_31",
+      "split": "imagesTr",
+      "shape_kji": [
+        20,
+        320,
+        320
+      ],
+      "spacing_ras_mm": [
+        0.625,
+        0.625,
+        3.6
+      ],
+      "runtime_sec": 2.0454,
+      "vox_p_mask_ge_50_frac": 0.000465,
+      "vox_p_obt_ge_50_frac": 0.000296,
+      "raw_unet_tubes_no_physics_or_gt": 6,
+      "stage1_unet_sym_tubes_only": 1,
+      "clean_ssl_stage1_sym_tubes_only": 0,
+      "candidate_pool_before_graph_transformer": 19,
+      "pure_physics_hybridnet_by_tau": {
+        "25": 18,
+        "35": 18,
+        "45": 18,
+        "50": 18,
+        "55": 16,
+        "60": 13
+      },
+      "unified_needlefinder_2026_by_tau": {
+        "25": 18,
+        "35": 18,
+        "45": 18,
+        "50": 18,
+        "55": 16,
+        "60": 13
+      },
+      "unified_needlefinder_2026_sym_gated_by_tau": {
+        "25": 0,
+        "35": 0,
+        "45": 0,
+        "50": 0,
+        "55": 0,
+        "60": 0
+      },
+      "detected_confs_unified": [
+        71.65,
+        71.33,
+        70.96,
+        70.76,
+        70.66,
+        69.83,
+        67.89,
+        65.8,
+        65.79,
+        65.74,
+        64.12,
+        62.47,
+        61.85,
+        58.61,
+        56.27,
+        55.85,
+        54.69,
+        51.3
+      ]
+    },
+    {
+      "case_id": "prostate_32",
+      "split": "imagesTr",
+      "shape_kji": [
+        20,
+        320,
+        320
+      ],
+      "spacing_ras_mm": [
+        0.625,
+        0.625,
+        3.6
+      ],
+      "runtime_sec": 2.5921,
+      "vox_p_mask_ge_50_frac": 0.000941,
+      "vox_p_obt_ge_50_frac": 0.000592,
+      "raw_unet_tubes_no_physics_or_gt": 11,
+      "stage1_unet_sym_tubes_only": 0,
+      "clean_ssl_stage1_sym_tubes_only": 1,
+      "candidate_pool_before_graph_transformer": 3,
+      "pure_physics_hybridnet_by_tau": {
+        "25": 3,
+        "35": 3,
+        "45": 2,
+        "50": 2,
+        "55": 2,
+        "60": 2
+      },
+      "unified_needlefinder_2026_by_tau": {
+        "25": 3,
+        "35": 3,
+        "45": 2,
+        "50": 2,
+        "55": 2,
+        "60": 2
+      },
+      "unified_needlefinder_2026_sym_gated_by_tau": {
+        "25": 0,
+        "35": 0,
+        "45": 0,
+        "50": 0,
+        "55": 0,
+        "60": 0
+      },
+      "detected_confs_unified": [
+        99.62,
+        62.31,
+        36.42
+      ]
+    },
+    {
+      "case_id": "prostate_34",
+      "split": "imagesTr",
+      "shape_kji": [
+        15,
+        320,
+        320
+      ],
+      "spacing_ras_mm": [
+        0.6,
+        0.6,
+        4.0
+      ],
+      "runtime_sec": 1.1347,
+      "vox_p_mask_ge_50_frac": 0.000641,
+      "vox_p_obt_ge_50_frac": 0.000446,
+      "raw_unet_tubes_no_physics_or_gt": 3,
+      "stage1_unet_sym_tubes_only": 0,
+      "clean_ssl_stage1_sym_tubes_only": 0,
+      "candidate_pool_before_graph_transformer": 5,
+      "pure_physics_hybridnet_by_tau": {
+        "25": 5,
+        "35": 3,
+        "45": 1,
+        "50": 0,
+        "55": 0,
+        "60": 0
+      },
+      "unified_needlefinder_2026_by_tau": {
+        "25": 5,
+        "35": 3,
+        "45": 1,
+        "50": 0,
+        "55": 0,
+        "60": 0
+      },
+      "unified_needlefinder_2026_sym_gated_by_tau": {
+        "25": 0,
+        "35": 0,
+        "45": 0,
+        "50": 0,
+        "55": 0,
+        "60": 0
+      },
+      "detected_confs_unified": [
+        49.29,
+        41.66,
+        39.92,
+        34.39,
+        33.92
+      ]
+    },
+    {
+      "case_id": "prostate_35",
+      "split": "imagesTr",
+      "shape_kji": [
+        20,
+        320,
+        320
+      ],
+      "spacing_ras_mm": [
+        0.625,
+        0.625,
+        3.6
+      ],
+      "runtime_sec": 1.946,
+      "vox_p_mask_ge_50_frac": 0.000626,
+      "vox_p_obt_ge_50_frac": 0.00036,
+      "raw_unet_tubes_no_physics_or_gt": 5,
+      "stage1_unet_sym_tubes_only": 0,
+      "clean_ssl_stage1_sym_tubes_only": 0,
+      "candidate_pool_before_graph_transformer": 3,
+      "pure_physics_hybridnet_by_tau": {
+        "25": 3,
+        "35": 2,
+        "45": 1,
+        "50": 1,
+        "55": 1,
+        "60": 1
+      },
+      "unified_needlefinder_2026_by_tau": {
+        "25": 3,
+        "35": 2,
+        "45": 1,
+        "50": 1,
+        "55": 1,
+        "60": 1
+      },
+      "unified_needlefinder_2026_sym_gated_by_tau": {
+        "25": 0,
+        "35": 0,
+        "45": 0,
+        "50": 0,
+        "55": 0,
+        "60": 0
+      },
+      "detected_confs_unified": [
+        85.31,
+        41.53,
+        28.85
+      ]
+    },
+    {
+      "case_id": "prostate_37",
+      "split": "imagesTr",
+      "shape_kji": [
+        15,
+        256,
+        256
+      ],
+      "spacing_ras_mm": [
+        0.75,
+        0.75,
+        4.0
+      ],
+      "runtime_sec": 1.0251,
+      "vox_p_mask_ge_50_frac": 0.000536,
+      "vox_p_obt_ge_50_frac": 0.000353,
+      "raw_unet_tubes_no_physics_or_gt": 6,
+      "stage1_unet_sym_tubes_only": 1,
+      "clean_ssl_stage1_sym_tubes_only": 0,
+      "candidate_pool_before_graph_transformer": 12,
+      "pure_physics_hybridnet_by_tau": {
+        "25": 11,
+        "35": 11,
+        "45": 11,
+        "50": 11,
+        "55": 9,
+        "60": 9
+      },
+      "unified_needlefinder_2026_by_tau": {
+        "25": 11,
+        "35": 11,
+        "45": 11,
+        "50": 11,
+        "55": 9,
+        "60": 9
+      },
+      "unified_needlefinder_2026_sym_gated_by_tau": {
+        "25": 0,
+        "35": 0,
+        "45": 0,
+        "50": 0,
+        "55": 0,
+        "60": 0
+      },
+      "detected_confs_unified": [
+        70.92,
+        70.45,
+        69.96,
+        65.26,
+        65.05,
+        64.38,
+        64.13,
+        63.93,
+        63.61,
+        54.09,
+        52.45
+      ]
+    },
+    {
+      "case_id": "prostate_38",
+      "split": "imagesTr",
+      "shape_kji": [
+        20,
+        320,
+        320
+      ],
+      "spacing_ras_mm": [
+        0.625,
+        0.625,
+        3.6
+      ],
+      "runtime_sec": 2.4312,
+      "vox_p_mask_ge_50_frac": 0.000999,
+      "vox_p_obt_ge_50_frac": 0.000629,
+      "raw_unet_tubes_no_physics_or_gt": 9,
+      "stage1_unet_sym_tubes_only": 1,
+      "clean_ssl_stage1_sym_tubes_only": 0,
+      "candidate_pool_before_graph_transformer": 7,
+      "pure_physics_hybridnet_by_tau": {
+        "25": 6,
+        "35": 6,
+        "45": 3,
+        "50": 3,
+        "55": 3,
+        "60": 3
+      },
+      "unified_needlefinder_2026_by_tau": {
+        "25": 6,
+        "35": 6,
+        "45": 3,
+        "50": 3,
+        "55": 3,
+        "60": 3
+      },
+      "unified_needlefinder_2026_sym_gated_by_tau": {
+        "25": 0,
+        "35": 0,
+        "45": 0,
+        "50": 0,
+        "55": 0,
+        "60": 0
+      },
+      "detected_confs_unified": [
+        99.9,
+        92.47,
+        89.25,
+        41.98,
+        41.6,
+        37.92
+      ]
+    },
+    {
+      "case_id": "prostate_39",
+      "split": "imagesTr",
+      "shape_kji": [
+        15,
+        320,
+        320
+      ],
+      "spacing_ras_mm": [
+        0.6,
+        0.6,
+        4.0
+      ],
+      "runtime_sec": 0.9625,
+      "vox_p_mask_ge_50_frac": 0.000716,
+      "vox_p_obt_ge_50_frac": 0.000436,
+      "raw_unet_tubes_no_physics_or_gt": 3,
+      "stage1_unet_sym_tubes_only": 0,
+      "clean_ssl_stage1_sym_tubes_only": 0,
+      "candidate_pool_before_graph_transformer": 2,
+      "pure_physics_hybridnet_by_tau": {
+        "25": 2,
+        "35": 2,
+        "45": 0,
+        "50": 0,
+        "55": 0,
+        "60": 0
+      },
+      "unified_needlefinder_2026_by_tau": {
+        "25": 2,
+        "35": 2,
+        "45": 0,
+        "50": 0,
+        "55": 0,
+        "60": 0
+      },
+      "unified_needlefinder_2026_sym_gated_by_tau": {
+        "25": 0,
+        "35": 0,
+        "45": 0,
+        "50": 0,
+        "55": 0,
+        "60": 0
+      },
+      "detected_confs_unified": [
+        42.08,
+        40.78
+      ]
+    },
+    {
+      "case_id": "prostate_40",
+      "split": "imagesTr",
+      "shape_kji": [
+        20,
+        320,
+        320
+      ],
+      "spacing_ras_mm": [
+        0.625,
+        0.625,
+        3.6
+      ],
+      "runtime_sec": 2.4422,
+      "vox_p_mask_ge_50_frac": 0.000774,
+      "vox_p_obt_ge_50_frac": 0.000486,
+      "raw_unet_tubes_no_physics_or_gt": 1,
+      "stage1_unet_sym_tubes_only": 0,
+      "clean_ssl_stage1_sym_tubes_only": 0,
+      "candidate_pool_before_graph_transformer": 3,
+      "pure_physics_hybridnet_by_tau": {
+        "25": 3,
+        "35": 3,
+        "45": 0,
+        "50": 0,
+        "55": 0,
+        "60": 0
+      },
+      "unified_needlefinder_2026_by_tau": {
+        "25": 3,
+        "35": 3,
+        "45": 0,
+        "50": 0,
+        "55": 0,
+        "60": 0
+      },
+      "unified_needlefinder_2026_sym_gated_by_tau": {
+        "25": 0,
+        "35": 0,
+        "45": 0,
+        "50": 0,
+        "55": 0,
+        "60": 0
+      },
+      "detected_confs_unified": [
+        41.97,
+        41.97,
+        37.54
+      ]
+    },
+    {
+      "case_id": "prostate_41",
+      "split": "imagesTr",
+      "shape_kji": [
+        18,
+        256,
+        256
+      ],
+      "spacing_ras_mm": [
+        0.75,
+        0.75,
+        3.0
+      ],
+      "runtime_sec": 1.1892,
+      "vox_p_mask_ge_50_frac": 0.000477,
+      "vox_p_obt_ge_50_frac": 0.000276,
+      "raw_unet_tubes_no_physics_or_gt": 9,
+      "stage1_unet_sym_tubes_only": 1,
+      "clean_ssl_stage1_sym_tubes_only": 0,
+      "candidate_pool_before_graph_transformer": 7,
+      "pure_physics_hybridnet_by_tau": {
+        "25": 6,
+        "35": 5,
+        "45": 3,
+        "50": 3,
+        "55": 3,
+        "60": 3
+      },
+      "unified_needlefinder_2026_by_tau": {
+        "25": 6,
+        "35": 5,
+        "45": 3,
+        "50": 3,
+        "55": 3,
+        "60": 3
+      },
+      "unified_needlefinder_2026_sym_gated_by_tau": {
+        "25": 1,
+        "35": 1,
+        "45": 1,
+        "50": 1,
+        "55": 1,
+        "60": 1
+      },
+      "detected_confs_unified": [
+        98.57,
+        97.96,
+        90.52,
+        42.32,
+        37.9,
+        29.91
+      ]
+    },
+    {
+      "case_id": "prostate_42",
+      "split": "imagesTr",
+      "shape_kji": [
+        22,
+        320,
+        320
+      ],
+      "spacing_ras_mm": [
+        0.625,
+        0.625,
+        3.6
+      ],
+      "runtime_sec": 2.6394,
+      "vox_p_mask_ge_50_frac": 0.001268,
+      "vox_p_obt_ge_50_frac": 0.00082,
+      "raw_unet_tubes_no_physics_or_gt": 10,
+      "stage1_unet_sym_tubes_only": 0,
+      "clean_ssl_stage1_sym_tubes_only": 0,
+      "candidate_pool_before_graph_transformer": 3,
+      "pure_physics_hybridnet_by_tau": {
+        "25": 3,
+        "35": 3,
+        "45": 3,
+        "50": 3,
+        "55": 2,
+        "60": 2
+      },
+      "unified_needlefinder_2026_by_tau": {
+        "25": 3,
+        "35": 3,
+        "45": 3,
+        "50": 3,
+        "55": 2,
+        "60": 2
+      },
+      "unified_needlefinder_2026_sym_gated_by_tau": {
+        "25": 0,
+        "35": 0,
+        "45": 0,
+        "50": 0,
+        "55": 0,
+        "60": 0
+      },
+      "detected_confs_unified": [
+        88.33,
+        85.73,
+        50.47
+      ]
+    },
+    {
+      "case_id": "prostate_43",
+      "split": "imagesTr",
+      "shape_kji": [
+        20,
+        320,
+        320
+      ],
+      "spacing_ras_mm": [
+        0.625,
+        0.625,
+        3.6
+      ],
+      "runtime_sec": 2.3996,
+      "vox_p_mask_ge_50_frac": 0.000367,
+      "vox_p_obt_ge_50_frac": 0.000193,
+      "raw_unet_tubes_no_physics_or_gt": 0,
+      "stage1_unet_sym_tubes_only": 0,
+      "clean_ssl_stage1_sym_tubes_only": 0,
+      "candidate_pool_before_graph_transformer": 3,
+      "pure_physics_hybridnet_by_tau": {
+        "25": 3,
+        "35": 3,
+        "45": 3,
+        "50": 3,
+        "55": 3,
+        "60": 3
+      },
+      "unified_needlefinder_2026_by_tau": {
+        "25": 3,
+        "35": 3,
+        "45": 3,
+        "50": 3,
+        "55": 3,
+        "60": 3
+      },
+      "unified_needlefinder_2026_sym_gated_by_tau": {
+        "25": 0,
+        "35": 0,
+        "45": 0,
+        "50": 0,
+        "55": 0,
+        "60": 0
+      },
+      "detected_confs_unified": [
+        78.25,
+        74.17,
+        63.69
+      ]
+    },
+    {
+      "case_id": "prostate_44",
+      "split": "imagesTr",
+      "shape_kji": [
+        20,
+        320,
+        320
+      ],
+      "spacing_ras_mm": [
+        0.625,
+        0.625,
+        3.6
+      ],
+      "runtime_sec": 2.3539,
+      "vox_p_mask_ge_50_frac": 0.00105,
+      "vox_p_obt_ge_50_frac": 0.000691,
+      "raw_unet_tubes_no_physics_or_gt": 10,
+      "stage1_unet_sym_tubes_only": 0,
+      "clean_ssl_stage1_sym_tubes_only": 0,
+      "candidate_pool_before_graph_transformer": 3,
+      "pure_physics_hybridnet_by_tau": {
+        "25": 3,
+        "35": 3,
+        "45": 2,
+        "50": 2,
+        "55": 2,
+        "60": 2
+      },
+      "unified_needlefinder_2026_by_tau": {
+        "25": 3,
+        "35": 3,
+        "45": 2,
+        "50": 2,
+        "55": 2,
+        "60": 2
+      },
+      "unified_needlefinder_2026_sym_gated_by_tau": {
+        "25": 0,
+        "35": 0,
+        "45": 0,
+        "50": 0,
+        "55": 0,
+        "60": 0
+      },
+      "detected_confs_unified": [
+        99.86,
+        68.38,
+        38.32
+      ]
+    },
+    {
+      "case_id": "prostate_46",
+      "split": "imagesTr",
+      "shape_kji": [
+        20,
+        320,
+        320
+      ],
+      "spacing_ras_mm": [
+        0.625,
+        0.625,
+        3.6
+      ],
+      "runtime_sec": 2.2246,
+      "vox_p_mask_ge_50_frac": 0.001306,
+      "vox_p_obt_ge_50_frac": 0.000714,
+      "raw_unet_tubes_no_physics_or_gt": 10,
+      "stage1_unet_sym_tubes_only": 0,
+      "clean_ssl_stage1_sym_tubes_only": 1,
+      "candidate_pool_before_graph_transformer": 4,
+      "pure_physics_hybridnet_by_tau": {
+        "25": 4,
+        "35": 4,
+        "45": 4,
+        "50": 4,
+        "55": 4,
+        "60": 3
+      },
+      "unified_needlefinder_2026_by_tau": {
+        "25": 4,
+        "35": 4,
+        "45": 4,
+        "50": 4,
+        "55": 4,
+        "60": 3
+      },
+      "unified_needlefinder_2026_sym_gated_by_tau": {
+        "25": 0,
+        "35": 0,
+        "45": 0,
+        "50": 0,
+        "55": 0,
+        "60": 0
+      },
+      "detected_confs_unified": [
+        90.65,
+        70.03,
+        64.45,
+        57.6
+      ]
+    },
+    {
+      "case_id": "prostate_47",
+      "split": "imagesTr",
+      "shape_kji": [
+        20,
+        320,
+        320
+      ],
+      "spacing_ras_mm": [
+        0.625,
+        0.625,
+        3.6
+      ],
+      "runtime_sec": 2.664,
+      "vox_p_mask_ge_50_frac": 0.000573,
+      "vox_p_obt_ge_50_frac": 0.00034,
+      "raw_unet_tubes_no_physics_or_gt": 6,
+      "stage1_unet_sym_tubes_only": 1,
+      "clean_ssl_stage1_sym_tubes_only": 1,
+      "candidate_pool_before_graph_transformer": 5,
+      "pure_physics_hybridnet_by_tau": {
+        "25": 4,
+        "35": 4,
+        "45": 4,
+        "50": 4,
+        "55": 4,
+        "60": 4
+      },
+      "unified_needlefinder_2026_by_tau": {
+        "25": 4,
+        "35": 4,
+        "45": 4,
+        "50": 4,
+        "55": 4,
+        "60": 4
+      },
+      "unified_needlefinder_2026_sym_gated_by_tau": {
+        "25": 3,
+        "35": 3,
+        "45": 3,
+        "50": 3,
+        "55": 3,
+        "60": 3
+      },
+      "detected_confs_unified": [
+        94.0,
+        90.92,
+        89.57,
+        81.91
+      ]
+    },
+    {
+      "case_id": "prostate_03",
+      "split": "imagesTs",
+      "shape_kji": [
+        20,
+        320,
+        320
+      ],
+      "spacing_ras_mm": [
+        0.625,
+        0.625,
+        3.6
+      ],
+      "runtime_sec": 2.5827,
+      "vox_p_mask_ge_50_frac": 0.001965,
+      "vox_p_obt_ge_50_frac": 0.001249,
+      "raw_unet_tubes_no_physics_or_gt": 8,
+      "stage1_unet_sym_tubes_only": 1,
+      "clean_ssl_stage1_sym_tubes_only": 0,
+      "candidate_pool_before_graph_transformer": 12,
+      "pure_physics_hybridnet_by_tau": {
+        "25": 11,
+        "35": 8,
+        "45": 6,
+        "50": 5,
+        "55": 5,
+        "60": 5
+      },
+      "unified_needlefinder_2026_by_tau": {
+        "25": 11,
+        "35": 8,
+        "45": 6,
+        "50": 5,
+        "55": 5,
+        "60": 5
+      },
+      "unified_needlefinder_2026_sym_gated_by_tau": {
+        "25": 2,
+        "35": 2,
+        "45": 2,
+        "50": 2,
+        "55": 2,
+        "60": 2
+      },
+      "detected_confs_unified": [
+        99.21,
+        94.81,
+        83.35,
+        83.08,
+        69.95,
+        45.95,
+        35.98,
+        35.17,
+        34.62,
+        29.6,
+        26.7
+      ]
+    },
+    {
+      "case_id": "prostate_05",
+      "split": "imagesTs",
+      "shape_kji": [
+        20,
+        320,
+        320
+      ],
+      "spacing_ras_mm": [
+        0.625,
+        0.625,
+        3.6
+      ],
+      "runtime_sec": 2.1019,
+      "vox_p_mask_ge_50_frac": 0.000749,
+      "vox_p_obt_ge_50_frac": 0.000412,
+      "raw_unet_tubes_no_physics_or_gt": 0,
+      "stage1_unet_sym_tubes_only": 0,
+      "clean_ssl_stage1_sym_tubes_only": 0,
+      "candidate_pool_before_graph_transformer": 3,
+      "pure_physics_hybridnet_by_tau": {
+        "25": 3,
+        "35": 3,
+        "45": 2,
+        "50": 2,
+        "55": 2,
+        "60": 2
+      },
+      "unified_needlefinder_2026_by_tau": {
+        "25": 3,
+        "35": 3,
+        "45": 2,
+        "50": 2,
+        "55": 2,
+        "60": 2
+      },
+      "unified_needlefinder_2026_sym_gated_by_tau": {
+        "25": 0,
+        "35": 0,
+        "45": 0,
+        "50": 0,
+        "55": 0,
+        "60": 0
+      },
+      "detected_confs_unified": [
+        84.81,
+        75.6,
+        41.17
+      ]
+    },
+    {
+      "case_id": "prostate_08",
+      "split": "imagesTs",
+      "shape_kji": [
+        15,
+        320,
+        320
+      ],
+      "spacing_ras_mm": [
+        0.6,
+        0.6,
+        4.0
+      ],
+      "runtime_sec": 0.9741,
+      "vox_p_mask_ge_50_frac": 0.001001,
+      "vox_p_obt_ge_50_frac": 0.000634,
+      "raw_unet_tubes_no_physics_or_gt": 12,
+      "stage1_unet_sym_tubes_only": 0,
+      "clean_ssl_stage1_sym_tubes_only": 0,
+      "candidate_pool_before_graph_transformer": 5,
+      "pure_physics_hybridnet_by_tau": {
+        "25": 5,
+        "35": 4,
+        "45": 3,
+        "50": 3,
+        "55": 3,
+        "60": 2
+      },
+      "unified_needlefinder_2026_by_tau": {
+        "25": 5,
+        "35": 4,
+        "45": 3,
+        "50": 3,
+        "55": 3,
+        "60": 2
+      },
+      "unified_needlefinder_2026_sym_gated_by_tau": {
+        "25": 0,
+        "35": 0,
+        "45": 0,
+        "50": 0,
+        "55": 0,
+        "60": 0
+      },
+      "detected_confs_unified": [
+        83.65,
+        78.45,
+        58.1,
+        44.81,
+        32.76
+      ]
+    },
+    {
+      "case_id": "prostate_09",
+      "split": "imagesTs",
+      "shape_kji": [
+        17,
+        320,
+        320
+      ],
+      "spacing_ras_mm": [
+        0.6,
+        0.6,
+        4.0
+      ],
+      "runtime_sec": 1.2157,
+      "vox_p_mask_ge_50_frac": 0.001337,
+      "vox_p_obt_ge_50_frac": 0.000898,
+      "raw_unet_tubes_no_physics_or_gt": 9,
+      "stage1_unet_sym_tubes_only": 1,
+      "clean_ssl_stage1_sym_tubes_only": 0,
+      "candidate_pool_before_graph_transformer": 8,
+      "pure_physics_hybridnet_by_tau": {
+        "25": 7,
+        "35": 6,
+        "45": 5,
+        "50": 5,
+        "55": 5,
+        "60": 5
+      },
+      "unified_needlefinder_2026_by_tau": {
+        "25": 7,
+        "35": 6,
+        "45": 5,
+        "50": 5,
+        "55": 5,
+        "60": 5
+      },
+      "unified_needlefinder_2026_sym_gated_by_tau": {
+        "25": 1,
+        "35": 1,
+        "45": 1,
+        "50": 1,
+        "55": 1,
+        "60": 1
+      },
+      "detected_confs_unified": [
+        99.9,
+        99.03,
+        90.9,
+        79.5,
+        70.47,
+        40.82,
+        26.53
+      ]
+    },
+    {
+      "case_id": "prostate_11",
+      "split": "imagesTs",
+      "shape_kji": [
+        20,
+        320,
+        320
+      ],
+      "spacing_ras_mm": [
+        0.625,
+        0.625,
+        3.6
+      ],
+      "runtime_sec": 2.2216,
+      "vox_p_mask_ge_50_frac": 0.001305,
+      "vox_p_obt_ge_50_frac": 0.000875,
+      "raw_unet_tubes_no_physics_or_gt": 9,
+      "stage1_unet_sym_tubes_only": 2,
+      "clean_ssl_stage1_sym_tubes_only": 0,
+      "candidate_pool_before_graph_transformer": 15,
+      "pure_physics_hybridnet_by_tau": {
+        "25": 13,
+        "35": 12,
+        "45": 10,
+        "50": 10,
+        "55": 10,
+        "60": 10
+      },
+      "unified_needlefinder_2026_by_tau": {
+        "25": 13,
+        "35": 12,
+        "45": 10,
+        "50": 10,
+        "55": 10,
+        "60": 10
+      },
+      "unified_needlefinder_2026_sym_gated_by_tau": {
+        "25": 3,
+        "35": 3,
+        "45": 3,
+        "50": 3,
+        "55": 3,
+        "60": 3
+      },
+      "detected_confs_unified": [
+        99.67,
+        99.5,
+        88.75,
+        86.85,
+        86.18,
+        78.58,
+        76.43,
+        75.42,
+        72.47,
+        66.27,
+        41.89,
+        36.44,
+        31.11
+      ]
+    },
+    {
+      "case_id": "prostate_12",
+      "split": "imagesTs",
+      "shape_kji": [
+        20,
+        320,
+        320
+      ],
+      "spacing_ras_mm": [
+        0.625,
+        0.625,
+        3.6
+      ],
+      "runtime_sec": 2.4013,
+      "vox_p_mask_ge_50_frac": 0.000482,
+      "vox_p_obt_ge_50_frac": 0.000293,
+      "raw_unet_tubes_no_physics_or_gt": 4,
+      "stage1_unet_sym_tubes_only": 0,
+      "clean_ssl_stage1_sym_tubes_only": 0,
+      "candidate_pool_before_graph_transformer": 1,
+      "pure_physics_hybridnet_by_tau": {
+        "25": 1,
+        "35": 1,
+        "45": 1,
+        "50": 1,
+        "55": 1,
+        "60": 1
+      },
+      "unified_needlefinder_2026_by_tau": {
+        "25": 1,
+        "35": 1,
+        "45": 1,
+        "50": 1,
+        "55": 1,
+        "60": 1
+      },
+      "unified_needlefinder_2026_sym_gated_by_tau": {
+        "25": 0,
+        "35": 0,
+        "45": 0,
+        "50": 0,
+        "55": 0,
+        "60": 0
+      },
+      "detected_confs_unified": [
+        94.52
+      ]
+    },
+    {
+      "case_id": "prostate_15",
+      "split": "imagesTs",
+      "shape_kji": [
+        20,
+        320,
+        320
+      ],
+      "spacing_ras_mm": [
+        0.625,
+        0.625,
+        3.6
+      ],
+      "runtime_sec": 2.6116,
+      "vox_p_mask_ge_50_frac": 0.001279,
+      "vox_p_obt_ge_50_frac": 0.000934,
+      "raw_unet_tubes_no_physics_or_gt": 15,
+      "stage1_unet_sym_tubes_only": 1,
+      "clean_ssl_stage1_sym_tubes_only": 1,
+      "candidate_pool_before_graph_transformer": 1,
+      "pure_physics_hybridnet_by_tau": {
+        "25": 0,
+        "35": 0,
+        "45": 0,
+        "50": 0,
+        "55": 0,
+        "60": 0
+      },
+      "unified_needlefinder_2026_by_tau": {
+        "25": 0,
+        "35": 0,
+        "45": 0,
+        "50": 0,
+        "55": 0,
+        "60": 0
+      },
+      "unified_needlefinder_2026_sym_gated_by_tau": {
+        "25": 0,
+        "35": 0,
+        "45": 0,
+        "50": 0,
+        "55": 0,
+        "60": 0
+      },
+      "detected_confs_unified": []
+    },
+    {
+      "case_id": "prostate_19",
+      "split": "imagesTs",
+      "shape_kji": [
+        20,
+        320,
+        320
+      ],
+      "spacing_ras_mm": [
+        0.625,
+        0.625,
+        3.6
+      ],
+      "runtime_sec": 2.6844,
+      "vox_p_mask_ge_50_frac": 0.001085,
+      "vox_p_obt_ge_50_frac": 0.000622,
+      "raw_unet_tubes_no_physics_or_gt": 4,
+      "stage1_unet_sym_tubes_only": 0,
+      "clean_ssl_stage1_sym_tubes_only": 0,
+      "candidate_pool_before_graph_transformer": 5,
+      "pure_physics_hybridnet_by_tau": {
+        "25": 5,
+        "35": 5,
+        "45": 4,
+        "50": 4,
+        "55": 4,
+        "60": 4
+      },
+      "unified_needlefinder_2026_by_tau": {
+        "25": 5,
+        "35": 5,
+        "45": 4,
+        "50": 4,
+        "55": 4,
+        "60": 4
+      },
+      "unified_needlefinder_2026_sym_gated_by_tau": {
+        "25": 0,
+        "35": 0,
+        "45": 0,
+        "50": 0,
+        "55": 0,
+        "60": 0
+      },
+      "detected_confs_unified": [
+        99.9,
+        82.22,
+        75.22,
+        63.91,
+        41.94
+      ]
+    },
+    {
+      "case_id": "prostate_22",
+      "split": "imagesTs",
+      "shape_kji": [
+        15,
+        320,
+        320
+      ],
+      "spacing_ras_mm": [
+        0.6,
+        0.6,
+        4.0
+      ],
+      "runtime_sec": 0.5576,
+      "vox_p_mask_ge_50_frac": 0.000174,
+      "vox_p_obt_ge_50_frac": 9.3e-05,
+      "raw_unet_tubes_no_physics_or_gt": 0,
+      "stage1_unet_sym_tubes_only": 0,
+      "clean_ssl_stage1_sym_tubes_only": 0,
+      "candidate_pool_before_graph_transformer": 6,
+      "pure_physics_hybridnet_by_tau": {
+        "25": 6,
+        "35": 6,
+        "45": 5,
+        "50": 5,
+        "55": 5,
+        "60": 5
+      },
+      "unified_needlefinder_2026_by_tau": {
+        "25": 6,
+        "35": 6,
+        "45": 5,
+        "50": 5,
+        "55": 5,
+        "60": 5
+      },
+      "unified_needlefinder_2026_sym_gated_by_tau": {
+        "25": 0,
+        "35": 0,
+        "45": 0,
+        "50": 0,
+        "55": 0,
+        "60": 0
+      },
+      "detected_confs_unified": [
+        71.92,
+        71.61,
+        70.79,
+        65.0,
+        64.72,
+        36.86
+      ]
+    },
+    {
+      "case_id": "prostate_23",
+      "split": "imagesTs",
+      "shape_kji": [
+        20,
+        320,
+        320
+      ],
+      "spacing_ras_mm": [
+        0.625,
+        0.625,
+        3.6
+      ],
+      "runtime_sec": 2.2027,
+      "vox_p_mask_ge_50_frac": 0.000891,
+      "vox_p_obt_ge_50_frac": 0.000501,
+      "raw_unet_tubes_no_physics_or_gt": 4,
+      "stage1_unet_sym_tubes_only": 0,
+      "clean_ssl_stage1_sym_tubes_only": 0,
+      "candidate_pool_before_graph_transformer": 3,
+      "pure_physics_hybridnet_by_tau": {
+        "25": 3,
+        "35": 3,
+        "45": 3,
+        "50": 3,
+        "55": 3,
+        "60": 1
+      },
+      "unified_needlefinder_2026_by_tau": {
+        "25": 3,
+        "35": 3,
+        "45": 3,
+        "50": 3,
+        "55": 3,
+        "60": 1
+      },
+      "unified_needlefinder_2026_sym_gated_by_tau": {
+        "25": 0,
+        "35": 0,
+        "45": 0,
+        "50": 0,
+        "55": 0,
+        "60": 0
+      },
+      "detected_confs_unified": [
+        99.9,
+        59.52,
+        55.49
+      ]
+    },
+    {
+      "case_id": "prostate_26",
+      "split": "imagesTs",
+      "shape_kji": [
+        20,
+        320,
+        320
+      ],
+      "spacing_ras_mm": [
+        0.625,
+        0.625,
+        3.6
+      ],
+      "runtime_sec": 2.1818,
+      "vox_p_mask_ge_50_frac": 0.001291,
+      "vox_p_obt_ge_50_frac": 0.000773,
+      "raw_unet_tubes_no_physics_or_gt": 7,
+      "stage1_unet_sym_tubes_only": 1,
+      "clean_ssl_stage1_sym_tubes_only": 0,
+      "candidate_pool_before_graph_transformer": 5,
+      "pure_physics_hybridnet_by_tau": {
+        "25": 4,
+        "35": 3,
+        "45": 2,
+        "50": 2,
+        "55": 2,
+        "60": 2
+      },
+      "unified_needlefinder_2026_by_tau": {
+        "25": 4,
+        "35": 3,
+        "45": 2,
+        "50": 2,
+        "55": 2,
+        "60": 2
+      },
+      "unified_needlefinder_2026_sym_gated_by_tau": {
+        "25": 1,
+        "35": 1,
+        "45": 1,
+        "50": 1,
+        "55": 1,
+        "60": 1
+      },
+      "detected_confs_unified": [
+        95.28,
+        84.67,
+        38.46,
+        26.83
+      ]
+    },
+    {
+      "case_id": "prostate_27",
+      "split": "imagesTs",
+      "shape_kji": [
+        20,
+        320,
+        320
+      ],
+      "spacing_ras_mm": [
+        0.625,
+        0.625,
+        3.6
+      ],
+      "runtime_sec": 2.2309,
+      "vox_p_mask_ge_50_frac": 0.001291,
+      "vox_p_obt_ge_50_frac": 0.000769,
+      "raw_unet_tubes_no_physics_or_gt": 6,
+      "stage1_unet_sym_tubes_only": 1,
+      "clean_ssl_stage1_sym_tubes_only": 0,
+      "candidate_pool_before_graph_transformer": 7,
+      "pure_physics_hybridnet_by_tau": {
+        "25": 6,
+        "35": 6,
+        "45": 5,
+        "50": 5,
+        "55": 5,
+        "60": 4
+      },
+      "unified_needlefinder_2026_by_tau": {
+        "25": 6,
+        "35": 6,
+        "45": 5,
+        "50": 5,
+        "55": 5,
+        "60": 4
+      },
+      "unified_needlefinder_2026_sym_gated_by_tau": {
+        "25": 1,
+        "35": 1,
+        "45": 1,
+        "50": 1,
+        "55": 1,
+        "60": 1
+      },
+      "detected_confs_unified": [
+        83.24,
+        78.18,
+        76.05,
+        71.91,
+        59.28,
+        43.73
+      ]
+    },
+    {
+      "case_id": "prostate_30",
+      "split": "imagesTs",
+      "shape_kji": [
+        20,
+        320,
+        320
+      ],
+      "spacing_ras_mm": [
+        0.625,
+        0.625,
+        3.6
+      ],
+      "runtime_sec": 2.8198,
+      "vox_p_mask_ge_50_frac": 0.000526,
+      "vox_p_obt_ge_50_frac": 0.000326,
+      "raw_unet_tubes_no_physics_or_gt": 0,
+      "stage1_unet_sym_tubes_only": 0,
+      "clean_ssl_stage1_sym_tubes_only": 0,
+      "candidate_pool_before_graph_transformer": 6,
+      "pure_physics_hybridnet_by_tau": {
+        "25": 6,
+        "35": 5,
+        "45": 2,
+        "50": 2,
+        "55": 2,
+        "60": 2
+      },
+      "unified_needlefinder_2026_by_tau": {
+        "25": 6,
+        "35": 5,
+        "45": 2,
+        "50": 2,
+        "55": 2,
+        "60": 2
+      },
+      "unified_needlefinder_2026_sym_gated_by_tau": {
+        "25": 0,
+        "35": 0,
+        "45": 0,
+        "50": 0,
+        "55": 0,
+        "60": 0
+      },
+      "detected_confs_unified": [
+        95.2,
+        64.69,
+        41.38,
+        36.69,
+        36.43,
+        28.27
+      ]
+    },
+    {
+      "case_id": "prostate_33",
+      "split": "imagesTs",
+      "shape_kji": [
+        20,
+        320,
+        320
+      ],
+      "spacing_ras_mm": [
+        0.625,
+        0.625,
+        3.6
+      ],
+      "runtime_sec": 2.5356,
+      "vox_p_mask_ge_50_frac": 0.000433,
+      "vox_p_obt_ge_50_frac": 0.00022,
+      "raw_unet_tubes_no_physics_or_gt": 0,
+      "stage1_unet_sym_tubes_only": 0,
+      "clean_ssl_stage1_sym_tubes_only": 0,
+      "candidate_pool_before_graph_transformer": 23,
+      "pure_physics_hybridnet_by_tau": {
+        "25": 23,
+        "35": 23,
+        "45": 23,
+        "50": 23,
+        "55": 19,
+        "60": 17
+      },
+      "unified_needlefinder_2026_by_tau": {
+        "25": 23,
+        "35": 23,
+        "45": 23,
+        "50": 23,
+        "55": 19,
+        "60": 17
+      },
+      "unified_needlefinder_2026_sym_gated_by_tau": {
+        "25": 0,
+        "35": 0,
+        "45": 0,
+        "50": 0,
+        "55": 0,
+        "60": 0
+      },
+      "detected_confs_unified": [
+        77.91,
+        72.52,
+        71.35,
+        71.12,
+        71.08,
+        71.05,
+        70.72,
+        69.92,
+        69.64,
+        67.17,
+        65.26,
+        64.62,
+        64.39,
+        63.49,
+        62.02,
+        61.82,
+        60.86,
+        59.45,
+        58.8,
+        54.42,
+        53.91,
+        53.46,
+        52.48
+      ]
+    },
+    {
+      "case_id": "prostate_36",
+      "split": "imagesTs",
+      "shape_kji": [
+        20,
+        320,
+        320
+      ],
+      "spacing_ras_mm": [
+        0.625,
+        0.625,
+        3.6
+      ],
+      "runtime_sec": 2.2905,
+      "vox_p_mask_ge_50_frac": 0.000938,
+      "vox_p_obt_ge_50_frac": 0.000608,
+      "raw_unet_tubes_no_physics_or_gt": 0,
+      "stage1_unet_sym_tubes_only": 0,
+      "clean_ssl_stage1_sym_tubes_only": 0,
+      "candidate_pool_before_graph_transformer": 8,
+      "pure_physics_hybridnet_by_tau": {
+        "25": 8,
+        "35": 8,
+        "45": 8,
+        "50": 8,
+        "55": 8,
+        "60": 8
+      },
+      "unified_needlefinder_2026_by_tau": {
+        "25": 8,
+        "35": 8,
+        "45": 8,
+        "50": 8,
+        "55": 8,
+        "60": 8
+      },
+      "unified_needlefinder_2026_sym_gated_by_tau": {
+        "25": 0,
+        "35": 0,
+        "45": 0,
+        "50": 0,
+        "55": 0,
+        "60": 0
+      },
+      "detected_confs_unified": [
+        99.84,
+        99.55,
+        96.18,
+        95.27,
+        90.6,
+        89.69,
+        88.34,
+        76.03
+      ]
+    },
+    {
+      "case_id": "prostate_45",
+      "split": "imagesTs",
+      "shape_kji": [
+        15,
+        320,
+        320
+      ],
+      "spacing_ras_mm": [
+        0.6,
+        0.6,
+        4.0
+      ],
+      "runtime_sec": 1.0102,
+      "vox_p_mask_ge_50_frac": 0.000937,
+      "vox_p_obt_ge_50_frac": 0.000548,
+      "raw_unet_tubes_no_physics_or_gt": 3,
+      "stage1_unet_sym_tubes_only": 0,
+      "clean_ssl_stage1_sym_tubes_only": 0,
+      "candidate_pool_before_graph_transformer": 0,
+      "pure_physics_hybridnet_by_tau": {
+        "25": 0,
+        "35": 0,
+        "45": 0,
+        "50": 0,
+        "55": 0,
+        "60": 0
+      },
+      "unified_needlefinder_2026_by_tau": {
+        "25": 0,
+        "35": 0,
+        "45": 0,
+        "50": 0,
+        "55": 0,
+        "60": 0
+      },
+      "unified_needlefinder_2026_sym_gated_by_tau": {
+        "25": 0,
+        "35": 0,
+        "45": 0,
+        "50": 0,
+        "55": 0,
+        "60": 0
+      },
+      "detected_confs_unified": []
+    }
+  ]
+}

@@ -2,27 +2,27 @@
 \centering
 \begin{threeparttable}
 \caption{\textbf{Clinical imaging cohorts and evaluation protocols.}
-Primary evaluation uses 5-fold patient-level out-of-fold (OOF) cross-validation on 54 clinical 3T T2W MRI datasets from Brigham and Women's Hospital (BWH AMIGO).}
+Primary evaluation uses strictly nested $5\times 5$ patient-level out-of-fold (OOF) cross-validation with 100\,\% reference-free axial cropping (\texttt{k\_lim\_auto}) on 54 clinical 3T T2W MRI datasets from Brigham and Women's Hospital (BWH AMIGO).}
 \label{tbl:cohorts}
-\footnotesize
-\setlength{\tabcolsep}{3.8pt}
+\scriptsize
+\setlength{\tabcolsep}{2.5pt}
 \begin{tabular}{@{}L L R R L L L@{}}
 \toprule
 Cohort / Subset & Source & {Pts} & {Cath.} & {XY (mm)} & {$\Delta z$ (mm)} & {Evaluation role}\\
 \midrule
-BWH GYN full cohort\tnote{a} & BWH (3T T2W) & 54 & 1063 & $0.31\text{--}0.88$ & $1.2\text{--}6.0$ & 5-fold OOF primary benchmark\\
-\quad Long shafts (primary set) & BWH (3T T2W) & 54 & 759 & $0.31\text{--}0.88$ & $1.2\text{--}6.0$ & Full-depth active dwell shafts\\
-\quad Short / obturator (secondary set) & BWH (3T T2W) & 54 & 304 & $0.31\text{--}0.88$ & $1.2\text{--}6.0$ & Partial-FOV \& template references\\
-\quad Adhesion subgroup\tnote{b} & BWH (3T T2W) & 23 & 571 & $0.31\text{--}0.88$ & $1.2\text{--}6.0$ & Touching / crossing shaft stress test\\
-Dual-observer subset\tnote{c} & BWH (3T T2W) & 40 & 505 & $0.31\text{--}0.88$ & $1.2\text{--}6.0$ & Inter-observer floor (\texttt{CY} vs.\ \texttt{LB}/\texttt{AMe})\\
-MSD Task05\_Prostate\tnote{d} & Radboudumc & 48 & 0 & $0.60\text{--}0.75$ & $3.0\text{--}4.0$ & Out-of-distribution 0-needle specificity\\
+BWH GYN full cohort\tnote{a} & BWH (3T T2W) & 54 & 1063 & $0.31\text{--}0.88$ & $1.2\text{--}6.0$ & Nested $5\times 5$ OOF benchmark\\
+\quad Long shafts (primary) & BWH (3T T2W) & 54 & 759 & $0.31\text{--}0.88$ & $1.2\text{--}6.0$ & Full-depth active dwell shafts\\
+\quad Short / obturator (secondary) & BWH (3T T2W) & 54 & 304 & $0.31\text{--}0.88$ & $1.2\text{--}6.0$ & Partial-FOV \& template tracks\\
+\quad Adhesion subgroup\tnote{b} & BWH (3T T2W) & 23 & 571 & $0.31\text{--}0.88$ & $1.2\text{--}6.0$ & Touching / crossing shaft test\\
+Dual-observer subset\tnote{c} & BWH (3T T2W) & 40 & 723 & $0.31\text{--}0.88$ & $1.2\text{--}6.0$ & Inter-observer floor (\texttt{CY+HT}, \texttt{LB}/\texttt{AMe})\\
+External SSL \& specificity\tnote{d} & Radboud + BWH & 51 & 0 & $0.60\text{--}0.88$ & $3.0\text{--}4.8$ & 3D SSL (51) \& 0-needle test (48)\\
 \bottomrule
 \end{tabular}
 \begin{tablenotes}[flushleft]\footnotesize
-\item[a] Consolidated superset of the cohorts of Pernelle \emph{et al.}\ (2013, 10 patients) and Zaffino \emph{et al.}\ (2019, 50 patients), extended with new implants; 9--42 reference trajectories per patient. Spacings are the ranges of the 54 image headers.
+\item[a] Consolidated superset of the cohorts of Pernelle \emph{et al.}\ (2013, 10 patients) and Zaffino \emph{et al.}\ (2019, 50 patients), extended with new implants; 9--42 reference trajectories per patient (20 standard-resolution $320\times256$ scans and 34 high-resolution $640\times416$ / $768\times768$ scans).
 \item[b] Severe catheter-adhesion subgroup: the 23/54 patients in which $\ge 4$ long or $\ge 6$ total reference catheters pass within $\le 3.0$\,mm of another catheter on shared axial slices. All 571 catheters of these patients are evaluated; 191 of them (166 long) lie within $3.0$\,mm of a neighbour (233 across the whole cohort).
-\item[c] Forty clinical scenes independently contoured by two expert medical physics teams (\texttt{CY}: 544 trajectories on disk, 505 active in the planning scenes; \texttt{LB}/\texttt{AMe}: 513 trajectories; 465 Hungarian 1-to-1 matched pairs within $3.5$\,mm).
-\item[d] Public CC-BY-SA 4.0 pelvic axial T2W MRI benchmark containing prostate, rectum, bladder, obturator internus, and dense periprostatic vasculature with zero implanted catheters.
+\item[c] All 40/40 dual-traced clinical scenes independently contoured by two expert medical physics teams (\texttt{CY+HT}: 723 total trajectories = 505 \texttt{CY} long + 218 \texttt{HT} short/obturator; \texttt{LB}/\texttt{AMe}: 513 trajectories, with 465 consensus-fused with \texttt{CY}, 13 matched to \texttt{HT}, and 35 extra traces).
+\item[d] Fifty-one external pelvic 3T T2W MRI volumes from 50 distinct subjects: 48 public CC-BY-SA 4.0 volumes from MSD \texttt{Task05\_Prostate} (zero implanted catheters, evaluated for out-of-distribution false-positive specificity) plus 3 non-benchmark BWH pelvic T2W volumes from 2 distinct subjects (\texttt{Case 061} [2 series] and \texttt{Case 100 Prostate} [1 series], zero patient overlap with the 54 benchmark cases) used for self-supervised 3D U-Net pre-training.
 \end{tablenotes}
 \end{threeparttable}
 \end{table}

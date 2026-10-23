@@ -12,6 +12,7 @@
 ---
 
 ## Research & Evaluations (`wiki/research/`)
+- [[wiki/research/2026-10-23-clean-nested-multirater-ssl-1dtip-benchmark|2026-10-23 Clean Nested 5x5 Benchmark: Multi-Rater Supervision, External Pelvic SSL, Reference-Free k_lim_auto & Dedicated 1D Axial Tip Localizer]] — Strictly nested $5 \times 5$ patient-level OOF benchmark (`25` inner models, 100% reference-free `k_lim_auto`, 51-volume external pelvic SSL with anatomical hard negatives, 40/40 multi-rater consensus supervision, collinear fragment stitching, and 91-step dilated 1D ResNet + self-attention tip localizer): `89.1%` F1 (`91.4%` recall, `92.3%` inner-OOF cross-fit), `0.59 ± 0.40 mm` (`0.47 mm` med) shaft error, `6.23 ± 10.49 mm` (`2.27 mm` med) 3D tip error, `0.125–0.33 FP/scan` on 48 MSD prostate volumes, and `4.15 s` CPU / `2.67 s` GPU full-volume runtime
 - [[wiki/research/2026-10-22-full-54case-unet-transformer-graphnet-benchmark|2026-10-22 Full 54-Case Benchmark (Physics, 3D U-Net, Axial TransUNet, Slice MPNN & Bundle Graph Transformer)]] — 5-fold cross-validation across all 54 BWH clinical cases (`1,063` needles: `759` CY long + `304` HT obturator) and runtime breakdown (`0.61 s` CPU / `0.35 s` GPU)
 - [[wiki/research/2026-10-22-literature-clinical-relevance-and-public-datasets|2026-10-22 Literature Survey, Clinical Relevance & Public Datasets (2013–2026)]] — EMBRACE-I/II clinical drivers, MR-only workflow bottleneck (`46 ± 10 min` manual), 2013–2026 SOTA comparison table, and public dataset audit (TCIA, Zenodo, RSNA `Case 050`)
 - [[wiki/research/2026-10-21-sota-nn-hybrid-needle-detection|2026-10-21 SOTA Deep Learning & Hybrid 3D CV Survey]] — Architectural survey and root-cause analysis of missed needles
@@ -44,7 +45,7 @@
 ---
 
 ## Plans & Manuscript Drafts (`plans/` & `paper/`)
-- [[paper/manuscript|2026-10-22 NeedleFinder 2026 PMB Manuscript (`needlefinder_2026_pmb.pdf` & `.html`)]] — Publication-ready *Physics in Medicine & Biology* manuscript with 5 hand-crafted `booktabs` + `threeparttable` tables (`paper/tables/tab1..5.tex`) and 6 vector PDF/PNG/SVG figures (`reports/figures/fig1..6.pdf`); book-style typography in both editions (EB Garamond + Garamond-Math, 120 mm measure with floats breaking into the margins, small-caps apparatus, single vermilion accent; HTML uses embedded subset fonts, native MathML, dark mode and print CSS; HTML tables are generated at build time from the same `tables/*.tex` (single source, fails loudly on unknown LaTeX); see `paper/style/preamble.tex`, `paper/style/nf_template.html`, `paper/build_html.py`)
+- [[paper/manuscript|2026-10-23 NeedleFinder 2026 PMB Manuscript (`needlefinder_2026_pmb.pdf` & `.html`)]] — Publication-ready *Physics in Medicine & Biology* manuscript synchronized with the strictly nested $5 \times 5$ benchmark and Codex Astra v3 audit (`sources/2026-10-23-review-codex-astra-v3-clean.md`), with 5 `booktabs` + `threeparttable` tables (`paper/tables/tab1..5.tex`) and 7 vector PDF/PNG/SVG figures (`reports/figures/fig1..7.pdf`)
 - [[plans/2026-10-22-pmb-scientific-design-system|2026-10-22 PMB Scientific Design System & Visual Architecture Spec]] — Okabe–Ito entity palette, booktabs/siunitx table macros (no longtables), 6-figure blueprint with anti-collision rules, and data blockers D1–D10 (adhesion subgroup, nnU-Net+clDice, Xiao modality, few-shot)
 - [[plans/2026-10-22-needlefinder-2026-manuscript-draft|2026-10-22 NeedleFinder 2026 Scientific Manuscript Draft & Visual Blueprint]] — Initial paper draft
 - [[plans/2026-10-21-new-paper-proposal|2026-10-21 New Paper Proposal]] — Initial execution plan
@@ -52,6 +53,11 @@
 ---
 
 ## Raw Sources & Reviews (`sources/` & `reports/`)
+- `sources/2026-10-23-unified-clean-nested-benchmark.json` — Strictly nested $5 \times 5$ OOF benchmark across all 54 patients (`1,063` catheters), 759 long active-dwell shafts, 23-patient Severe Catheter-Adhesion Subgroup (`571` catheters), and leak-free Stage 2B Few-Shot (`0, 0_synth_zeroshot, 1, 5, 10, 20, 43` shots)
+- `sources/2026-10-23-table3-observers-and-nf-clean.json` — Complete 40/40 dual-observer benchmark (`CY+HT` 723 vs. `LB/AMe` 513 vs. union 759 vs. `NeedleFinder 2026`)
+- `sources/2026-10-23-public-pelvic-mri-specificity-clean.json` — Clean zero-needle specificity benchmark on 48 public pelvic MRI scans (`MSD Task05_Prostate`: `0.125 FP/scan` with SSL + Stage 0 gate, `0.33 FP/scan` frozen unified NF 2026 + dark-core gate)
+- `sources/2026-10-23-failure-analysis.json` — Categorized failure audit of all false positives, false negatives, and $>10\text{ mm}$ tip outliers across the 54 cases
+- [[sources/2026-10-23-review-codex-astra-v3-clean|2026-10-23 Clean Nested Benchmark Audit (v3) by Codex Astra (`gpt-6-astra`)]] — Independent verification of all 5 methodological upgrades (`Items 1–5`), confirming 0 blocking evaluation defects
 - `sources/2026-10-22-unified-apples-to-apples-benchmark.json` — Complete 5-fold OOF benchmark across all 54 patients (`1,063` catheters), 23-patient Severe Catheter-Adhesion Subgroup (`233` catheters), and Few-Shot (`0, 1, 5, 10, 20, 43` shots) comparing `PMB 2019 3D U-Net + DBSCAN`, `Native 3D ResUNet + clDice + Skeleton`, `Xiao 2026 Sync-Track (arXiv:2607.11290)`, and `NeedleFinder 2026 + IRGM + Poly3`
 - `sources/2026-10-22-public-pelvic-mri-specificity-benchmark.json` — Out-of-distribution zero-needle specificity benchmark on 48 clinical 3T pelvic T2W MRI volumes (`MSD Task05_Prostate`)
 - [[sources/2013-miccai-summary|2013 MICCAI Paper Summary]]

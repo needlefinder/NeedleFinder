@@ -1,34 +1,37 @@
 \begin{table}[tbp]
 \centering
 \begin{threeparttable}
-\caption{\textbf{Human inter-observer agreement versus \NF{} on the 40 dual-annotated clinical 3T MRI scenes.}
-Expert teams \texttt{CY} ($n=505$ trajectories) and \texttt{LB}/\texttt{AMe} ($n=513$) digitized the same volumes independently; \NF{} rows are 5-fold out-of-fold predictions on the same scenes. All rows are computed with the same loader, matching rule, and metrics (source: \texttt{2026-10-23-table3-observers-and-nf-rerun.json}).}
+\caption{\textbf{Human inter-observer agreement versus \NF{} across all 40/40 dual-annotated clinical 3T MRI scenes.}
+Expert teams \texttt{CY+HT} ($n=723$ total trajectories: $505$ \texttt{CY} long + $218$ \texttt{HT} short/obturator) and \texttt{LB}/\texttt{AMe} ($n=513$, of which $460$ are long) digitized the same 40 volumes independently; \NF{} rows are strictly nested $5\times 5$ out-of-fold predictions on the same 40 scenes.}
 \label{tbl:interobserver}
-\footnotesize
+\scriptsize
+\setlength{\tabcolsep}{2.4pt}
 \begin{tabular}{@{}L
- R R
- R R R R R
+ R R R R
+ R R R R
  R R@{}}
 \toprule
- & \multicolumn{2}{c}{1-to-1 Match} & \multicolumn{5}{c}{\Eshaft{} (mm)} & {\HD{}$_{\text{slice}}$ (mm)} & {\Etip{} (mm)}\\
-\cmidrule(lr){2-3}\cmidrule(lr){4-8}\cmidrule(lr){9-9}\cmidrule(l){10-10}
-Comparison pair (reference) & {$n$} & {Rate (\%)\tnote{a}} & {Mean} & {SD} & {Median} & {IQR} & {P95} & {Median} & {Median}\\
+ & \multicolumn{4}{c}{1-to-1 Detection ($\le 3.5$\,mm)} & \multicolumn{4}{c}{\Eshaft{} (mm)} & \multicolumn{2}{c}{\Etip{} (mm)}\\
+\cmidrule(lr){2-5}\cmidrule(lr){6-9}\cmidrule(l){10-11}
+Comparison pair (eval.\ vs.\ reference) & {$n_{\text{match}}$} & {Rec.} & {Prec.} & {F1} & {Mean} & {SD} & {Median} & {P95} & {Mean} & {Median}\\
 \midrule
-\multicolumn{10}{@{}l}{\textit{Human inter-observer agreement}}\\
+\multicolumn{11}{@{}l}{\textit{Human inter-observer agreement}}\\
 \addlinespace[1pt]
-\quad \texttt{CY} vs.\ \texttt{LB}/\texttt{AMe} ($\le 3.5$\,mm) & 465 & 90.6 & 0.72 & 0.61 & 0.50 & 0.51 & 2.06 & 0.95 & \second{3.21}\\
-\quad \texttt{LB}/\texttt{AMe} vs.\ \texttt{CY} ($\le 3.5$\,mm) & 465 & 92.1 & 0.72 & 0.61 & 0.50 & 0.51 & 2.06 & 0.95 & \second{3.21}\\
-\quad \texttt{CY} vs.\ \texttt{LB}/\texttt{AMe} ($\le 5.0$\,mm) & 473 & 92.2 & 0.80 & 0.79 & 0.51 & 0.54 & 2.34 & 0.96 & 3.27\\
+\quad \texttt{LB}/\texttt{AMe} vs.\ \texttt{CY} long ($460$ vs.\ $505$)\tnote{a} & 424 & 84.0 & \best{92.2} & \best{87.9} & 0.70 & 0.58 & 0.49 & 1.90 & 6.28 & 3.24\\
+\quad \texttt{LB}/\texttt{AMe} vs.\ \texttt{CY+HT} all ($513$ vs.\ $723$) & 476 & 65.8 & 92.8 & 77.0 & 0.73 & 0.61 & 0.50 & 2.09 & 6.30 & 3.21\\
 \midrule
-\multicolumn{10}{@{}l}{\textit{Automated out-of-fold predictions vs.\ each observer team ($\le 3.5$\,mm)}}\\
+\multicolumn{11}{@{}l}{\textit{Automated out-of-fold predictions vs.\ observer teams across all 40 scenes}}\\
 \addlinespace[1pt]
-\oursrow \quad \NF{} vs.\ \texttt{CY} & 464 & \best{91.9} & \best{0.55} & \best{0.37} & \best{0.44} & \best{0.32} & \best{1.17} & \best{0.91} & \best{2.92}\\
-\oursrow \quad \NF{} vs.\ \texttt{LB}/\texttt{AMe} & 455 & 88.7 & 0.74 & 0.58 & 0.51 & 0.58 & 2.06 & 0.92 & 4.62\\
+\oursrow \quad \NF{} ($\tau=50\,\%$) vs.\ \texttt{CY+HT} ($768$ vs.\ $723$) & 653 & 90.3 & 85.0 & \second{87.6} & \best{0.58} & \best{0.39} & \best{0.47} & \second{1.33} & \best{5.26} & \best{2.10}\\
+\oursrow \quad \NF{} ($\tau=35\,\%$) vs.\ \texttt{CY+HT} ($825$ vs.\ $723$) & 669 & \best{92.5} & 81.1 & 86.4 & \second{0.59} & \second{0.40} & \best{0.47} & \best{1.32} & 5.54 & 2.20\\
+\oursrow \quad \NF{} ($\tau=50\,\%$) vs.\ union \texttt{CY+HT+LB} ($768$ vs.\ $759$)\tnote{b} & 669 & 88.1 & \second{87.1} & \second{87.6} & \second{0.59} & \second{0.40} & \best{0.47} & 1.36 & \second{5.44} & \second{2.17}\\
+\oursrow \quad \NF{} ($\tau=50\,\%$) vs.\ \texttt{LB}/\texttt{AMe} ($768$ vs.\ $513$)\tnote{c} & 465 & \second{90.6} & 60.5 & 72.6 & 0.77 & 0.62 & 0.51 & 2.11 & 7.87 & 3.97\\
 \bottomrule
 \end{tabular}
 \begin{tablenotes}[flushleft]\footnotesize
-\item[a] Matched pairs divided by the number of trajectories of the reference team named second (505 for \texttt{CY}, 513 for \texttt{LB}/\texttt{AMe}).
-\item \NF{} vs.\ \texttt{CY} has a lower shaft discrepancy and a 43\,\% tighter 95th-percentile tail than the disagreement between the two human teams; against \texttt{LB}/\texttt{AMe} it lies within 0.05\,mm of the human-to-human values, except at the tips, where \texttt{LB}/\texttt{AMe} differ from both \texttt{CY} and the algorithm.
+\item[a] Strict long-shaft inter-observer comparison ($424$ matched pairs out of $460$ \texttt{LB}/\texttt{AMe} long vs.\ $505$ \texttt{CY} long: $83.96\,\%$ recall, $92.17\,\%$ strict precision [$93.6\,\%$ obturator-adjusted], $87.88\,\%$ strict F1 [$88.5\,\%$ obturator-adjusted], $0.70 \pm 0.58$\,mm shaft error [$0.70 \pm 0.60$\,mm across all $465$ \texttt{LB}/\texttt{AMe} trajectories matched to \texttt{CY}]).
+\item[b] Evaluated against the de-duplicated union of both expert teams ($723$ \texttt{CY+HT} + $36$ unique \texttt{LB}/\texttt{AMe} trajectories $= 759$ union catheters), showing that 16 apparent false positives against \texttt{CY+HT} alone are genuine catheters traced by \texttt{LB}/\texttt{AMe} (precision rises from $85.0\,\%$ to $87.1\,\%$).
+\item[c] Because \texttt{LB}/\texttt{AMe} primarily traced long interstitial shafts ($513$ traces vs.\ $723$ for \texttt{CY+HT}), unadjusted precision against \texttt{LB}/\texttt{AMe} alone penalizes valid short obturator predictions; recall is $90.6\,\%$.
 \end{tablenotes}
 \end{threeparttable}
 \end{table}

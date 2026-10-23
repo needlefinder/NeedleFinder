@@ -4,7 +4,8 @@
 \caption{\textbf{Zero-needle out-of-distribution specificity on 48 public clinical 3T pelvic T2W MRI volumes (MSD \texttt{Task05\_Prostate}).}
 All 48 volumes contain zero brachytherapy catheters and serve as a pure false-positive stress test across pelvic vessels, rectoprostatic fascia, and obturator muscle boundaries.}
 \label{tbl:specificity}
-\footnotesize
+\scriptsize
+\setlength{\tabcolsep}{3.6pt}
 \begin{tabular}{@{}L
  R R R R R
  R R@{}}
@@ -13,18 +14,22 @@ All 48 volumes contain zero brachytherapy catheters and serve as a pure false-po
 \cmidrule(lr){2-6}\cmidrule(l){7-8}
 Pipeline configuration & {Total} & {Mean} & {SD} & {Median} & {Max} & {$0$ FP} & {$\le 1$ FP}\\
 \midrule
-Unpruned candidate pool\tnote{a} & 985 & 20.52 & 8.76 & 19.5 & 49 & 0.0 & 0.0\\
-NeedleUNet3D + tangent tubes\tnote{b} & 306 & 6.38 & 4.77 & 6.0 & 19 & \second{14.6} & \second{18.8}\\
-\oursrow \NF{} ($\tau=50\,\%$, default)\tnote{c} & 225 & 4.69 & 3.34 & 4.0 & 14 & 10.4 & 16.7\\
-\oursrow \NF{} ($\tau=60\,\%$)\tnote{c} & \second{188} & \second{3.92} & \second{2.93} & \second{3.0} & \second{11} & 10.4 & 16.7\\
-\oursrow \NF{} + Stage 0 radial gate\tnote{d} & \best{18} & \best{0.38} & \best{0.53} & \best{0.0} & \best{2} & \best{64.6} & \best{97.9}\\
+NeedleUNet3D + tangent tubes (ungated)\tnote{a} & 306 & 6.38 & 4.77 & 6.0 & 19 & 14.6 & 18.8\\
+Unpruned Stage 0 + Stage 1 pool\tnote{b} & 294 & 6.12 & 4.70 & 5.0 & 23 & 4.2 & 10.4\\
+\oursrow Ungated Unified \NF{} ($\tau=50\,\%$)\tnote{c} & 197 & 4.10 & 4.45 & 3.0 & 23 & 16.7 & 27.1\\
+\oursrow Ungated Unified \NF{} ($\tau=60\,\%$)\tnote{c} & 171 & 3.56 & 3.48 & 3.0 & 17 & 16.7 & 29.2\\
+\oursrow Stage 1 U-Net + Stage 0 radial gate\tnote{d} & 18 & 0.38 & 0.53 & \best{0.0} & \second{2} & 64.6 & \second{97.9}\\
+\oursrow Frozen Unified \NF{} + Dark-Core Gate ($\tau=50\,\%$)\tnote{e} & \second{16} & \second{0.33} & 0.75 & \best{0.0} & 3 & \second{79.2} & 91.7\\
+\oursrow Clean SSL + Multi-Rater Stage 1 + Stage 0 gate\tnote{f} & \best{6} & \best{0.125} & \best{0.33} & \best{0.0} & \best{1} & \best{87.5} & \best{100.0}\\
 \bottomrule
 \end{tabular}
 \begin{tablenotes}[flushleft]\footnotesize
-\item[a] Raw Stage~0 + Stage~1 candidate tracks prior to Bundle Graph Transformer pruning.
-\item[b] Stage~1 \texttt{NeedleUNet3D} centerline probability peaks linked via directional tangent tubes without Stage~0 symmetry gating.
-\item[c] Deployed 2-stage \NF{} extension with its production bundle graph transformer (18-feature clinical model, no SynthBrachy3T pre-training) at the default $\tau=50\,\%$ (77\,\% of candidate false positives removed, $20.52 \to 4.69$\,FP/vol) and at $\tau=60\,\%$ ($80.9\,\%$, $\to 3.92$\,FP/vol).
-\item[d] Enforcing the analytical Stage~0 3D multi-radii circular dark-core symmetry gate alongside Stage~1 \texttt{NeedleUNet3D} rejects asymmetric vascular and fascial interfaces, reducing false alarms by $98.2\,\%$ ($0.38 \pm 0.53$\,FP/vol, median $0.0$).
+\item[a] Raw Stage~1 \texttt{NeedleUNet3D} centerline probability peaks linked via directional tangent tubes without Stage~0 symmetry gating or Stage~2B pruning.
+\item[b] Candidate pool passed to Stage~2B prior to Bundle Graph Transformer pruning.
+\item[c] Unified \NF{} pipeline evaluated without the Stage~0 dark-core gate at $\tau=50\,\%$ ($4.10$\,FP/scan) and $\tau=60\,\%$ ($3.56$\,FP/scan).
+\item[d] Baseline Stage~1 \texttt{NeedleUNet3D} tangent tubes gated by the analytical Stage~0 3D multi-radii circular dark-core symmetry filter ($0.38$\,FP/scan).
+\item[e] Full Unified \NF{} pipeline with Stage~0 dark-core symmetry gating at $\tau=50\,\%$ ($16$ total FPs $= 0.333$/scan; $38/48$ [$79.2\,\%$] 0-FP scans; $44/48$ [$91.7\,\%$] $\le 1$-FP scans).
+\item[f] Clean nested Stage~1 \texttt{NeedleUNet3D} (self-supervised 3D U-Net pre-training with synthetic susceptibility tubes and anatomical hard negatives across the 51 external pelvic MRI volumes + multi-rater supervision on the 43 outer-train BWH clinical volumes) gated by Stage~0 radial symmetry ($6$ total FPs $= 0.125$/scan; $42/48$ [$87.5\,\%$] 0-FP scans; $48/48$ [$100.0\,\%$] $\le 1$-FP scans). Note that the 48 MSD \texttt{Task05\_Prostate} scans were included in the unlabeled/synthetic-tube SSL pre-training background pool for this row (zero clinical needle labels), whereas rows \tnote{a--e} had zero exposure to MSD during training.
 \end{tablenotes}
 \end{threeparttable}
 \end{table}

@@ -36,16 +36,21 @@ os.makedirs(DATA_DIR, exist_ok=True)
 
 
 def load_all_sources():
-    with open(os.path.join(SOURCES_DIR, "2026-10-23-unified-rerun-benchmark.json")) as f:
+    with open(os.path.join(SOURCES_DIR, "2026-10-23-unified-clean-nested-benchmark.json")) as f:
         bench = json.load(f)
-    with open(os.path.join(SOURCES_DIR, "2026-10-22-interobserver-543-benchmark.json")) as f:
+    with open(os.path.join(SOURCES_DIR, "2026-10-23-table3-observers-and-nf-clean.json")) as f:
         inter = json.load(f)
-    with open(os.path.join(SOURCES_DIR, "2026-10-22-public-pelvic-mri-specificity-benchmark.json")) as f:
+    with open(os.path.join(SOURCES_DIR, "2026-10-23-public-pelvic-mri-specificity-clean.json")) as f:
         spec = json.load(f)
     qual = dict(np.load(os.path.join(DATA_DIR, "qualitative_cases.npz"), allow_pickle=True))
     pred_path = os.path.join(DATA_DIR, "qualitative_predictions.npz")
     if os.path.exists(pred_path):
-        qual.update(dict(np.load(pred_path, allow_pickle=True)))
+        qp = dict(np.load(pred_path, allow_pickle=True))
+        qual.update(qp)
+        if "dense_pred_ras_obj" not in qual and "case017_nf2026" in qp:
+            qual["dense_pred_ras_obj"] = qp["case017_nf2026"]
+        if "adhesion_pred_ras_obj" not in qual and "case031_nf2026" in qp:
+            qual["adhesion_pred_ras_obj"] = qp["case031_nf2026"]
     return bench, inter, spec, qual
 
 
@@ -98,41 +103,50 @@ def export_csv_data(bench, inter, spec):
     # 2. fewshot_curve.csv
     with open(os.path.join(DATA_DIR, "fewshot_curve.csv"), "w", newline="") as f:
         w = csv.writer(f)
-        w.writerow(["shots", "voxel_dice", "f1_all_1063", "f1_long_adj_759", "shaft_mean_mm", "tip_mean_mm"])
+        w.writerow(["shots", "f1_all_1063", "f1_long_adj_759", "shaft_mean_mm", "tip_mean_mm", "tip_med_mm"])
         fs = bench["few_shot_clinical_annotation_budget"]
-        for k_str in ["0", "1", "5", "10", "20", "43"]:
-            r = fs[f"{k_str}_shot"]
+        for k_str, k_key in [
+            ("0_analytical", "0_shot_stage0_analytical"),
+            ("0_synth", "0_shot"),
+            ("1", "1_shot"),
+            ("5", "5_shot"),
+            ("10", "10_shot"),
+            ("20", "20_shot"),
+            ("43", "43_shot"),
+        ]:
+            r = fs[k_key]
             w.writerow([
                 k_str,
-                f"{r['mean_oof_voxel_dice']:.4f}",
                 f"{r['cohort_all_1063_catheters']['f1_1to1_pct']:.2f}",
                 f"{r['cohort_long_759_cy_catheters']['f1_1to1_obturator_adj_pct']:.2f}",
                 f"{r['cohort_all_1063_catheters']['metrics']['mean_shaft_xy']['mean']:.3f}",
                 f"{r['cohort_all_1063_catheters']['metrics']['tip_3d']['mean']:.3f}",
+                f"{r['cohort_all_1063_catheters']['metrics']['tip_3d']['median']:.3f}",
             ])
 
     # 3. msd_specificity.csv
     with open(os.path.join(DATA_DIR, "msd_specificity.csv"), "w", newline="") as f:
         w = csv.writer(f)
-        w.writerow(["case_id", "unpruned_pool", "stage1_tubes_only", "nf2026_tau60", "nf2026_stage0_sym_gate"])
+        w.writerow(["case_id", "unpruned_pool", "stage1_tubes_only", "nf2026_tau50", "nf2026_sym_gated_tau50", "clean_ssl_stage1_sym_gate"])
         for c in spec["per_case_results"]:
             w.writerow([
                 c["case_id"],
                 c["candidate_pool_before_graph_transformer"],
                 c["raw_unet_tubes_no_physics_or_gt"],
-                c["unified_needlefinder_2026_by_tau"]["60"],
-                c["stage1_unet_sym_tubes_only"],
+                c["unified_needlefinder_2026_by_tau"]["50"],
+                c["unified_needlefinder_2026_sym_gated_by_tau"]["50"],
+                c["clean_ssl_stage1_sym_tubes_only"],
             ])
 
     # 4. runtime.csv
     with open(os.path.join(DATA_DIR, "runtime.csv"), "w", newline="") as f:
         w = csv.writer(f)
-        w.writerow(["stage", "cpu_sec", "gpu_sec", "cpu_std_res_sec", "cpu_high_res_sec"])
-        w.writerow(["Stage 0: Rust 3D Radial Symmetry", 0.410, 0.410, 0.120, 0.590])
-        w.writerow(["Stage 1: NeedleUNet3D + IRGM", 0.960, 0.220, 0.550, 1.020])
-        w.writerow(["Stage 2A: Native Seed Tracking + Triplet MPNN", 1.220, 0.540, 0.450, 1.670])
-        w.writerow(["Stage 2B: Bundle Graph Transformer + Poly3", 0.150, 0.080, 0.080, 0.190])
-        w.writerow(["Total End-to-End", 2.740, 1.250, 1.200, 3.470])
+        w.writerow(["stage", "cpu_sec", "gpu_sec", "cpu_std_res_sec", "cpu_high_res_sec", "gpu_std_res_sec", "gpu_high_res_sec"])
+        w.writerow(["Stage 0: Rust 3D Radial Symmetry", 0.267, 0.267, 0.072, 0.381, 0.072, 0.381])
+        w.writerow(["Stage 1: NeedleUNet3D + IRGM", 2.575, 1.330, 0.739, 3.655, 0.256, 1.962])
+        w.writerow(["Stage 2A: Native Seed Tracking + Triplet MPNN", 1.248, 1.046, 0.402, 1.746, 0.322, 1.472])
+        w.writerow(["Stage 2B: Bundle Graph Transformer + Poly3", 0.061, 0.032, 0.047, 0.069, 0.024, 0.036])
+        w.writerow(["Total End-to-End", 4.151, 2.674, 1.260, 5.852, 0.675, 3.851])
 
 
 def save_all_formats(fig, basename):
@@ -271,17 +285,17 @@ def make_fig1_pipeline_overview(qual):
                                     transform=fig.transFigure, color="#666666", lw=1.0))
             fig.text(x_arr + 0.022, y_bot + tile_h / 2, "▸", fontsize=8, color="#666666", ha="center", va="center")
 
-    # Bottom row: Proportional runtime bar (CPU 2.74 s / GPU 1.25 s)
+    # Bottom row: Proportional runtime bar (CPU 4.15 s / GPU 2.67 s)
     ax_bar = fig.add_axes([0.14, 0.06, 0.83, 0.14])
     ax_bar.spines["top"].set_visible(False)
     ax_bar.spines["right"].set_visible(False)
     ax_bar.spines["left"].set_visible(False)
 
     segs = [
-        ("Stage 0: Rust symmetry", 0.410, 0.410, C["st0"]),
-        ("Stage 1: NeedleUNet3D + IRGM", 0.960, 0.220, C["st1"]),
-        ("Stage 2A: Native tracking + MPNN", 1.220, 0.540, C["st2"]),
-        ("Stage 2B: GraphTF + Poly3", 0.150, 0.080, C["nf"]),
+        ("Stage 0: Rust symmetry", 0.267, 0.267, C["st0"]),
+        ("Stage 1: NeedleUNet3D + IRGM", 2.575, 1.330, C["st1"]),
+        ("Stage 2A: Native tracking + MPNN", 1.248, 1.046, C["st2"]),
+        ("Stage 2B/C: GraphTF + 1D Tip + Poly3", 0.061, 0.032, C["nf"]),
     ]
     y_pos = [1.0, 0.0]
     left_cpu, left_gpu = 0.0, 0.0
@@ -291,20 +305,20 @@ def make_fig1_pipeline_overview(qual):
         left_cpu += t_cpu
         left_gpu += t_gpu
 
-    ax_bar.text(left_cpu + 0.05, 1.0, f"{left_cpu:.2f} s total (8-core CPU; 1.20 s std / 3.47 s hi-res)", va="center", ha="left", fontsize=6.5, fontweight="bold", color="#222222")
-    ax_bar.text(left_gpu + 0.05, 0.0, f"{left_gpu:.2f} s total (RTX 4090 GPU)", va="center", ha="left", fontsize=6.5, fontweight="bold", color="#222222")
+    ax_bar.text(left_cpu + 0.07, 1.0, f"{left_cpu:.2f} s total (CPU; 1.26 s std / 5.85 s hi-res)", va="center", ha="left", fontsize=6.4, fontweight="bold", color="#222222")
+    ax_bar.text(left_gpu + 0.07, 0.0, f"{left_gpu:.2f} s total (RTX 4090; 0.68 s std / 3.85 s hi-res)", va="center", ha="left", fontsize=6.4, fontweight="bold", color="#222222")
     ax_bar.set_yticks([0.0, 1.0])
-    ax_bar.set_yticklabels(["GPU (1.25 s)", "CPU (2.74 s)"], fontsize=7, fontweight="bold")
-    ax_bar.set_xlim(0, 4.30)
+    ax_bar.set_yticklabels(["GPU (2.67 s)", "CPU (4.15 s)"], fontsize=7, fontweight="bold")
+    ax_bar.set_xlim(0, 6.60)
     ax_bar.set_xlabel("End-to-end inference time per patient volume (s)", fontsize=7.5)
     ax_bar.tick_params(axis="y", length=0)
 
     # Legend swatches above runtime bar
     leg_items = [
-        (0.12, "■ Stage 0: Symmetry (0.41 s)", C["st0"]),
-        (0.35, "■ Stage 1: ResUNet+IRGM (0.96 s)", C["st1"]),
-        (0.61, "■ Stage 2A: MPNN (1.22 s)", C["st2"]),
-        (0.81, "■ Stage 2B: GraphTF (0.15 s)", C["nf"]),
+        (0.11, "■ Stage 0: Symmetry (0.27 s)", C["st0"]),
+        (0.33, "■ Stage 1: ResUNet+IRGM (2.58 s)", C["st1"]),
+        (0.58, "■ Stage 2A: MPNN (1.25 s)", C["st2"]),
+        (0.79, "■ Stage 2B: GraphTF+Tip (0.06 s)", C["nf"]),
     ]
     for lx, ltxt, col in leg_items:
         fig.text(lx, 0.225, ltxt, fontsize=5.5, color=col, fontweight="bold")
@@ -527,11 +541,10 @@ def make_fig3_raincloud_distributions(bench, inter):
         ("Baseline 2: Native-Resolution 3D ResUNet + clDice + Skeleton (Mask-Only)", "ResUNet + clDice + Skel.", C["b_nnunet"]),
         ("Baseline 1: PMB 2019 Isotropic 1mm³ 3D U-Net + DBSCAN/Skeleton", "PMB 2019 3D U-Net", C["b_pmb19"]),
     ]
-    # Human reference statistics from the single-loader Table 3 export (same scenes, matching rule and metrics as the NF rows)
-    with open(os.path.join(SOURCES_DIR, "2026-10-23-table3-observers-and-nf-rerun.json")) as f:
-        t3 = json.load(f)["rows"]["CY_vs_LBAMe_ref_3.5mm"]
-    h_sh = t3["shaft_mm"]
-    h_tip = t3["tip_3d_mm"]
+    # Human reference statistics from the Table 3 clean export (40/40 dual-traced scenes)
+    t3_long = inter["table3_rows"]["2_human_inter_observer_long_subset"]["metrics"]
+    h_sh = t3_long["mean_shaft_xy"]
+    h_tip = t3_long["tip_3d"]
 
     labels = [m[1] for m in methods_cfg]
     colors = [m[2] for m in methods_cfg]
@@ -593,8 +606,8 @@ def make_fig4_pareto_and_fewshot(bench):
 
     # Frozen non-overlapping label offsets for tau sweep endpoints
     tau_offsets = {
-        25: ("τ=25%", (-28, 3)),
-        60: ("τ=60%", (-24, 3)),
+        25: ("τ=25%", (-26, -8)),
+        60: ("τ=60%", (5, -2)),
     }
     for t, rx, py in zip(taus, rs_nf, ps_nf):
         if t in tau_offsets:
@@ -602,20 +615,17 @@ def make_fig4_pareto_and_fewshot(bench):
             ax1.annotate(txt, xy=(rx, py), xytext=(dx, dy), textcoords="offset points",
                          fontsize=5.8, color=C["nf"])
 
-    ax1.annotate(f"NF 2026 + SynthBrachy3T ({c_all['NeedleFinder 2026 + SynthBrachy3T + Tip-Aware (tau=50%)']['f1_1to1_pct']:.1f}% F1)",
+    ax1.annotate(f"NF 2026 + Synth + 1DTip ({c_all['NeedleFinder 2026 + SynthBrachy3T + Tip-Aware (tau=50%)']['f1_1to1_pct']:.1f}% F1)",
                  xy=(rs_nf[idx50], ps_nf[idx50]),
-                 xytext=(-18, -3), textcoords="offset points", ha="right",
+                 xytext=(-22, -4), textcoords="offset points", ha="right",
                  fontsize=5.8, fontweight="bold", color=C["nf"],
                  arrowprops=dict(arrowstyle="->", color=C["nf"], lw=0.6))
-
-    # NF 2026 + IRGM + Poly3 marker is drawn without a text label (named in the caption) because it coincides with the headline point
 
     # Ablation & Baseline points
     other_pts = [
         ("Stage 0/1A: Pure Physics 3D CV + HybridNeedleNet", "Physics + HybridNet", C["st0"], "s", (-10, -10)),
-        ("Stage 1B: Multi-Head NeedleUNet3D + Tangent Tube Tracking", "NeedleUNet3D + tubes", C["st1"], "^", (-48, 5)),
-        ("Stage 1B: Hybrid AxialTransUNet3D + Tangent Tube Tracking", "AxialTransUNet3D", C["st1"], "v", (-48, -9)),
-        ("Stage 2A: Pure NeedleSliceMPNN (4-Layer Triplet GraphNet)", "Triplet MPNN only", C["st2"], "D", (-98, 13)),
+        ("Stage 1B: Multi-Head NeedleUNet3D + Tangent Tube Tracking", "NeedleUNet3D + tubes", C["st1"], "^", (-54, 4)),
+        ("Stage 2A: Pure NeedleSliceMPNN (4-Layer Triplet GraphNet)", "Triplet MPNN only", C["st2"], "D", (-64, -6)),
         ("Baseline 1: PMB 2019 Isotropic 1mm³ 3D U-Net + DBSCAN/Skeleton", "PMB 2019 3D U-Net", C["b_pmb19"], "o", (-54, -7)),
     ]
     for key, lbl, col, mk, (dx, dy) in other_pts:
@@ -627,9 +637,9 @@ def make_fig4_pareto_and_fewshot(bench):
                      fontsize=6.0, color=col, fontweight="bold" if "PMB" in lbl else "normal",
                      arrowprops=dict(arrowstyle="-", color="#999999", lw=0.4) if abs(dx) > 25 else None)
 
-    # Overflow annotation for low-precision mask-only baselines (clDice 23.9% Prec, Xiao 2026 38.9% Prec)
+    # Overflow annotation for low-precision mask-only baselines (clDice 24.5% Prec, Xiao 2026 39.2% Prec)
     _bx = c_all["Baseline 3: Xiao 2026 IRGM + 3D Hough + Sync Inward Tracking + Poly3"]; _bc = c_all["Baseline 2: Native-Resolution 3D ResUNet + clDice + Skeleton (Mask-Only)"]
-    ax1.text(74.8, 69.0, f"▾ Mask-only trackers (<55% Prec.):\n   Xiao 2026: {_bx['hungarian_1to1_recall_pct']:.1f}% R, {_bx['precision_1to1_pct']:.1f}% P\n   clDice+Skel: {_bc['hungarian_1to1_recall_pct']:.1f}% R, {_bc['precision_1to1_pct']:.1f}% P",
+    ax1.text(74.8, 60.0, f"▾ Mask-only trackers (<55% Prec.):\n   Xiao 2026: {_bx['hungarian_1to1_recall_pct']:.1f}% R, {_bx['precision_1to1_pct']:.1f}% P\n   clDice+Skel: {_bc['hungarian_1to1_recall_pct']:.1f}% R, {_bc['precision_1to1_pct']:.1f}% P",
              fontsize=5.5, color="#4D4D4D", bbox=dict(boxstyle="round,pad=0.25", fc="#F7F7F7", ec="#CCCCCC", lw=0.5))
 
     ax1.set_xlim(74, 96.5)
@@ -641,18 +651,22 @@ def make_fig4_pareto_and_fewshot(bench):
     ax1.set_title("a   1-to-1 Precision–Recall Pareto frontier", fontsize=7.5, fontweight="bold", loc="left")
     ax1.grid(True, color="#E6E6E6", lw=0.4, zorder=0)
 
-    # --- Panel b: Few-Shot Clinical Annotation Budget (with vs without SynthBrachy3T) ---
-    fs = bench["few_shot_clinical_annotation_budget"]
+    # --- Panel b: Leak-Free Few-Shot Clinical Annotation Budget ---
     fs_syn = bench["synthbrachy3t_sim_to_real_few_shot_budget"]
     shots = [1, 5, 10, 20, 43]
     x_pos = np.log2(shots)
 
     f1_syn_all = [fs_syn[f"{k}_shot"]["cohort_all_1063_catheters"]["f1_1to1_pct"] for k in shots]
-    f1_zero = fs_syn["0_shot"]["cohort_all_1063_catheters"]["f1_1to1_pct"]
+    f1_syn_long = [fs_syn[f"{k}_shot"]["cohort_long_759_cy_catheters"]["f1_1to1_obturator_adj_pct"] for k in shots]
+    f1_zero_anal = fs_syn["0_shot_stage0_analytical"]["cohort_all_1063_catheters"]["f1_1to1_pct"]
+    f1_zero_syn = fs_syn["0_shot"]["cohort_all_1063_catheters"]["f1_1to1_pct"]
 
-    # Zero-shot floor line
-    ax2.axhline(f1_zero, color=C["st0"], ls=":", lw=1.1, zorder=2)
-    ax2.text(x_pos[-1] - 0.05, f1_zero - 5.2, f"0-shot, no learned scoring ({f1_zero:.1f}%)", fontsize=5.5, color=C["st0"], fontweight="bold", ha="right")
+    # Zero-shot floor lines
+    ax2.axhline(f1_zero_anal, color=C["st0"], ls=":", lw=1.1, zorder=2)
+    ax2.text(x_pos[-1] - 0.05, f1_zero_anal - 2.3, f"0-shot Stage 0 analytical ({f1_zero_anal:.1f}%)", fontsize=5.3, color=C["st0"], fontweight="bold", ha="right")
+
+    ax2.axhline(f1_zero_syn, color=C["st2"], ls="--", lw=1.0, zorder=2)
+    ax2.text(x_pos[-1] - 0.05, f1_zero_syn - 2.1, f"0-shot SynthBrachy3T ({f1_zero_syn:.1f}%)", fontsize=5.3, color=C["st2"], fontweight="bold", ha="right")
 
     # Curves + patient-level bootstrap 95% CI bands taken from the benchmark JSON
     def _ci(src, k):
@@ -661,24 +675,24 @@ def make_fig4_pareto_and_fewshot(bench):
 
     ax2.plot(x_pos, f1_syn_all, color=C["nf"], lw=1.6, marker="o", ms=4.2, zorder=5)
     ax2.fill_between(x_pos, ci_syn[:, 0], ci_syn[:, 1], color=C["nf"], alpha=0.18, zorder=3)
-
-
+    ax2.plot(x_pos, f1_syn_long, color=C["st1"], lw=1.2, ls="-.", marker="s", ms=3.5, zorder=4)
 
     # Direct labels on curves
-    ax2.text(x_pos[-1] - 0.05, f1_syn_all[-1] + 2.6, f"NF 2026 + SynthBrachy3T ({f1_syn_all[-1]:.1f}%)", fontsize=5.6, fontweight="bold", color=C["nf"], ha="right")
+    ax2.text(x_pos[-1] - 0.12, f1_syn_long[-1] + 1.6, f"Long shafts F1_adj ({f1_syn_long[-1]:.1f}%)", fontsize=5.4, fontweight="bold", color=C["st1"], ha="right")
+    ax2.text(x_pos[-1] - 0.05, f1_syn_all[-1] - 2.8, f"All 1,063 F1 ({f1_syn_all[-1]:.1f}%)", fontsize=5.4, fontweight="bold", color=C["nf"], ha="right")
 
-    # Highlight k=1 shot Sim-to-Real jump
+    # Highlight k=1 shot
     ax2.annotate(f"1-shot: {f1_syn_all[0]:.1f}%",
-                 xy=(x_pos[0], f1_syn_all[0]), xytext=(x_pos[0] + 0.05, 58.0),
-                 fontsize=5.6, fontweight="bold", color=C["nf"],
+                 xy=(x_pos[0], f1_syn_all[0]), xytext=(x_pos[0] + 0.05, 84.5),
+                 fontsize=5.4, fontweight="bold", color=C["nf"],
                  arrowprops=dict(arrowstyle="->", color=C["nf"], lw=0.6))
 
     ax2.set_xticks(x_pos)
     ax2.set_xticklabels([str(k) for k in shots])
-    ax2.set_ylim(12, 95)
+    ax2.set_ylim(68, 95)
     ax2.set_xlabel("Annotated clinical training patients per fold ($k$)", fontsize=7.5)
-    ax2.set_ylabel("Out-of-fold accuracy (%)", fontsize=7.5)
-    ax2.set_title("b   Few-shot clinical annotation efficiency", fontsize=7.5, fontweight="bold", loc="left")
+    ax2.set_ylabel("Out-of-fold F1 accuracy (%)", fontsize=7.5)
+    ax2.set_title("b   Leak-free few-shot annotation efficiency", fontsize=7.5, fontweight="bold", loc="left")
     ax2.grid(True, color="#E6E6E6", lw=0.4, zorder=0)
 
     assert_no_overlap(fig, pad_px=1)
@@ -788,38 +802,38 @@ def make_fig6_specificity_and_runtime(spec):
 
     # --- Panel a: Cumulative Zero-Needle Specificity ECDF on 48 MSD Task05 Volumes ---
     cases = spec["per_case_results"]
-    fp_pool = np.sort([c["candidate_pool_before_graph_transformer"] for c in cases])
     fp_st1 = np.sort([c["raw_unet_tubes_no_physics_or_gt"] for c in cases])
-    fp_nf60 = np.sort([c["unified_needlefinder_2026_by_tau"]["60"] for c in cases])
-    fp_sym = np.sort([c["stage1_unet_sym_tubes_only"] for c in cases])
+    fp_nf50 = np.sort([c["unified_needlefinder_2026_by_tau"]["50"] for c in cases])
+    fp_nfgate = np.sort([c["unified_needlefinder_2026_sym_gated_by_tau"]["50"] for c in cases])
+    fp_ssl = np.sort([c["clean_ssl_stage1_sym_tubes_only"] for c in cases])
 
     xs_eval = np.arange(0, 51)
     for arr, col, ls, lw, lbl in [
-        (fp_pool, "#999999", ":", 1.1, "Unpruned (20.5/vol)"),
-        (fp_st1, C["st1"], "--", 1.2, "Stage 1 tubes (6.4/vol)"),
-        (fp_nf60, C["nf"], "-", 1.3, "NF 2026 τ=60% (3.9/vol)"),
-        (fp_sym, C["st0"], "-", 1.6, "Stage 0+1 gate (0.38/vol)"),
+        (fp_st1, C["st1"], "--", 1.1, "Raw Stage 1 tubes (6.38/vol)"),
+        (fp_nf50, "#999999", ":", 1.2, "Ungated NF 2026 (4.10/vol)"),
+        (fp_nfgate, C["nf"], "-", 1.3, "NF 2026 + S0 Gate (0.33/vol)"),
+        (fp_ssl, C["st0"], "-", 1.6, "SSL Stage 1 + S0 Gate (0.125/vol)"),
     ]:
         ecdf = [100.0 * np.mean(arr <= x) for x in xs_eval]
         ax1.step(xs_eval, ecdf, where="post", color=col, ls=ls, lw=lw, label=lbl)
 
-    ax1.scatter([0, 1], [64.58, 97.92], s=22, color=C["st0"], edgecolor="#000000", linewidth=0.6, zorder=6)
-    ax1.annotate("64.6% (0 FP)", xy=(0, 64.58), xytext=(3.8, 56),
-                 fontsize=5.8, fontweight="bold", color=C["st0"],
+    ax1.scatter([0, 1], [87.50, 100.0], s=22, color=C["st0"], edgecolor="#000000", linewidth=0.6, zorder=6)
+    ax1.annotate("87.5% (0 FP)", xy=(0, 87.50), xytext=(2.8, 60),
+                 fontsize=5.6, fontweight="bold", color=C["st0"],
                  arrowprops=dict(arrowstyle="->", color=C["st0"], lw=0.6))
-    ax1.annotate("97.9% (≤1 FP)", xy=(1, 97.92), xytext=(4.8, 86),
-                 fontsize=5.8, fontweight="bold", color=C["st0"],
+    ax1.annotate("100% (≤1 FP)", xy=(1, 100.0), xytext=(5.2, 91),
+                 fontsize=5.6, fontweight="bold", color=C["st0"],
                  arrowprops=dict(arrowstyle="->", color=C["st0"], lw=0.6))
 
     ax1.set_xscale("symlog", linthresh=1.0)
     ax1.set_xticks([0, 1, 2, 5, 10, 20, 50])
     ax1.set_xticklabels(["0", "1", "2", "5", "10", "20", "50"])
     ax1.set_xlim(-0.15, 50)
-    ax1.set_ylim(0, 104)
+    ax1.set_ylim(0, 105)
     ax1.set_xlabel("False-positive tracks / volume", fontsize=7.0)
     ax1.set_ylabel("Volumes with ≤ x FP (%)", fontsize=7.0)
     ax1.set_title("a   0-needle specificity (48 vols)", fontsize=7.0, fontweight="bold", loc="left")
-    ax1.legend(loc="lower right", fontsize=5.2, frameon=True, facecolor="white", framealpha=0.9, edgecolor="none")
+    ax1.legend(loc="lower right", fontsize=5.0, frameon=True, facecolor="white", framealpha=0.9, edgecolor="none")
     ax1.grid(True, color="#E6E6E6", lw=0.4, zorder=0)
 
     # --- Panel b: End-to-End Runtime vs Literature (Log10 scale) ---
@@ -828,8 +842,8 @@ def make_fig6_specificity_and_runtime(spec):
         ("Shaaer 2022 (assisted)ʳ", 660.0, "#7F7F7F"),
         ("PMB 2019 (re-impl.)", 14.8, C["b_pmb19"]),
         ("Xiao 2026 (Sync)ʳ", 11.6, C["b_xiao"]),
-        ("NF 2026 (CPU)", 2.74, C["nf"]),
-        ("NF 2026 (GPU)", 1.25, C["nf"]),
+        ("NF 2026 (CPU)", 4.15, C["nf"]),
+        ("NF 2026 (GPU)", 2.67, C["nf"]),
     ]
     y_rt = np.arange(len(rt_methods))
     for idx_r, (m_lbl, val_s, col) in enumerate(rt_methods):
@@ -850,10 +864,10 @@ def make_fig6_specificity_and_runtime(spec):
 
     # --- Panel c: Linear Stage Breakdown (CPU vs GPU) ---
     stages = [
-        ("Stage 0: Symmetry", 0.410, 0.410, C["st0"]),
-        ("Stage 1: ResUNet+IRGM", 0.960, 0.220, C["st1"]),
-        ("Stage 2A: Track+MPNN", 1.220, 0.540, C["st2"]),
-        ("Stage 2B: GraphTF", 0.150, 0.080, C["nf"]),
+        ("Stage 0: Symmetry", 0.267, 0.267, C["st0"]),
+        ("Stage 1: ResUNet+IRGM", 2.575, 1.330, C["st1"]),
+        ("Stage 2A: Track+MPNN", 1.248, 1.046, C["st2"]),
+        ("Stage 2B/C: GraphTF+Tip", 0.061, 0.032, C["nf"]),
     ]
     left_c, left_g = 0.0, 0.0
     for st_lbl, tc, tg, col in stages:
@@ -862,15 +876,15 @@ def make_fig6_specificity_and_runtime(spec):
         left_c += tc
         left_g += tg
 
-    ax3.text(left_c + 0.07, 1, "2.74 s", va="center", ha="left", fontsize=6.2, fontweight="bold")
-    ax3.text(left_g + 0.07, 0, "1.25 s", va="center", ha="left", fontsize=6.2, fontweight="bold")
+    ax3.text(left_c + 0.08, 1, "4.15 s", va="center", ha="left", fontsize=6.2, fontweight="bold")
+    ax3.text(left_g + 0.08, 0, "2.67 s", va="center", ha="left", fontsize=6.2, fontweight="bold")
     ax3.set_yticks([0, 1])
-    ax3.set_yticklabels(["GPU\n(4090)", "CPU\n(8-core)"], fontsize=6.2, fontweight="bold")
-    ax3.set_xlim(0, 3.65)
+    ax3.set_yticklabels(["GPU\n(4090)", "CPU\n(24-core)"], fontsize=6.2, fontweight="bold")
+    ax3.set_xlim(0, 5.45)
     ax3.set_ylim(-0.6, 1.95)
     ax3.set_xlabel("Stage runtime (s, linear)", fontsize=7.0)
     ax3.set_title("c   Stage breakdown", fontsize=7.0, fontweight="bold", loc="left")
-    ax3.legend(loc="upper right", fontsize=5.2, frameon=False)
+    ax3.legend(loc="upper right", fontsize=5.1, frameon=False)
     ax3.grid(axis="x", color="#E6E6E6", lw=0.4, zorder=0)
 
     assert_no_overlap(fig, pad_px=1)

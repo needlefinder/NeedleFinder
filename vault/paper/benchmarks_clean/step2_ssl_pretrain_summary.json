@@ -1,0 +1,102 @@
+{
+  "step": "Step 2: Self-Supervised 3D Encoder Pretraining on 51 External Pelvic MRI Volumes (Item 5)",
+  "n_external_volumes": 51,
+  "n_msd_prostate_3t_t2w_volumes": 48,
+  "n_bwh_non_benchmark_pelvic_t2w_volumes": 3,
+  "overlap_with_54_benchmark_cases": 0,
+  "mean_anatomical_hard_negative_voxel_fraction_rsym_gt_0p2": 0.0278,
+  "epochs": 45,
+  "gpu_used": "NVIDIA GeForce RTX 4090",
+  "elapsed_sec": 370.96,
+  "checkpoint_path": "/home/guillaume/github/needlefinder/nn_models_clean/unet3d_ssl_pretrained_51vols.pt",
+  "final_epoch_metrics": {
+    "epoch": 45,
+    "loss_total": 0.1719,
+    "loss_tube": 0.1504,
+    "loss_mae": 0.0718,
+    "syn_tube_dice": 0.8667,
+    "elapsed_sec": 370.9
+  },
+  "training_history": [
+    {
+      "epoch": 1,
+      "loss_total": 1.2335,
+      "loss_tube": 1.1785,
+      "loss_mae": 0.1834,
+      "syn_tube_dice": 0.0161,
+      "elapsed_sec": 35.7
+    },
+    {
+      "epoch": 5,
+      "loss_total": 0.2699,
+      "loss_tube": 0.2354,
+      "loss_mae": 0.1148,
+      "syn_tube_dice": 0.8091,
+      "elapsed_sec": 66.8
+    },
+    {
+      "epoch": 10,
+      "loss_total": 0.2034,
+      "loss_tube": 0.174,
+      "loss_mae": 0.0979,
+      "syn_tube_dice": 0.8509,
+      "elapsed_sec": 105.6
+    },
+    {
+      "epoch": 15,
+      "loss_total": 0.1909,
+      "loss_tube": 0.1646,
+      "loss_mae": 0.0878,
+      "syn_tube_dice": 0.8574,
+      "elapsed_sec": 143.8
+    },
+    {
+      "epoch": 20,
+      "loss_total": 0.1926,
+      "loss_tube": 0.1678,
+      "loss_mae": 0.0828,
+      "syn_tube_dice": 0.8566,
+      "elapsed_sec": 181.7
+    },
+    {
+      "epoch": 25,
+      "loss_total": 0.1869,
+      "loss_tube": 0.1628,
+      "loss_mae": 0.0801,
+      "syn_tube_dice": 0.8588,
+      "elapsed_sec": 219.8
+    },
+    {
+      "epoch": 30,
+      "loss_total": 0.1762,
+      "loss_tube": 0.1537,
+      "loss_mae": 0.0753,
+      "syn_tube_dice": 0.8635,
+      "elapsed_sec": 257.5
+    },
+    {
+      "epoch": 35,
+      "loss_total": 0.1739,
+      "loss_tube": 0.1514,
+      "loss_mae": 0.0748,
+      "syn_tube_dice": 0.866,
+      "elapsed_sec": 295.3
+    },
+    {
+      "epoch": 40,
+      "loss_total": 0.1722,
+      "loss_tube": 0.1508,
+      "loss_mae": 0.0714,
+      "syn_tube_dice": 0.8664,
+      "elapsed_sec": 333.1
+    },
+    {
+      "epoch": 45,
+      "loss_total": 0.1719,
+      "loss_tube": 0.1504,
+      "loss_mae": 0.0718,
+      "syn_tube_dice": 0.8667,
+      "elapsed_sec": 370.9
+    }
+  ]
+}

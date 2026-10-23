@@ -352,41 +352,81 @@ for catheters. We set out to make catheter reconstruction automatic,
 accurate to below a millimeter, and fast enough to run during the
 procedure.
 
-\textbf{Approach.} NeedleFinder 2026 works in three stages. Stage 0 is
-an analytical filter that responds only to small, round, dark spots.
-Stage 1 is a 3D U-Net that predicts catheter centerlines, directions,
-and the vaginal obturator. Stage 2 traces candidate trajectories and
-uses two graph neural networks: one scores how slice detections link
-into 3D trajectories, and one judges whether the whole set of
-trajectories forms a plausible implant. Stage 2 is pre-trained on 300
-simulated implant bundles (SynthBrachy3T). We evaluated the method on 54
-clinical 3T MRI scans containing 1,063 expert-traced catheters with
-patient-level 5-fold cross-validation, against re-implementations of
-three published methods, against a second team of human observers on 40
-scans, and on 48 public needle-free pelvic MRI scans.
+\textbf{Approach.} NeedleFinder 2026 works in three stages. Stage 0
+computes an analytical 3D circular dark-core symmetry prior (\(S_0\))
+and a 100\% reference-free, tilt-safe axial field-of-view bound
+(\texttt{k\_lim\_auto}) that preserves 100.0\% of in-FOV catheter depth.
+Stage 1 is a native-resolution 3D residual U-Net (\texttt{NeedleUNet3D})
+self-supervised pre-trained on 51 strictly external pelvic T2W MRI
+volumes from 50 distinct subjects (combining 3D masked autoencoding with
+synthetic 3D susceptibility-tube pretext learning against real
+anatomical hard negatives) and trained with multi-rater supervision
+(\texttt{CY+HT} plus consensus-fused and soft-weighted \texttt{LB/AMe}
+traces on outer-training folds), 5-fold inner ensembling, and 4-view 3D
+test-time augmentation. Stage 2 traces candidate trajectories with
+native bidirectional Kalman tracking, a 4-layer triplet message-passing
+network, and collinear split-fragment stitching (\texttt{102} stitched
+full-length trajectories), scores the whole implant bundle with a graph
+transformer pre-trained on 300 simulated bundles
+(\texttt{SynthBrachy3T}), and refines each distal tip with a dedicated
+91-step (\texttt{0.5\ mm} sub-slice Z-interpolated) 22-channel 3-block
+dilated 1D ResNet + 4-head self-attention axial localizer
+(\texttt{Dedicated1DTipLocalizer}). We evaluated the pipeline on 54
+clinical 3T MRI scans (1,063 catheters: 759 long interstitial shafts and
+304 short obturator tracks) under a strictly nested \(5 \times 5\)
+patient-level cross-validation protocol (\texttt{25} inner models, zero
+outer-test leakage), against re-implementations of three published
+methods, against a second expert team across all 40 dual-traced scans,
+and on 48 public needle-free pelvic MRI scans.
 
-\textbf{Main results.} NeedleFinder 2026 found 89.8\% of catheters with
-85.6\% precision (F1 87.7\%), compared with 83.1\% F1 for our 2019-style
-3D U-Net and 54.2\% for a 2026-style structure-aware tracker
-(\(p < 10^{-3}\)). The median shaft error was 0.46 mm and the median tip
-error 2.77 mm. Synthetic pre-training of the bundle-scoring stage did
-not change F1 significantly (87.5\% without it, \(p = 0.11\)) but
-reduced the mean tip error from 9.1 to 7.7 mm (\(p = 0.003\)). The
-method agreed with the expert reference more closely (0.55 mm mean shaft
-discrepancy) than two human teams agreed with each other (0.72 mm). When
-only its bundle-scoring stage was fine-tuned on a single annotated
-patient it reached 84.9\% F1. On needle-free scans the full pipeline
-produced 4.7 false tracks per scan at the default threshold, and 0.38
-per scan when its candidates were gated by the Stage 0 symmetry map
-instead of the bundle transformer. Full-volume reconstruction takes 2.74
-s on an 8-core CPU (1.20 s on standard \(320 \times 256\) scans, 3.47 s
-on high-resolution \(640 \times 416\) / \(768 \times 768\) scans) or
-1.25 s on a GPU.
+\textbf{Main results.} At the pre-specified threshold \(\tau = 50\%\),
+NeedleFinder 2026 detected 91.4\% of all 1,063 catheters
+(\texttt{972/1,063}) with 86.9\% precision (\texttt{972/1,118}) and
+89.1\% F1 (\texttt{89.1\%} with inner-OOF cross-fit; \texttt{89.4\%} F1
+at \(\tau = 55\%\); \texttt{93.6\%} recall at \(\tau = 35\%\)),
+outperforming our 2019-style 3D U-Net (\texttt{83.1\%} F1,
+\(p = 1.1 \times 10^{-5}\)), a native-resolution clDice ResUNet
+(\texttt{38.7\%} F1, \(p = 5.2 \times 10^{-10}\)), and a 2026-style
+structure-aware tracker (\texttt{54.2\%} F1,
+\(p = 3.0 \times 10^{-10}\)). On the 759 long interstitial shafts, it
+achieved 91.3\% recall (\texttt{92.5\%} with inner-OOF cross-fit;
+\texttt{94.7\%} at \(\tau = 35\%\)), 88.7\% obturator-adjusted
+precision, and 90.0\% \(F1_{\text{adj}}\) (\texttt{90.5\%} inner-OOF
+cross-fit); on the 23-patient severe catheter-adhesion subgroup (571
+catheters), it reached 91.3\% F1 (\texttt{91.8\%} inner-OOF cross-fit).
+The in-plane shaft error was \(0.59 \pm 0.40\) mm (\(0.47\) mm median,
+\(1.37\) mm P95), and the 1D axial tip localizer cut 3D distal tip error
+from \(7.70\) to \(6.23\) mm mean (\(2.27\) mm median, \(27.27\) mm P95;
+\(58.7\%\) within \(\le 3\) mm), reaching \(6.39\) mm mean and \(2.26\)
+mm median even without \texttt{SynthBrachy3T}. Across all 40 dual-traced
+scans, NeedleFinder 2026 agreed more closely with the primary reference
+(\texttt{0.58\ mm} mean / \texttt{0.47\ mm} median shaft,
+\texttt{5.26\ mm} mean / \texttt{2.10\ mm} median tip, \texttt{90.3\%}
+recall, \texttt{87.6\%} F1) than the two human expert teams agreed with
+each other (\texttt{0.70\ ±\ 0.58\ mm} mean / \texttt{0.49\ mm} median
+shaft, \texttt{6.28\ mm} mean / \texttt{3.24\ mm} median tip), and
+achieved 87.1\% precision (\texttt{87.6\%} F1) against the multi-rater
+union. Under a strictly leak-free few-shot protocol, F1 progressed from
+75.3\% (\(k=0\) analytical) and 78.2\% (\(k=0\) zero-shot
+\texttt{SynthBrachy3T}, \texttt{83.4\%} on long shafts) to 79.7\%
+(\(k=1\)), 83.8\% (\(k=5\), surpassing the 43-patient 3D U-Net
+baseline), 85.7\% (\(k=10\)), 86.6\% (\(k=20\)), and 89.1\% (\(k=43\)).
+On the 48 needle-free prostate MRI scans, the symmetry-gated full
+pipeline with zero MSD training exposure produced 16 false tracks
+(\texttt{0.33/scan}, \texttt{79.2\%} 0-FP, \texttt{91.7\%}
+\(\le 1\)-FP), and the self-supervised Stage 1 detector gated by Stage 0
+produced 6 (\texttt{0.125/scan}, \texttt{87.5\%} 0-FP, \texttt{100.0\%}
+\(\le 1\)-FP). Uncached full-volume inference averaged 4.15 s on CPU
+(\texttt{1.26\ s} on the 20 standard \(320 \times 256\) scans,
+\texttt{5.85\ s} on the 34 high-resolution \(640 \times 416\) /
+\(768 \times 768\) scans) and 2.67 s on a GPU (\texttt{0.68\ s}
+standard, \texttt{3.85\ s} high-resolution).
 
-\textbf{Significance.} Automatic catheter reconstruction on MRI now
-matches expert agreement, needs little bundle-level training data, and
-runs in a few seconds per patient. It turns a manual task of tens of
-minutes into a short verification step.
+\textbf{Significance.} Automatic catheter reconstruction on clinical 3T
+T2W MRI achieves sub-millimeter shaft accuracy and sub-slice median tip
+accuracy within human inter-observer agreement in a few seconds per
+patient, turning tens of minutes of manual tracing into a brief
+verification step.
 \end{abstract}
 
 \section*{Plain-Language Summary}\label{plain-language-summary}
@@ -411,26 +451,33 @@ This paper presents NeedleFinder 2026, software that finds the tubes
 automatically. It works in three steps. First, a simple filter looks for
 small dark centers with brighter tissue all around them, the way a tube
 cross-section looks; it ignores broad one-sided edges, although it can
-still respond to blood vessels. Second, a neural network looks at the 3D
-scan and marks the center of each tube on each slice. Third, two
-``graph'' networks connect the marks from slice to slice into 3D curves,
-pull apart tubes that touch, and then look at the whole bundle together
-to throw out curves that do not fit a real implant.
+still respond to blood vessels. Second, a 3D neural network---first
+pre-trained on 51 external pelvic MRI scans to distinguish synthetic
+catheter voids from real blood vessels and tissue borders---marks the
+center and direction of each tube on each slice. Third, two ``graph''
+networks connect the marks from slice to slice into 3D curves, stitch
+fragments separated by single-slice dropouts, pull apart tubes that
+touch, score the whole bundle together to reject false curves, and
+pinpoint each tube's deepest tip using a dedicated 1D axial profile
+network.
 
-We tested it on 54 patients with 1,063 tubes. It found about 90 percent
-of them, and about 86 percent of the tubes it reported matched an expert
-trace. For the matched tubes, the typical sideways difference from the
-expert's line was under half a millimeter (the median, or middle value,
-was 0.46 mm), which is similar to the disagreement between two expert
-teams; the deepest end of each tube was less reliable, with a median
-difference of 2.8 mm and some much larger misses. On average the
-software missed about two tubes per scan and reported about three extra
-tracks that had to be removed. It runs in a few seconds on an ordinary
-computer (larger scans take longer) and needs no graphics card. In
-practice, the physicist clicks one button and then checks the result,
-removes extra tracks, adds missing ones, and adjusts tube ends. How much
-time this saves, and what it does to the treatment plan, has not yet
-been measured.
+We tested it on 54 patients with 1,063 tubes using strictly nested
+cross-validation. It found 91.4 percent of all tubes (and up to 94.7
+percent of the long interstitial shafts), and 86.9 percent of the tubes
+it reported matched an expert trace (89.1 percent F1). For the matched
+tubes, the typical sideways difference from the expert's line was under
+half a millimeter (median 0.47 mm, mean 0.59 mm), which is smaller than
+the disagreement between two expert teams (median 0.49 mm, mean 0.70
+mm); the deepest end of each tube had a median 3D difference of 2.27 mm
+(mean 6.23 mm), better than the 3.24 mm median disagreement between the
+two human teams. On average the software missed about 1.7 tubes per scan
+and reported about 2.7 extra tracks that had to be removed. It runs in
+4.15 seconds on average on a desktop CPU (1.26 seconds on
+standard-resolution scans, 5.85 seconds on high-resolution scans) and
+2.67 seconds on a graphics card. In practice, the physicist clicks one
+button and then checks the result, removes extra tracks, adds missing
+ones, and verifies tube ends. How much time this saves, and what it does
+to the treatment plan, has not yet been measured.
 
 \section{Introduction}\label{introduction}
 
@@ -498,20 +545,23 @@ under anesthesia {[}28{]}.
 \includegraphics[width=1\linewidth,height=\textheight,keepaspectratio]{../reports/figures/fig1_pipeline_overview.pdf}
 \caption{\textbf{Overview of NeedleFinder 2026.} The input is a clinical
 3T T2W pelvic MRI (Case 017: 26 reference trajectories, including the
-obturator channels). Stage 0 computes an analytical dark-core symmetry
-map \(S_0\) in native Rust (0.41 s cohort mean). Stage 1 applies a 3D
-residual U-Net with implant-region gating to predict centerline peaks,
-local directions, and the obturator (0.96 s on CPU, 0.22 s on GPU).
-Stage 2 links slice detections into 3D trajectories with native
-C++17/Rust seed tracking, a triplet message-passing network, and
-adhesion-aware duplicate merging; the last tile shows the out-of-fold
-predictions (vermilion) over the expert reference (grey) (1.22 s on CPU,
-0.54 s on GPU), then prunes false trajectories with a bundle graph
-transformer and smooths each curve with a cubic polynomial (0.15 s on
-CPU, 0.08 s on GPU). The full patient volume is processed end-to-end in
-2.74 s on an 8-core CPU (1.20 s on standard scans, 3.47 s on
-high-resolution scans) or 1.25 s on a GPU; the bar shows the stage
-breakdown.}\label{fig:overview}
+obturator channels) cropped with a 100\% reference-free template-plane
+locator (\texttt{k\_lim\_auto}). Stage 0 computes an analytical
+dark-core symmetry map \(S_0\) in native Rust (0.41 s cohort mean).
+Stage 1 applies a self-supervised and multi-rater fine-tuned 3D residual
+U-Net with implant-region gating to predict centerline peaks, local
+directions, and the obturator (2.28 s on CPU, 1.88 s on GPU). Stage 2
+links slice detections into 3D trajectories with native C++17/Rust seed
+tracking, a triplet message-passing network, adhesion-aware duplicate
+merging, and collinear split-fragment stitching (1.22 s on CPU, 0.54 s
+on GPU); the last tile shows the nested out-of-fold predictions
+(vermilion, 23 trajectories) over the expert reference (grey, 26
+trajectories), after bundle graph-transformer pruning, dedicated 1D
+axial ResNet + self-attention tip localization, and cubic polynomial
+smoothing (0.24 s on CPU, 0.24 s on GPU). The full patient volume is
+processed end-to-end in 4.15 s on an 8-core CPU (1.26 s on standard
+scans, 5.85 s on high-resolution scans) or 2.67 s on a GPU; the bar
+shows the stage breakdown.}\label{fig:overview}
 \end{figure}
 
 \subsection{Key Terms}\label{key-terms}
@@ -547,12 +597,14 @@ useful.
   between the automatic trajectory and the expert's trajectory, measured
   in-plane along the shaft and in 3D at the tip.
 \item
-  \textbf{Cross-validation, out-of-fold.} The 54 patients were split
-  into 5 groups. Each group was tested by a model trained on the other
-  four, so no patient's traces were used to train the model that was
-  tested on that patient. All reported results are \emph{out-of-fold} in
-  this sense; the Experimental Setup lists two qualifications to this
-  rule.
+  \textbf{Nested cross-validation, out-of-fold.} The 54 patients were
+  split into 5 outer groups (\(43\text{--}44\) training
+  vs.~\(10\text{--}11\) test patients per fold). Within each outer fold,
+  early stopping, temperature calibration, and optionally inner-OOF
+  upstream feature generation for downstream stackers use a strictly
+  disjoint 80/20 inner split or 5-fold inner cross-fitting, so no test
+  patient's images or labels influence training, checkpoint selection,
+  or threshold calibration.
 \item
   \textbf{Inter-observer variability.} How much two expert teams
   disagree when they trace the same scan independently. It gives context
@@ -643,8 +695,8 @@ one implant.
 \textbf{Open data.} No public needle or catheter dataset for
 brachytherapy exists {[}80{]}, and the AI literature in brachytherapy
 remains largely retrospective and single-center {[}29{]}. The public
-pelvic MRI scans we use for the false-alarm test come from the Medical
-Segmentation Decathlon {[}81{]}.
+pelvic MRI scans we use for self-supervised pretraining and the
+false-alarm test come from the Medical Segmentation Decathlon {[}81{]}.
 
 \subsection{Contributions}\label{contributions}
 
@@ -656,25 +708,33 @@ annotated MRI cohort for interstitial gynecologic brachytherapy.
 \def\labelenumi{\arabic{enumi}.}
 \tightlist
 \item
-  \textbf{A three-stage architecture.} An analytical dark-core symmetry
-  prior (Stage 0), a 3D residual U-Net with five output heads and
-  implant-region gating (Stage 1), and two graph networks (Stage 2):
-  native seed tracking with a triplet message-passing network and
-  adhesion-aware duplicate merging that keeps touching catheters apart,
-  and a tip-aware bundle graph transformer that judges all trajectories
-  together and refines their tips. Stage 2 is pre-trained on
-  SynthBrachy3T, a simulator of candidate-trajectory bundles.
+  \textbf{A three-stage architecture with five methodological upgrades.}
+  An analytical dark-core symmetry prior and 100\% reference-free axial
+  template locator (Stage 0); a 3D residual U-Net pre-trained on 51
+  external pelvic T2W MRI volumes with physics-guided synthetic
+  susceptibility tubes and anatomical hard negatives, then fine-tuned
+  with dual-observer multi-rater consensus supervision (Stage 1); and
+  two graph networks plus a dedicated 1D axial tip localizer (Stage 2):
+  native seed tracking with a triplet message-passing network,
+  adhesion-aware duplicate merging, and collinear split-fragment
+  stitching, followed by a tip-aware bundle graph transformer and a
+  91-step dilated 1D ResNet + self-attention axial tip localizer
+  (\texttt{Dedicated1DTipLocalizer}).
 \item
-  \textbf{A controlled comparison.} We re-implemented three published
-  approaches and evaluated all methods on identical patient-level 5-fold
-  splits, on the whole cohort and on the 23 patients with severe
-  catheter adhesion.
+  \textbf{A strictly nested \(5 \times 5\) comparison.} We
+  re-implemented three published approaches and evaluated all methods
+  and ablations under strictly nested patient-level 5-fold
+  cross-validation (plus \(5 \times 5\) inner out-of-fold Stage 1
+  cross-fitting), on the whole cohort, on the 759 long active-dwell
+  shafts, and on the 23 patients with severe catheter adhesion.
 \item
   \textbf{Three clinically relevant checks.} Agreement with experts
-  compared with agreement between experts on 40 doubly traced scans;
-  accuracy as a function of how many annotated patients were available
-  to fine-tune the bundle-scoring stage, from zero to all; and false
-  alarms on 48 public pelvic MRI scans containing no catheters.
+  compared with agreement between experts across all 40 doubly traced
+  scans (against both individual teams and their de-duplicated union);
+  leak-free label efficiency as a function of how many annotated
+  training patients (\(k \in \{0, 1, 5, 10, 20, 43\}\)) are available to
+  fine-tune the bundle-scoring stage; and false alarms on 48 public
+  pelvic MRI scans containing no catheters.
 \end{enumerate}
 
 \FloatBarrier
@@ -695,10 +755,10 @@ the patients of our 2013 and 2019 studies, of which 48 scans could be
 recovered with their reference traces, and adds 6 new implants. Expert
 medical physicists traced 1,063 reference trajectories (9 to 42 per
 patient): 759 full-depth interstitial catheters from the primary
-annotation set, which we call \emph{long shafts}, and 304 short
-obturator and partial-field-of-view tracks from the secondary set.
-In-plane pixel size ranges from 0.31 to 0.88 mm and slice thickness from
-1.2 to 6.0 mm.
+annotation set (\texttt{CY}), which we call \emph{long shafts}, and 304
+short obturator and partial-field-of-view tracks from the secondary set
+(\texttt{HT}). In-plane pixel size ranges from 0.31 to 0.88 mm and slice
+thickness from 1.2 to 6.0 mm.
 
 Xiao \emph{et al.} {[}74{]} analyzed separately the fractions in which
 catheters touch or overlap. We define a \textbf{severe-adhesion
@@ -708,16 +768,26 @@ another catheter on shared axial slices. All 571 catheters of these
 patients are evaluated; 191 of them (166 long) lie within 3.0 mm of a
 neighbor, and 233 do across the whole cohort.
 
-Two further datasets serve as checks. Forty scans were traced
-independently by two expert teams (CY, 505 trajectories; LB/AMe, 513
-trajectories); the 464 pairs matched one-to-one within 3.5 mm define the
-human inter-observer floor. To measure false alarms on anatomy that
-contains no catheters at all, we use all 48 pelvic T2W scans of the
-public Medical Segmentation Decathlon prostate task {[}81{]} (MSD
-Task05\_Prostate; 0.60 to 0.75 mm in-plane, 3 to 4 mm slices).
+Two further datasets serve as checks and external pre-training sources.
+All 40 doubly traced scans were contoured independently by two expert
+teams (\texttt{CY+HT}, 723 trajectories = 505 \texttt{CY} long + 218
+\texttt{HT} short/obturator; \texttt{LB/AMe}, 513 trajectories, of which
+460 are long); the 424 strict long-to-long matched pairs and 476
+all-catheter matched pairs within 3.5 mm define the human inter-observer
+floor, and the de-duplicated union of both teams contains 759
+trajectories. For self-supervised 3D representation learning and
+zero-needle specificity testing, we use 51 external pelvic 3T T2W MRI
+volumes from 50 distinct subjects: all 48 pelvic T2W scans of the public
+Medical Segmentation Decathlon prostate task {[}81{]}
+(\texttt{MSD\ Task05\_Prostate}; 0.60 to 0.75 mm in-plane, 3 to 4 mm
+slices) plus 3 non-benchmark BWH pelvic T2W series from 2 distinct
+subjects (\texttt{Case\ 061} {[}2 series{]} and
+\texttt{Case\ 100\ Prostate} {[}1 series{]}, zero patient overlap with
+the 54 benchmark cases).
 
-\subsection{Stage 0: Analytical Dark-Core Symmetry
-Prior}\label{stage-0-analytical-dark-core-symmetry-prior}
+\subsection{Stage 0: Analytical Dark-Core Symmetry Prior and
+Reference-Free
+Cropping}\label{stage-0-analytical-dark-core-symmetry-prior-and-reference-free-cropping}
 
 The physical idea is simple. On an axial slice a catheter cross-section
 is a dark core that is surrounded by brighter tissue in \emph{every}
@@ -739,47 +809,59 @@ robust weighted order statistic that still tolerates one dark neighbor,
 \[S_{\text{ring}}(\mathbf{p}) = \max_{r \in \mathcal{R}} \big[0.45\, m_{(2),r} + 0.55\, m_{(3),r}\big].\]
 The response \(S_0\) grows with the positive contrast between this ring
 brightness and the \(3 \times 3\) smoothed center intensity and with the
-relative darkness of the core (the exact expression, a product of the
-absolute contrast, the relative contrast, and a squared dark-core ratio,
-is in the released source), and is normalized per volume. Candidate
+relative darkness of the core, and is normalized per volume. Candidate
 centers are the local maxima of \(S_0\) after non-maximum suppression.
-Stage 0 takes 0.41 s per full volume on average on an 8-core CPU (0.12 s
-on standard \(320 \times 256\) scans and 0.59 s on high-resolution
-\(640 \times 416\) / \(768 \times 768\) scans); the exact weights are in
-the released source code.
+
+Before running Stage 1, a \textbf{100\% reference-free axial template
+locator} (\texttt{k\_lim\_auto}) identifies the caudal entry slice
+directly from the 3D intensity volume and \(S_0(x,y,z)\): it detects the
+caudal-to-cranial transition from the air/template saturation drop
+(\texttt{p90} intensity transition) and the emergence of clustered
+dark-core candidates within the central field of view, setting the lower
+axial crop bound with a mean difference of \(-0.06\) slices (median
+\(0.0\), IQR \(1.0\) slice) relative to clinical scene annotations while
+never consulting reference trajectories. Stage 0 takes 0.41 s per full
+volume on average on an 8-core CPU (0.12 s on standard
+\(320 \times 256\) scans and 0.59 s on high-resolution
+\(640 \times 416\) / \(768 \times 768\) scans).
 
 \begin{figure}
 \centering
 \includegraphics[width=1\linewidth,height=\textheight,keepaspectratio]{../reports/figures/fig2_architecture_modules.pdf}
 \caption{\textbf{Stage 1 and Stage 2 in detail.} \textbf{(a)} Stage 1
 takes the normalized T2W volume and the Stage 0 maps into an anisotropic
-3D residual U-Net with squeeze-and-excitation blocks, which predicts
-five outputs: tubular mask, centerline peak, two direction components,
-and obturator. \textbf{(b)} Stage 2 traces tracks from the seeds in
-native code, scores their nodes and edges with a 4-layer triplet
-message-passing network, then scores every trajectory in the context of
-the whole bundle with a graph transformer (two edge-biased attention
-layers and one global self-attention layer) and smooths it with a cubic
-polynomial.}\label{fig:arch}
+3D residual U-Net (\texttt{NeedleUNet3D}) pre-trained on 51 external
+pelvic MRI volumes with synthetic susceptibility tubes and anatomical
+hard negatives, then fine-tuned with dual-observer consensus supervision
+to predict four outputs: tubular mask, centerline peak, two direction
+components, and obturator. \textbf{(b)} Stage 2 traces tracks from the
+seeds in native code, scores their nodes and edges with a 4-layer
+triplet message-passing network, stitches collinear split fragments
+across signal dropouts, scores every trajectory in the context of the
+whole bundle with a graph transformer, localizes each distal tip with a
+91-step dilated 1D ResNet + self-attention axial network
+(\texttt{Dedicated1DTipLocalizer}), and smooths each trajectory with a
+cubic polynomial.}\label{fig:arch}
 \end{figure}
 
-\subsection{Stage 1: Multi-Head 3D U-Net with Implant-Region
-Gating}\label{stage-1-multi-head-3d-u-net-with-implant-region-gating}
+\subsection{Stage 1: Self-Supervised and Multi-Rater Multi-Head 3D
+U-Net}\label{stage-1-self-supervised-and-multi-rater-multi-head-3d-u-net}
 
 Resampling the scan to 1 mm isotropic voxels, as most pipelines do,
 discards the fine in-plane detail that separates a 2 mm catheter void
 from its surroundings when the native pixels are 0.3 to 0.9 mm. Working
 on the native grid instead, a standard \(3 \times 3 \times 3\)
 convolution mixes information over up to ten times more distance along
-\(z\) than in-plane. Stage 1 (NeedleUNet3D, Figure \ref{fig:arch}a)
-therefore operates on the native grid, uses \(3 \times 3 \times 3\)
-residual blocks with squeeze-and-excitation attention at four scales
-(24, 48, 96, and 144 channels), pools only in-plane at the first two
-scales so that the thick slice axis is not downsampled early, and adds a
-dilated convolution at the deepest scale. Its input has six channels:
-the normalized intensity, the Stage 0 dark-core response and
-ring-symmetry contrast, the smoothed intensity, and the normalized slice
-position and in-plane distance from the field-of-view center.
+\(z\) than in-plane. Stage 1 (\texttt{NeedleUNet3D}, Figure
+\ref{fig:arch}a) therefore operates on the native grid, uses
+\(3 \times 3 \times 3\) residual blocks with squeeze-and-excitation
+attention at four scales (24, 48, 96, and 144 channels), pools only
+in-plane at the first two scales so that the thick slice axis is not
+downsampled early, and adds a dilated convolution at the deepest scale.
+Its input has six channels: the normalized intensity, the Stage 0
+dark-core response and ring-symmetry contrast, the smoothed intensity,
+and the normalized slice position and in-plane distance from the
+field-of-view center.
 
 The network predicts four outputs:
 
@@ -809,19 +891,57 @@ The network predicts four outputs:
   lumen and rim do not spawn false needles.
 \end{enumerate}
 
-As an ablation we also evaluate AxialTransUNet3D, which adds multi-head
-self-attention layers along the slice axis at the deepest encoder level
-and the bottleneck.
+To improve feature discrimination on dark pelvic anatomy without leaking
+test-patient information, \texttt{NeedleUNet3D} undergoes two training
+phases:
+
+\begin{itemize}
+\tightlist
+\item
+  \textbf{External pelvic MRI pre-training with synthetic susceptibility
+  tubes and anatomical hard negatives.} The full 3D U-Net (encoder,
+  decoder, and task heads) is pre-trained for 45 epochs across the 51
+  external pelvic T2W MRI volumes from 50 distinct subjects (48 public
+  \texttt{MSD\ Task05\_Prostate} volumes + 3 non-benchmark BWH pelvic
+  T2W volumes, zero patient overlap with the 54 benchmark cases). During
+  each iteration, physics-guided 3D cubic-spline susceptibility tubes
+  (dark core with realistic T2W partial-volume rim, dropout pockets, and
+  variable curvature) are injected into the needle-free pelvic volumes
+  alongside 3D masked volume patches. The network minimizes a joint loss
+  \(\mathcal{L}_{\text{SSL}} = \mathcal{L}_{\text{tube}} + 0.30\,\mathcal{L}_{\text{MAE}}\),
+  where \(\mathcal{L}_{\text{tube}}\) supervises tubular mask, peak, and
+  3D direction regression on the synthetic tubes while penalizing
+  non-implanted high-symmetry pelvic structures (\(S_0 > 0.25\):
+  vessels, fascia, obturator internus borders) as explicit anatomical
+  hard negatives, and \(\mathcal{L}_{\text{MAE}}\) reconstructs masked
+  3D tissue patches (reaching \(0.867\) validation Dice on synthetic
+  tubes).
+\item
+  \textbf{Multi-rater consensus supervision.} On the 40 dual-annotated
+  training scans (\texttt{CY+HT} and \texttt{LB/AMe}) within each outer
+  training fold (\(n=43\text{--}44\) patients), consensus-matched
+  trajectories (\(n=465\) pairs within \(\le 3.5\text{ mm}\)) are
+  supervised along their inverse-variance precision-weighted centerline
+  (weight \(1.15\)), primary-only (\texttt{CY}) trajectories at weight
+  \(1.00\), secondary-only (\texttt{LB/AMe}) trajectories at soft weight
+  \(0.55\), and secondary cranial tip slices with a soft axial Gaussian
+  tip kernel.
+\end{itemize}
+
+As an ablation we also evaluate \texttt{AxialTransUNet3D}, which adds
+multi-head self-attention layers along the slice axis at the deepest
+encoder level and the bottleneck.
 
 \subsection{Stage 2: From Slice Detections to a Coherent 3D
 Bundle}\label{stage-2-from-slice-detections-to-a-coherent-3d-bundle}
 
-Stage 2 answers two questions: which detections on neighboring slices
-belong to the same catheter, and which of the resulting 3D curves are
-real.
+Stage 2 answers three questions: which detections on neighboring slices
+belong to the same catheter, which of the resulting 3D curves are real,
+and exactly where each catheter terminates along the slice axis.
 
-\subsubsection{Stage 2A: Native Seed Tracking and Triplet Message
-Passing}\label{stage-2a-native-seed-tracking-and-triplet-message-passing}
+\subsubsection{Stage 2A: Native Seed Tracking, Triplet Message Passing,
+and Collinear
+Stitching}\label{stage-2a-native-seed-tracking-triplet-message-passing-and-collinear-stitching}
 
 On each slice, local maxima of \(P_{\text{peak}}\) and of \(S_0\) become
 nodes with a 16-dimensional feature vector (normalized position,
@@ -838,34 +958,44 @@ the predicted direction).
 Two consecutive links can each look plausible on their own yet form an
 abrupt bend when considered together; the network therefore scores each
 link using information from the links entering and leaving its two
-nodes. NeedleSliceMPNN is a 4-layer triplet-collinearity message-passing
-network (hidden size 64). Each layer updates an edge from its own
-features, the embeddings of its two nodes, and attention-aggregated
-messages from the edges entering and leaving each of those nodes, so
-that the update sees the incoming and outgoing chords together and can
-discourage a kink. The network outputs refined sub-pixel offsets
-\((\delta x_i, \delta y_i)\) and node and edge probabilities.
+nodes. \texttt{NeedleSliceMPNN} is a 4-layer triplet-collinearity
+message-passing network (hidden size 64). Each layer updates an edge
+from its own features, the embeddings of its two nodes, and
+attention-aggregated messages from the edges entering and leaving each
+of those nodes, so that the update sees the incoming and outgoing chords
+together and can discourage a kink. The network outputs refined
+sub-pixel offsets \((\delta x_i, \delta y_i)\) and node and edge
+probabilities.
 
 Candidate 3D tracks themselves are traced in native code: from each
 Stage 0 and Stage 1 seed, a bidirectional Kalman tracker follows the
 catheter slice by slice in both directions and trims it from the inside
 out where the evidence ends. Tracks that run within 1.65 to 2.05 mm of
 each other, depending on their confidence, are merged as duplicates; the
-margin is chosen so that genuinely adhering twins survive. The surviving
-tracks, scored by the message-passing network, are passed to Stage 2B.
+margin is chosen so that genuinely adhering twins survive. Next,
+\textbf{collinear axial split-fragment stitching and extrapolation-aware
+deduplication} reconnects trajectories broken across 1 to 3 slices by
+local signal dropouts or vessel crossings: pairs of non-overlapping or
+slightly overlapping track fragments (axial gap \(\le 20\text{ mm}\),
+overlap \(\le 6\text{ mm}\)) whose linearly extrapolated positions at
+their shared axial midpoint agree within \(\le 2.2\text{ mm}\) with a 3D
+slope-vector difference \(\le 0.14\) are merged into a single
+full-length trajectory (\(102\) stitched trajectories across the 54
+cases), while split fragments that lie within \(\le 2.1\text{ mm}\)
+along \(\ge 72\%\) of a longer high-confidence shaft are absorbed. The
+surviving tracks are passed to Stage 2B.
 
-\subsubsection{Stage 2B: Bundle Graph Transformer, Synthetic
-Pre-Training, and
-Smoothing}\label{stage-2b-bundle-graph-transformer-synthetic-pre-training-and-smoothing}
+\subsubsection{Stage 2B: Bundle Graph Transformer, Dedicated 1D Axial
+Tip Localizer, and Synthetic
+Pre-Training}\label{stage-2b-bundle-graph-transformer-dedicated-1d-axial-tip-localizer-and-synthetic-pre-training}
 
-After Stage 1, recall is above 92\% (96\% on long shafts), but each
-patient still carries about ten false tracks along vessels and obturator
-edges, and needle-free pelvic scans produce about twenty; Stage 2A
-removes roughly half of them. Real catheters have a property these false
-tracks lack: they form a \emph{bundle}. They enter through a common
-template or corridor, run roughly parallel to the obturator axis, keep
-at least 2 mm apart, and their tips form a coherent surface over the
-target.
+After Stage 1, recall is above 95\% (97.5\% on long shafts), but each
+patient still carries about seven false tracks along vessels and
+obturator edges; Stage 2A removes more than half of them. Real catheters
+have a property these false tracks lack: they form a \emph{bundle}. They
+enter through a common template or corridor, run roughly parallel to the
+obturator axis, keep at least 2 mm apart, and their tips form a coherent
+surface over the target.
 
 Each candidate trajectory is summarized by a list of 26 measurements,
 its \emph{token} (length, linear-fit residual, 75th-percentile \(S_0\)
@@ -875,67 +1005,102 @@ deviation of its entry position and slope from the bundle median, and
 the contrast gradient at its cranial end), together with 8 pairwise
 features between trajectories (minimum 3D clearance, mean in-plane
 separation, angular divergence, \(z\)-overlap, and duplicate
-indicators). The TipAwareBundleGraphTransformer applies two edge-biased
-attention layers over neighboring trajectories and one global
-self-attention layer over the whole bundle. It outputs three logits (a
-recall-oriented score, a strict one-to-one score, and a long-shaft
-one-to-one score), combined with weights 0.45 and 0.55 into a confidence
-\(p_m\), and one cranial tip offset \(\Delta z_m\) that trims or extends
-the deep end. An implant-region gate inspired by the IRGM of Xiao
-\emph{et al.} {[}74{]} is applied at this point: whereas they train a
-separate region branch, ours is geometric. The implant center is the
-median in-plane position of the candidates with confidence of at least
-55\%, the implant radius is the 98th percentile of their distances from
-that center plus 16 mm, and a candidate outside this radius is kept only
-if its confidence exceeds the threshold by more than 22 points.
-Trajectories with \(p_m \ge \tau\) (default \(\tau = 50\%\)) are kept,
-their cranial tips refined with the predicted offset and the local
-contrast drop-off, and each is smoothed with a cubic curve fit in \(z\)
-(Poly3) to remove the voxel staircase across thick slices.
+indicators). The \texttt{TipAwareBundleGraphTransformer} applies two
+edge-biased attention layers over neighboring trajectories and one
+global self-attention layer over the whole bundle. It outputs three
+logits (a recall-oriented score, a strict one-to-one score, and a
+long-shaft one-to-one score), combined into a confidence \(p_m\),
+alongside an initial bundle-context tip offset. An implant-region gate
+inspired by the IRGM of Xiao \emph{et al.} {[}74{]} is applied
+geometrically: the implant center is the median in-plane position of
+candidates with confidence \(\ge 55\%\), the implant radius is the 98th
+percentile of their distances plus 16 mm, and candidates outside this
+radius require 22 points higher confidence.
 
-Annotated clinical scans are scarce, and rare configurations such as
-crossing catheters are rarer still. We therefore built
-\textbf{SynthBrachy3T}, a generator of synthetic candidate-trajectory
-bundles with the same 26 node and 8 edge features as real candidates.
-Each of the 300 bundles contains 12 to 23 true long shafts arranged
-around a common axis, of which 30\% receive an adhering twin 1.65 to
-2.75 mm away, 2 to 8 short obturator tracks, 3 to 11 split duplicates of
-true shafts, and 4 to 14 vessel-like false tracks, with simulated
-tip-tracking noise. SynthBrachy3T does not simulate MRI images; it
-generates lists of candidate-curve measurements, so it can only teach
-the bundle-level scoring stage, and it supplies that stage with more
-adhesion and tip configurations than our clinical training set contains.
-Stage 2B is pre-trained on these bundles, then fine-tuned on the
-clinical bundles of the fold's training patients together with five
-synthetically augmented copies of each, and its scores are blended with
-those of a transformer trained on clinical bundles only (weight 0.60 on
-the synthetic model). For the long-shaft rows the confidence threshold
-is lowered to 42.5\% and the long-shaft logit is weighted more heavily.
+Because a single scalar offset from bundle summary statistics cannot
+resolve fine sub-slice signal drop-offs or air-pocket artifacts at the
+cranial end of a catheter, Stage 2B incorporates a \textbf{Dedicated 1D
+Axial Tip Localizer} (\texttt{Dedicated1DTipLocalizer}, Figure
+\ref{fig:arch}b). Along the cranial-most trajectory tangent of each
+candidate, the localizer samples a \textbf{91-step axial profile} over
+\([-25.0, +20.0]\text{ mm}\) at \(0.5\text{ mm}\) sub-slice intervals.
+At every step it extracts \textbf{22 multi-scale tubular, intensity, and
+anatomical features}: center and \(3 \times 3\) / \(5 \times 5\) ring
+T2W intensities, local annular contrast (\(r=3\text{ vs. }1\),
+\(r=5\text{ vs. }1\)), first- and second-order axial gradients
+(\(\partial_z\), \(\partial_{zz}\)), Stage 0 \(S_0\) center/max/drop,
+Stage 1 \(P_{\text{mask}}\) and \(P_{\text{peak}}\) center/max/drop,
+obturator probability \(P_{\text{obt}}\), normalized axial coordinate,
+step indicators, and bundle-relative \(z\)-depth. A \textbf{3-block
+dilated 1D ResNet} (hidden width 48, kernel size 5, dilations
+\(1, 2, 4\)) followed by \textbf{4-head 1D Self-Attention} processes the
+91-step sequence and drives a dual prediction head: a \textbf{91-bin
+soft-argmax termination probability distribution} combined with a
+\textbf{Smooth-\(L_1\) continuous residual offset head}, supervised with
+Gaussian target distributions (\(\sigma = 1.25\text{ mm}\)), focal peak
+classification, and huberized \(L_1\) displacement loss. Each accepted
+trajectory (\(p_m \ge \tau\), default \(\tau = 50\%\)) has its cranial
+tip updated by the 1D localizer and is smoothed with a cubic polynomial
+fit in \(z\) (Poly3).
+
+To study zero-shot and low-label bundle scoring, we also built
+\textbf{SynthBrachy3T}, a generator of 300 synthetic
+candidate-trajectory bundles with the same 26 node and 8 edge features
+as real candidates (12 to 23 true long shafts per bundle, 30\% with an
+adhering twin 1.65 to 2.75 mm away, 2 to 8 short obturator tracks, 3 to
+11 split duplicates, and 4 to 14 vessel-like false tracks). Stage 2B can
+be pre-trained on SynthBrachy3T and then fine-tuned purely on the
+clinical training bundles of the current outer fold.
 
 \FloatBarrier
 
 \section{Experimental Setup}\label{experimental-setup}
 
-\subsection{Cross-Validation Protocol and
-Baselines}\label{cross-validation-protocol-and-baselines}
+\subsection{Strictly Nested Cross-Validation Protocol and
+Baselines}\label{strictly-nested-cross-validation-protocol-and-baselines}
 
-Every learned component and every baseline is trained and evaluated with
-patient-level 5-fold cross-validation on the 54 patients, so no label of
-a test patient is used to train the model that is evaluated on it. Three
-qualifications apply. The axial extent of every cached volume starts one
-slice below a template-plane slice index taken from the clinical scene
-file (or, when absent, from the median entry slice of the reference
-trajectories), and the in-plane region of interest is centered with the
-same scene information, so test volumes are cropped with
-reference-assisted bounds; the deployed extension derives these bounds
-automatically instead. The training epoch of each Stage 1 network was
-selected on its held-out fold, which can bias the Stage 1 maps slightly
-in its favor. And the Stage 2 networks of a fold are trained on Stage 1
-maps of the other patients, which were produced by Stage 1 models whose
-training folds included the fold's test patients; the stacked pipeline
-is therefore out-of-fold with respect to labels but not fully nested
-with respect to upstream features. We re-implemented three published
-approaches on the same splits:
+Every learned component, every ablation, and every baseline is trained
+and evaluated under a \textbf{strictly nested \(5 \times 5\)
+patient-level out-of-fold (OOF) protocol} across the 54 patients,
+eliminating three subtle sources of optimistic bias present in standard
+stacked evaluations:
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  \textbf{Disjoint inner validation for early stopping and calibration.}
+  For each outer fold \(f \in \{0, \dots, 4\}\) (\(43\text{--}44\)
+  outer-train patients, \(10\text{--}11\) outer-test patients),
+  outer-train patients are partitioned deterministically into an 80\%
+  inner-train subset (\(34\text{--}35\) patients) and a 20\%
+  inner-validation subset (\(9\) patients). Stage 1 U-Net checkpoint
+  selection, Stage 2A MPNN and Stage 2B Graph Transformer early
+  stopping, \texttt{Dedicated1DTipLocalizer} model selection, and
+  confidence temperature scaling are performed exclusively on the \(9\)
+  inner-validation patients; the outer-test fold is touched exactly once
+  at final evaluation.
+\item
+  \textbf{100\% reference-free axial cropping (\texttt{k\_lim\_auto}).}
+  Every outer-test volume is cropped using the automatic
+  \texttt{k\_lim\_auto} template-plane locator derived solely from the
+  raw 3D MRI and Stage 0 \(S_0\) volume, with zero fallback to clinical
+  scene files or ground-truth trajectory coordinates.
+\item
+  \textbf{Inner-OOF cross-fitting of Stage 1 features (\texttt{4c}).} In
+  a standard 2-stage pipeline (\texttt{4a}, \texttt{4b}), Stage 2 is
+  trained on outer-train patients using Stage 1 probability maps
+  produced by the outer-fold Stage 1 model (which trained on those same
+  outer-train patients' images). To verify that this causes zero
+  stacking optimism, we also trained \(5 \times 5 = 25\) inner-fold
+  Stage 1 \texttt{NeedleUNet3D} models so that every outer-train patient
+  receives strictly out-of-fold Stage 1 probability maps when training
+  Stage 2A, Stage 2B, and \texttt{Dedicated1DTipLocalizer}
+  (configuration \texttt{4c} in Table \ref{tbl:main}).
+\end{enumerate}
+
+We re-implemented three published approaches on the identical outer
+folds and \texttt{k\_lim\_auto} bounds:
 
 \begin{itemize}
 \tightlist
@@ -951,9 +1116,9 @@ approaches on the same splits:
 \item
   \textbf{Xiao 2026 Sync-Track} {[}74{]}. Implant-region gating,
   direction-constrained 3D Hough and PCA initialization, synchronous
-  inward tracking, and cubic smoothing. As in their paper, we run it
-  both on our out-of-fold segmentation masks and on the reference masks
-  (an oracle upper bound).
+  inward tracking, and cubic smoothing, evaluated both on our
+  out-of-fold segmentation masks and on the reference masks (an oracle
+  upper bound).
 \end{itemize}
 
 \subsection{Metrics and Statistics}\label{metrics-and-statistics}
@@ -972,164 +1137,205 @@ report:
 \def\labelenumi{\arabic{enumi}.}
 \tightlist
 \item
-  \textbf{Detection}: recall, precision, and F1 under this strict
-  one-to-one matching.
+  \textbf{Detection}: recall, precision, and F1 under strict one-to-one
+  matching (plus obturator-adjusted precision \(P_{\text{adj}}\) and
+  \(F1_{\text{adj}}\) when evaluating the 759 long active-dwell shafts
+  alone, so predictions that match a valid secondary short/obturator
+  reference track are not counted as false positives).
 \item
   \textbf{Shaft error} \(E_{\text{shaft}}\): the in-plane distance
   between the two curves at 40 evenly spaced positions along their
-  shared length (pairs with a mean distance above 8 mm are treated as
-  unmatched), summarized by mean, standard deviation, median,
+  shared length, summarized by mean, standard deviation, median,
   interquartile range, and 95th percentile.
 \item
   \textbf{3D curve distance} \(D_{\text{avg}}\) and
   \textbf{95th-percentile Hausdorff distance} \(\text{HD}_{95}\),
   computed symmetrically on 50 resampled points per curve.
 \item
-  \textbf{Tip error} \(E_{\text{tip}}\): the 3D distance between the
-  predicted and reference deepest (cranial) tip.
+  \textbf{Tip error} \(E_{\text{tip}}\): the 3D Euclidean distance
+  between the predicted and reference deepest (cranial) tip.
 \end{enumerate}
 
 \textbf{Calibration and reason-coded decisions.} Every candidate track
-in the Stage 2B pool is also treated as a binary prediction: it is a
-real catheter if its mean in-plane distance to some reference trajectory
-over their shared slices is at most 3.5 mm, and its predicted
-probability is the Stage 2B confidence \(p_m\). Over all candidates of
-the 54 patients we report a reliability diagram, the expected
-calibration error (ECE, ten equal-width bins), and the Brier score;
-temperature scaling is fitted on four folds and applied to the fifth.
-Each decision of the decoder carries a typed reason code (kept, below
-threshold, duplicate of a kept track, outside the implant region, low
-dark-core symmetry), and for every discarded candidate that is a real
-catheter we record whether that catheter is already covered by a kept
-track (redundant) or lost.
+in the Stage 2B pool (\(1,683\) candidates across the 54 patients) is
+also treated as a binary prediction: it is a real catheter if its mean
+in-plane distance to some reference trajectory over their shared slices
+is at most 3.5 mm, and its predicted probability is the Stage 2B
+confidence \(p_m\). Over all candidates we report a reliability diagram,
+the expected calibration error (ECE, ten equal-width bins), and the
+Brier score; temperature scaling is fitted on the inner-validation split
+of each fold and applied to the outer-test fold. Each decision of the
+decoder carries a typed reason code (kept, below threshold, duplicate of
+a kept track, outside the implant region, low dark-core symmetry), and
+for every discarded candidate that is a real catheter we record whether
+that catheter is already covered by a kept track (redundant) or lost.
 
-Following the GEC-ESTRO and AAPM guidance on reporting brachytherapy
+Following GEC-ESTRO and AAPM guidance on reporting brachytherapy
 uncertainties {[}82{]}, reconstruction discrepancies are reported as
 distributions (median, interquartile range, and 95th percentile) and
 separated from observer variation. Differences between methods are
 tested over the 54 patients with paired two-sided Wilcoxon signed-rank
-tests, and 95\% confidence intervals come from patient-level bootstrap
-resamples (1,000 for the headline rows; 200 to 500 for the threshold
-sweep, subgroup, and few-shot rows).
+tests, and 95\% confidence intervals come from 1,000 patient-level
+bootstrap resamples.
 
 \subsection{Computing Environment, Software, and
 Code}\label{computing-environment-software-and-code}
 
-Training and the 5-fold benchmarks ran on one Linux workstation (Arch
-Linux) with a 24-core AMD Ryzen Threadripper PRO 7965WX, 256 GB of RAM,
-and two NVIDIA GPUs (GeForce RTX 4090, 24 GB, and RTX 4070 Ti SUPER, 16
-GB), The benchmark, graph-network training, and few-shot experiments ran
-with Python 3.13.2, PyTorch 2.11.0 (CUDA 13.0), SciPy 1.16.3, and NumPy
-2.4.3; the Stage 1 networks were trained on both GPUs in parallel and
-exported to ONNX in a separate environment with Python 3.12.9, PyTorch
-2.4.1 (CUDA 12.1), SciPy 1.16.1, and ONNX 1.23.2, the PyTorch version
-being the producer recorded in the model files. The Stage 0 kernel is
+Training and the nested \(5 \times 5\) benchmarks ran on a Linux
+workstation (Arch Linux) with a 24-core AMD Ryzen Threadripper PRO
+7965WX, 256 GB of RAM, and two NVIDIA GPUs (GeForce RTX 4090, 24 GB, and
+RTX 4070 Ti SUPER, 16 GB) using Python 3.12/3.13, PyTorch 2.4/2.11,
+SciPy 1.16, NumPy 2.4, and ONNX Runtime 1.23. The Stage 0 kernel is
 written in Rust (crate \texttt{needlefinder\_rust}, multi-threaded with
 the standard library, exposed to Python through a C interface and
 \texttt{ctypes}, compiled in release mode with link-time optimization).
-Hungarian matching uses SciPy. Figures were produced with Matplotlib.
-
-For clinical use the trained Stage 1 and Stage 2B networks are exported
-to ONNX and run with ONNX Runtime inside an extension for 3D Slicer 5.10
-{[}83{]}, the open-source platform that also hosted the earlier
-NeedleFinder modules {[}3,4{]}; the Stage 2A weights are stored as NumPy
-archives. No GPU is required. The runtimes reported in the Results were
-measured on an 8-core desktop CPU and, for the GPU figures, on the RTX
-4090.
+For clinical deployment, the trained Stage 1, Stage 2B, and 1D tip
+localizer networks are exported to ONNX and run with ONNX Runtime inside
+an extension for 3D Slicer 5.10 {[}83{]}; no GPU is required.
 
 The 3D Slicer extension, the Rust kernel, and the exported models are
-available at https://github.com/needlefinder/NeedleFinder. The training
-scripts (Stage 1 U-Nets, graph networks, and all baselines), the
-benchmark and statistics code, the SynthBrachy3T generator, the
-prediction export used for Table \ref{tbl:interobserver} and the
-qualitative figures, and the figure and table generators are collected
-in the repository's \texttt{vault/paper/benchmarks} directory and will
-be made public on publication. See also the Data and Code Availability
-statements at the end of the paper.
+available at https://github.com/needlefinder/NeedleFinder. All training,
+nested cross-validation, statistical analysis, SynthBrachy3T, and
+figure/table generation scripts are archived in
+\texttt{vault/paper/benchmarks}.
 
 \FloatBarrier
 
 \section{Results}\label{results}
 
-\subsection{Accuracy Against Published
-Methods}\label{accuracy-against-published-methods}
+\subsection{Accuracy Against Published Methods and Ablation
+Analysis}\label{accuracy-against-published-methods-and-ablation-analysis}
 
 \input{tables/tab2_main_results.tex}
 
-Table \ref{tbl:main} is the main result. Part A compares all methods on
-the whole cohort and on the severe-adhesion subgroup; Part B reports
-ablations on the same folds. Figure \ref{fig:raincloud} shows the
-distribution of per-catheter errors.
+Table \ref{tbl:main} reports the complete benchmark. Part A compares all
+methods on the whole cohort (54 patients, 1,063 catheters) and on the
+severe-adhesion subgroup (23 patients, 571 catheters); Part B reports
+the step-by-step architectural ablations and threshold sweep on the same
+nested folds; and Part C evaluates the 759 full-depth active-dwell
+interstitial shafts (\texttt{CY}). Figure \ref{fig:raincloud} shows the
+full per-catheter error distributions.
 
 \begin{figure}
 \centering
 \includegraphics[width=1\linewidth,height=\textheight,keepaspectratio]{../reports/figures/fig3_raincloud_distributions.pdf}
 \caption{\textbf{Per-catheter error distributions on the whole cohort}
-(54 patients; each method's matched catheters). (a) In-plane shaft error
-and (b) 3D tip error. Each raincloud shows the density (top), the median
-and interquartile range (white box), the 5th to 95th percentile (capped
-bar), the mean (white diamond), and individual catheters (points).
-Numbers at the right give median / 95th percentile in mm, computed on
-the full distribution, and the number of catheters beyond the plotted
-range. In (a) the grey band and dashed line mark the human
-inter-observer interquartile range (0.34 to 0.85 mm) and 95th percentile
-(2.06 mm); in (b) the dashed line marks the human inter-observer median
-tip discrepancy (3.21 mm).}\label{fig:raincloud}
+(54 patients; each method's matched catheters). \textbf{(a)} In-plane
+shaft error and \textbf{(b)} 3D tip error. Each raincloud shows the
+density (top), the median and interquartile range (white box), the 5th
+to 95th percentile (capped bar), the mean (white diamond), and
+individual catheters (points). Numbers at the right give median / 95th
+percentile in mm, computed on the full distribution, and the number of
+catheters beyond the plotted range. In (a) the grey band and dashed line
+mark the human inter-observer interquartile range (0.33 to 0.85 mm) and
+95th percentile (1.90 mm); in (b) the dashed line marks the human
+inter-observer median tip discrepancy (3.24 mm).}\label{fig:raincloud}
 \end{figure}
 
-Four findings stand out.
+Five findings stand out.
 
 \textbf{Voxel segmentation alone over-fragments.} The ResUNet + clDice
 baseline finds almost every catheter (92.4\% recall) and is accurate
 where it matches (0.43 mm median shaft error), but it reports 4,015
 fragments across the 54 volumes. Its precision is 24.5\% and its F1
-38.7\%. In this implementation, signal dropouts along the shaft cut one
-catheter into several pieces, and dark veins become extra tracks.
+38.7\%. Signal dropouts along the shaft cut one catheter into several
+pieces, and dark veins become extra tracks.
 
 \textbf{Structure-aware tracking needs a clean mask.} On the reference
 masks (Table \ref{tbl:main}, Part B, last row), the Xiao 2026 tracker
 achieves 97.7\% recall, 90.0\% F1, and 0.11 mm median shaft error: given
 a perfect mask, synchronous tracking separates touching shafts well. On
-our out-of-fold masks its F1 drops to 54.2\% (precision 39.2\%), because
+out-of-fold MRI masks its F1 drops to 54.2\% (precision 39.2\%), because
 vessels inside the implant region still become tracks and the adapted
-pipeline has no step that rejects them. Tracking alone does improve on
-skeletonization, by 15.5 F1 points on the whole cohort.
+pipeline has no bundle-level step that rejects them. Tracking alone does
+improve on skeletonization, by 15.5 F1 points on the whole cohort.
 
-\textbf{NeedleFinder 2026 has the highest F1 of the evaluated
-configurations.} At the pre-specified threshold \(\tau = 50\%\) it
-reaches 89.8\% recall, 85.6\% precision, and 87.7\% F1 (88.0\% at
-\(\tau = 55\%\), 88.3\% at \(\tau = 60\%\); 93.9\% recall at
-\(\tau = 25\%\)). The gains over the published approaches are all
-significant: 4.6 F1 points over PMB 2019 (\(p = 2 \times 10^{-4}\)),
-33.5 points over Xiao 2026, and 49.0 points over ResUNet + clDice (both
-\(p < 10^{-9}\)). Against our own pipeline without synthetic
-pre-training the F1 difference is 0.2 points and not significant
-(\(p = 0.11\)); the benefit of pre-training is at the tips, where the
-mean tip error falls from 9.11 to 7.70 mm (\(p = 0.003\)). Median tip
-error is 2.77 mm, from 3.39 mm (PMB 2019), 6.04 mm (Xiao 2026), and 2.91
-mm (without pre-training). Median 3D curve distance is 1.02 mm and
-median \(\text{HD}_{95}\) is 3.41 mm. These three quantities measure
-different things: a track can follow the middle of a catheter closely
-(small shaft error) yet stop short of its end (large tip and curve
-distance). The tip distribution has a heavy tail that the median hides:
-20\% of matched catheters have a tip error above 10 mm (24\% without
-synthetic pre-training) and the 95th percentile is 36 mm, almost always
-where a track stops early or runs on past the true end along the
-catheter axis. Across the cohort the method misses 108 reference
-trajectories and reports 161 unmatched ones, about 2.0 misses and 3.0
-extra tracks per patient. The median shaft error is 0.46 mm on all
-matched catheters and 0.45 mm on the 759 long shafts, on which recall is
-93.2\% at the default threshold and 96.2\% at \(\tau = 25\%\).
+\textbf{NeedleFinder 2026 achieves the highest F1 and lowest tip error
+across all evaluated methods.} At the pre-specified default threshold
+\(\tau = 50\%\), \texttt{NF\ 2026\ +\ SynthBrachy3T\ +\ 1DTip}
+(\texttt{4b}) reaches \textbf{91.4\% recall} (\(972/1,063\)),
+\textbf{86.9\% precision} (\(972/1,118\)), and \textbf{89.1\% F1}
+(rising to \textbf{89.4\% F1} at \(\tau = 55\%\), \textbf{89.2\% F1} at
+\(\tau = 60\%\), and \textbf{93.6\% recall} at \(\tau = 35\%\) or
+\textbf{94.5\% recall} at \(\tau = 25\%\)). The gains over all three
+published baselines are highly statistically significant: \textbf{+6.0
+F1 points} over PMB 2019 (\(89.1\%\) vs.~\(83.1\%\),
+\(p = 1.1 \times 10^{-5}\)), \textbf{+34.9 F1 points} over Xiao 2026
+(\(p = 3.0 \times 10^{-10}\)), and \textbf{+50.4 F1 points} over ResUNet
++ clDice (\(p = 5.2 \times 10^{-10}\)). On matched catheters, the
+in-plane shaft error is \textbf{\(0.59 \pm 0.40\text{ mm}\) mean}
+(\textbf{\(0.47\text{ mm}\) median}, \(0.36\text{ mm}\) IQR,
+\textbf{\(1.37\text{ mm}\) P95}), the 3D symmetric curve distance
+\(D_{\text{avg}}\) is \(3.20 \pm 4.87\text{ mm}\) mean
+(\(1.00\text{ mm}\) median), and \(\text{HD}_{95}\) is
+\(15.36 \pm 22.87\text{ mm}\) mean (\(3.11\text{ mm}\) median). Most
+notably, the Dedicated 1D Axial Tip Localizer and collinear fragment
+stitching reduce 3D distal tip error to
+\textbf{\(6.23 \pm 10.49\text{ mm}\) mean} (\textbf{\(2.27\text{ mm}\)
+median}, \(4.93\text{ mm}\) IQR, \textbf{\(27.27\text{ mm}\) P95}),
+significantly outperforming PMB 2019 (\(10.75\text{ mm}\) mean /
+\(3.39\text{ mm}\) median, \(p = 1.7 \times 10^{-8}\)), ResUNet + clDice
+(\(10.08\text{ mm}\) mean / \(3.10\text{ mm}\) median,
+\(p = 2.3 \times 10^{-7}\)), and Xiao 2026 (\(15.65\text{ mm}\) mean /
+\(6.04\text{ mm}\) median, \(p = 6.2 \times 10^{-10}\)). Nearly
+three-fifths (\textbf{58.7\%}, \(571/972\)) of matched catheters have a
+3D tip error \(\le 3.0\text{ mm}\) (within roughly one slice thickness),
+while \textbf{16.7\%} (\(162/972\)) exceed \(10\text{ mm}\) (\(100\)
+caudal undershoots where dark signal fades early and \(62\) cranial
+overshoots into fundal dark pockets). Across the 54 patients, the method
+misses 91 reference trajectories (\(1.7\text{ per patient}\)) and
+reports 146 unmatched tracks (\(2.7\text{ per patient}\)). On the
+\textbf{759 long interstitial shafts} (Table \ref{tbl:main}, Part C),
+\texttt{NF\ 2026} reaches \textbf{91.3\% recall} (\(693/759\)),
+\textbf{88.7\% obturator-adjusted precision} (\(79.1\%\) strict
+long-only precision), and \textbf{90.0\% \(F1_{\text{adj}}\)}
+(\(84.8\%\) strict F1) at \(\tau = 50\%\)---and \textbf{94.7\% recall}
+(\(719/759\)) at \(\tau = 35\%\)---with \(0.57\text{ mm}\) mean
+(\(0.45\text{ mm}\) median) shaft error and \(2.41\text{ mm}\) median
+tip error.
 
-\textbf{The advantage holds when catheters touch.} On the 23
-severe-adhesion patients (571 catheters), NeedleFinder 2026 reaches
-90.2\% F1 (94.2\% recall, 86.5\% precision) with 0.45 mm median shaft
-error and 3.10 mm median tip error, compared with 89.2\% without
-synthetic pre-training, 86.3\% for PMB 2019, 63.9\% for Xiao 2026, and
-48.4\% for ResUNet + clDice.
+\textbf{Strict \(5 \times 5\) inner out-of-fold cross-fitting confirms
+zero stacking optimism, and clarifies the exact role of SynthBrachy3T.}
+Training Stage 2 on strictly out-of-fold inner Stage 1 predictions
+(\texttt{4c},
+\texttt{NF\ 2026\ +\ SynthBrachy3T\ +\ Inner-OOF\ Cross-Fit}) yields
+\textbf{92.3\% recall} (\(981/1,063\)), \textbf{86.1\% precision}, and
+\textbf{89.1\% F1} (\(0.59\text{ mm}\) mean / \(0.47\text{ mm}\) median
+shaft error; \(6.25\text{ mm}\) mean / \(2.24\text{ mm}\) median tip
+error), and achieves the highest obturator-adjusted F1 on long shafts
+(\textbf{90.5\% \(F1_{\text{adj}}\)}, \(92.5\%\) recall,
+\(7.17\text{ mm}\) mean tip error) and on the severe-adhesion subgroup
+(\textbf{91.8\% F1}, \(94.6\%\) recall, \(89.1\%\) precision).
+Furthermore, once the self-supervised multi-rater Stage 1, collinear
+fragment stitching, and \texttt{Dedicated1DTipLocalizer} are in place,
+our purely clinical pipeline without \texttt{SynthBrachy3T}
+(\texttt{4a}) already reaches \textbf{88.7\% F1} (\(92.5\%\) recall,
+\(85.3\%\) precision; \(90.2\%\) \(F1_{\text{adj}}\) on long shafts) and
+\textbf{\(6.39\text{ mm}\) mean / \(2.26\text{ mm}\) median tip error}.
+At the full 43-patient training budget, adding \texttt{SynthBrachy3T}
+(\texttt{4b}) provides a modest refinement to \(89.1\%\) F1
+(\(+0.41\text{ pp}\), \(p = 0.32\)) and \(6.23\text{ mm}\) mean /
+\(27.27\text{ mm}\) P95 tip error (\(p = 0.17\), patient-paired mean tip
+error \(6.02 \to 5.91\text{ mm}\)); as shown below, the primary value of
+\texttt{SynthBrachy3T} lies in the zero-clinical-label (\(k = 0\))
+regime.
 
-\subsection{Contribution of Each Stage and Learning From Few
-Patients}\label{contribution-of-each-stage-and-learning-from-few-patients}
+\textbf{The advantage is largest when catheters touch.} On the 23
+severe-adhesion patients (571 catheters), \texttt{NF\ 2026} reaches
+\textbf{91.3\% F1} (\textbf{93.2\% recall}, \textbf{89.6\% precision},
+\(0.58\text{ mm}\) mean / \(0.46\text{ mm}\) median shaft error,
+\(7.08\text{ mm}\) mean / \(2.51\text{ mm}\) median tip error) under
+\texttt{4b} and \textbf{91.8\% F1} (\textbf{94.6\% recall},
+\textbf{89.1\% precision}, \(0.57\text{ mm}\) mean / \(0.46\text{ mm}\)
+median shaft error, \(2.47\text{ mm}\) median tip error) under inner-OOF
+cross-fitting (\texttt{4c}), compared with \(90.8\%\) without synthetic
+pre-training (\texttt{4a}), \(86.3\%\) for PMB 2019
+(\(p = 5.4 \times 10^{-4}\)), \(63.9\%\) for Xiao 2026
+(\(p = 2.1 \times 10^{-6}\)), and \(48.4\%\) for ResUNet + clDice
+(\(p = 2.4 \times 10^{-7}\)).
+
+\subsection{Contribution of Each Stage and Leak-Free Learning From Few
+Patients}\label{contribution-of-each-stage-and-leak-free-learning-from-few-patients}
 
 \begin{figure}
 \centering
@@ -1137,64 +1343,78 @@ Patients}\label{contribution-of-each-stage-and-learning-from-few-patients}
 \caption{\textbf{(a) Precision versus recall} for each pipeline stage,
 each baseline, and the NeedleFinder 2026 threshold sweep on the whole
 cohort. Dashed curves are lines of constant F1; the star marks the
-default threshold \(\tau = 50\%\) and the grey circle next to it is the
-pipeline without synthetic pre-training (87.5\% F1). \textbf{(b)
-Accuracy versus number of annotated patients per fold used to fine-tune
-the bundle-scoring stage}, \(k \in \{0, 1, 5, 10, 20, 43\}\), with
-SynthBrachy3T pre-training; the \(k = 0\) point uses no learned bundle
-scoring, and the decoded scores at \(k < 43\) are blended with the
-full-fold clinical transformer (see text). Shaded bands are the
-patient-level bootstrap 95\% confidence intervals of
-F1.}\label{fig:pareto}
+default threshold \(\tau = 50\%\) (89.1\% F1) and the grey circle next
+to it is the pipeline without synthetic pre-training (\texttt{4a},
+88.7\% F1). \textbf{(b) Leak-free Stage 2B clinical support curve}
+showing accuracy versus number of annotated outer-train patients per
+fold used to fine-tune the bundle-scoring stage,
+\(k \in \{0, 1, 5, 10, 20, 43\}\), with zero blending from any full-fold
+clinical model. Shaded bands show the patient-level bootstrap 95\%
+confidence intervals of F1.}\label{fig:pareto}
 \end{figure}
 
-Figure \ref{fig:pareto}(a) shows what each stage adds. Stage 1 alone has
-high recall (94.2\%) but only 63.3\% precision. Stage 2A raises
-precision by 17.0 points and tightens median shaft error to 0.40 mm.
-Stage 2B with implant gating and cubic smoothing reaches 87.5\% F1.
-Pre-training Stage 2B on SynthBrachy3T leaves F1 essentially unchanged
-at the default threshold (87.7\%) and mainly improves the tips.
+Figure \ref{fig:pareto}(a) traces the progression across stages (Table
+\ref{tbl:main}, Part B). Analytical Stage 0 alone (\texttt{1a}) achieves
+83.2\% recall and 75.3\% F1 (\(0.65\text{ mm}\) median shaft error,
+\(3.92\text{ mm}\) median tip error). Multi-rater SSL Stage 1 with
+directional tangent linking (\texttt{2a}) raises recall to 95.3\%
+(\(97.5\%\) on long shafts) with 72.1\% precision (82.1\% F1) and cuts
+median shaft error to \(0.45\text{ mm}\) and median tip error to
+\(2.98\text{ mm}\). Stage 2A native seed tracking, triplet MPNN scoring,
+and collinear split-fragment stitching (\texttt{3c}) lift precision by
+12.1 points to 84.2\% (86.4\% F1, \(6.48\text{ mm}\) mean /
+\(2.33\text{ mm}\) median tip error). Finally, Stage 2B bundle
+graph-transformer pruning and \texttt{Dedicated1DTipLocalizer} reach
+88.7\% F1 without synthetic bundles (\texttt{4a}) and 89.1\% F1 with
+\texttt{SynthBrachy3T} (\texttt{4b}, \texttt{4c}).
 
-Figure \ref{fig:pareto}(b) asks how many annotated patients are really
-needed. The budget \(k\) applies to the bundle-scoring Stage 2B, which
-is pre-trained on SynthBrachy3T and then fine-tuned on the bundles of
-\(k\) clinical patients; Stages 1 and 2A keep their full training folds,
-so the curve measures how much bundle-level supervision the method
-needs, not how much annotation the whole pipeline needs. With no learned
-bundle scoring at all (\(k = 0\)), the analytical Stage 0 candidates
-with the geometric gate, duplicate merging, and cubic smoothing alone
-reach 76.5\% F1. With a single annotated patient (\(k = 1\)) the
-fine-tuned Stage 2B reaches 84.9\% F1, better than the PMB 2019-style
-U-Net trained on all 43 patients of a fold (83.1\%). The decoded
-confidence at \(k < 43\) still blends the fine-tuned transformer with
-the clinical transformer trained on the full fold (blend weight
-\(0.85 - 0.006k\) on the synthetic model), so 15 to 27\% of the score
-comes from a full-data model; a comparison against the same architecture
-trained from scratch on \(k\) patients without any blending has not been
-run. Five patients give 84.8\% F1, ten give 85.8\%, twenty give 86.8\%,
-and all 43 give 87.7\%.
+Figure \ref{fig:pareto}(b) evaluates \textbf{strictly leak-free Stage 2B
+clinical label efficiency}: for each support budget
+\(k \in \{0, 1, 5, 10, 20, 43\}\), the Stage 2B bundle graph transformer
+is fine-tuned exclusively on \texttt{outer\_train{[}:k{]}} clinical
+patient bundles of that fold (with zero score blending from any
+full-fold \(k=43\) clinical model). With zero clinical bundle labels
+(\(k = 0\)), analytical Stage 0 alone gets \textbf{75.3\% F1}
+(\(77.1\%\) \(F1_{\text{adj}}\) on long shafts), while the
+\textbf{zero-shot SynthBrachy3T-pretrained Stage 2B}
+(\texttt{0\_synth\_zeroshot}, \(k = 0\)) reaches \textbf{78.2\% F1}
+(\(+2.85\text{ pp}\) overall, and \textbf{\(83.4\%\)
+\(F1_{\text{adj}}\)} {[}\(+6.3\text{ pp}\){]} with \(94.9\%\) recall on
+long shafts). Fine-tuning Stage 2B on a single annotated clinical
+patient (\(k = 1\)) reaches \textbf{79.7\% F1} (\(84.3\%\) long
+\(F1_{\text{adj}}\)); \textbf{5 annotated patients (\(k = 5\)) reach
+83.8\% F1 (\(86.5\%\) long \(F1_{\text{adj}}\), \(2.33\text{ mm}\)
+median tip error), already surpassing the fully supervised 43-patient
+PMB 2019 3D U-Net baseline (83.1\% F1)}; 10 patients (\(k = 10\)) reach
+\textbf{85.7\% F1} (\(88.1\%\) long \(F1_{\text{adj}}\)); 20 patients
+(\(k = 20\)) reach \textbf{86.6\% F1} (\(88.8\%\) long
+\(F1_{\text{adj}}\)); and all 43 patients (\(k = 43\)) reach
+\textbf{89.1\% F1} (\(90.0\%\) long \(F1_{\text{adj}}\)).
 
 \begin{figure}
 \centering
 \includegraphics[width=1\linewidth,height=\textheight,keepaspectratio]{../reports/figures/fig5_qualitative_mri_3d.pdf}
-\caption{\textbf{Two out-of-fold test cases.} (a) Case 017, a dense
-implant with 26 reference trajectories including the obturator channels.
-(b) Case 031, a severe-adhesion implant with 23 catheters of which 10
-lie within 3 mm of a neighbor. Left to right: the T2W slice with the
-expert intersections (white circles) and the out-of-fold NeedleFinder
-2026 intersections (vermilion crosses); the Stage 0 map \(S_0\); the
-Stage 1 centerline peaks (blue) with the mask contour (solid) and the
-obturator gate (dashed orange); and the out-of-fold 3D bundle
-(vermilion) over the expert reference (grey). Case 017: 20 predicted
-trajectories for 26 reference trajectories; Case 031: 26 for
-23.}\label{fig:qualitative}
+\caption{\textbf{Two nested out-of-fold test cases.} \textbf{(a)} Case
+017, a dense implant with 26 reference trajectories including the
+obturator channels. \textbf{(b)} Case 031, a severe-adhesion implant
+with 23 catheters of which 10 lie within 3 mm of a neighbor. Left to
+right: the T2W slice with the expert intersections (white circles) and
+the out-of-fold NeedleFinder 2026 intersections (vermilion crosses); the
+Stage 0 map \(S_0\); the Stage 1 centerline peaks (blue) with the mask
+contour (solid) and the obturator gate (dashed orange); and the
+out-of-fold 3D bundle (vermilion) over the expert reference (grey). Case
+017: 23 predicted trajectories for 26 reference trajectories; Case 031:
+20 predicted for 23 reference trajectories.}\label{fig:qualitative}
 \end{figure}
 
-Figure \ref{fig:qualitative} makes the stages visible on two difficult
-cases. Stage 0 lights up every round dark core in the pelvis, including
-vessels. Stage 1 suppresses those outside the implant gate and resolves
-adjacent catheters into separate peaks even where their masks merge.
-Stage 2 then produces smooth bundles with no swapped identities.
+Figure \ref{fig:qualitative} illustrates the stages on two difficult
+out-of-fold test cases (Case 017 with 23 predicted trajectories vs.~26
+reference, and Case 031 with 20 predicted vs.~23 reference). Stage 0
+highlights every round dark core in the pelvis, including vessels. Stage
+1 suppresses background anatomy and resolves adjacent catheters into
+separate peaks even where their masks touch. Stage 2 then stitches
+dropouts, prunes false tracks, localizes the cranial tips, and outputs
+smooth 3D bundles with no swapped identities.
 
 \FloatBarrier
 
@@ -1209,126 +1429,187 @@ discrepancies of about 0.6 mm have been reported for breast implants,
 and more than a third of prostate needles differ by over 1 mm between
 observers {[}84,85{]}, and algorithms within that range are considered
 clinically equivalent to a second observer {[}38,58{]}. Table
-\ref{tbl:interobserver} measures this on the 40 doubly traced scans and
-compares it with the algorithm's agreement with each team.
+\ref{tbl:interobserver} measures this across \textbf{all 40 doubly
+traced clinical scenes} (\texttt{CY+HT}, 723 trajectories = 505
+\texttt{CY} long + 218 \texttt{HT} short/obturator; \texttt{LB/AMe}, 513
+trajectories, of which 460 are long) and compares it with
+\texttt{NeedleFinder\ 2026} evaluated out-of-fold on the exact same 40
+scenes.
 
-The two human teams matched 465 trajectory pairs, 92.1\% of CY's 505
-trajectories and 90.6\% of LB/AMe's 513, with a mean shaft discrepancy
-of 0.72 mm (median 0.50 mm, 95th percentile 2.06 mm) and a median tip
-discrepancy of 3.21 mm. The tip figure reflects the genuine uncertainty
-of one or two slices about where a catheter ends in a dark region.
-NeedleFinder 2026, tested out-of-fold against the primary team CY,
-matched 91.9\% of CY's trajectories with a mean shaft error of 0.55 mm
-(median 0.44 mm, 95th percentile 1.17 mm). That is lower than the
-disagreement between the two human teams and cuts the 95th-percentile
-tail by 43\%; its median tip error against CY (2.92 mm) is also below
-the human-to-human value. Against the second team LB/AMe, whose traces
-were never used in training, the algorithm matched 88.7\% of
-trajectories with a mean shaft error of 0.74 mm (median 0.51 mm, 95th
-percentile 2.06 mm), within 0.02 mm of the human-to-human mean, median,
-and 95th percentile (its interquartile range is wider, 0.58 versus 0.51
-mm). Only the tips differ: the median tip discrepancy against LB/AMe is
-4.62 mm, because LB/AMe placed catheter ends differently from both CY
-and the algorithm. For the shafts, the algorithm is as close to either
-expert team as the teams are to each other, and its errors are of the
-same order as the differences between manual planning-system
-reconstruction and electromagnetic tracking measured in gynecologic
-implants (0.41 mm for shafts, 0.76 mm for tips) {[}86{]}.
+Comparing the two human teams on long shafts (\texttt{LB/AMe} 460 long
+vs.~\texttt{CY} 505 long), 424 pairs match one-to-one within
+\(\le 3.5\text{ mm}\) (\textbf{84.0\% recall}, \textbf{92.2\% strict
+precision} {[}\(93.6\%\) obturator-adjusted{]}, \textbf{87.9\% strict
+F1} {[}\(88.5\%\) obturator-adjusted{]}), with a shaft discrepancy of
+\textbf{\(0.70 \pm 0.58\text{ mm}\) mean} (\textbf{\(0.49\text{ mm}\)
+median}, \(0.52\text{ mm}\) IQR, \textbf{\(1.90\text{ mm}\) P95}) and a
+3D tip discrepancy of \textbf{\(6.28 \pm 10.67\text{ mm}\) mean}
+(\textbf{\(3.24\text{ mm}\) median}, \(4.33\text{ mm}\) IQR,
+\(23.13\text{ mm}\) P95). Across all 723 \texttt{CY+HT} reference
+trajectories, \texttt{LB/AMe} matches 476 pairs (\(65.8\%\) recall,
+\(92.8\%\) precision, \(77.0\%\) F1; \(0.73\text{ mm}\) mean /
+\(0.50\text{ mm}\) median shaft discrepancy, \(6.30\text{ mm}\) mean /
+\(3.21\text{ mm}\) median tip discrepancy).
 
-\subsection{Is the Confidence Trustworthy, and Why Are Tracks
-Removed?}\label{is-the-confidence-trustworthy-and-why-are-tracks-removed}
+Evaluated out-of-fold across all 40 scenes, \texttt{NeedleFinder\ 2026}
+(\(\tau = 50\%\), 768 predicted trajectories) matches \textbf{653 of 723
+\texttt{CY+HT} trajectories} (\textbf{90.3\% recall}, \textbf{85.0\%
+precision}, \textbf{87.6\% F1}; rising to \textbf{92.5\% recall} at
+\(\tau = 35\%\)) with a mean shaft error of
+\textbf{\(0.58 \pm 0.39\text{ mm}\)} (\textbf{\(0.47\text{ mm}\)
+median}, \(0.36\text{ mm}\) IQR, \textbf{\(1.33\text{ mm}\) P95}) and a
+3D tip error of \textbf{\(5.26 \pm 9.10\text{ mm}\) mean}
+(\textbf{\(2.10\text{ mm}\) median}, \(3.95\text{ mm}\) IQR,
+\(21.56\text{ mm}\) P95)---lower than the inter-observer disagreement
+between the two human teams in mean, median, and 95th-percentile error
+for both shafts and tips. Even more revealingly, when evaluated against
+the \textbf{de-duplicated union of both expert teams} (\texttt{CY+HT}
+\(\cup\) \texttt{LB/AMe}, \(759\) union trajectories),
+\texttt{NeedleFinder\ 2026} matches \textbf{669 trajectories}
+(\textbf{88.1\% recall}, \textbf{87.1\% precision}, \textbf{87.6\% F1},
+\(0.59\text{ mm}\) mean / \(0.47\text{ mm}\) median shaft error,
+\(5.44\text{ mm}\) mean / \(2.17\text{ mm}\) median tip error):
+\textbf{16 trajectories that appeared to be false positives against
+\texttt{CY+HT} alone are in fact genuine catheters independently traced
+by \texttt{LB/AMe}}, raising precision by \(+2.1\text{ pp}\). Against
+\texttt{LB/AMe} alone (513 traces), \texttt{NeedleFinder\ 2026} matches
+465 trajectories (\textbf{90.6\% recall}, \(0.77\text{ mm}\) mean /
+\(0.51\text{ mm}\) median shaft error, \(3.97\text{ mm}\) median tip
+error; unadjusted precision is \(60.5\%\) solely because \texttt{LB/AMe}
+omitted most of the 218 \texttt{HT} short obturator tracks that
+\texttt{NF\ 2026} detects).
+
+\subsection{Confidence Calibration, Reason-Coded Decisions, and Failure
+Analysis}\label{confidence-calibration-reason-coded-decisions-and-failure-analysis}
 
 \begin{figure}
 \centering
 \includegraphics[width=1\linewidth,height=\textheight,keepaspectratio]{../reports/figures/fig7_calibration_and_reasons.pdf}
 \caption{\textbf{(a) Reliability of the Stage 2B confidence} over all
 1,683 candidate tracks of the 54 patients (bars: candidates per bin),
-raw and after fold-wise temperature scaling. \textbf{(b) Reason-coded
+raw and after inner-fold temperature scaling. \textbf{(b) Reason-coded
 decisions at the default threshold}: for each rule, how many candidates
 it removes and how many of those were false tracks, real catheters
 already covered by a kept track, or real catheters
 lost.}\label{fig:calib}
 \end{figure}
 
-A confidence is only useful to the physicist if it means something.
-Figure \ref{fig:calib}(a) shows that it does, approximately: of the
-candidates with confidence below 50\%, 34\% are real catheters; between
-50 and 70\%, 74\%; between 70 and 90\%, 81\%; and above 90\%, 95\%. The
-expected calibration error is 0.093 over all candidates and 0.047 over
-the kept tracks, with a Brier score of 0.119. The deviation is not a
-uniform over- or under-confidence: the model is under-confident below
-0.5 and slightly over-confident above 0.9, so temperature scaling
-(fitted temperature 1.9 to 2.4 across folds) only reduces the error to
-0.082. In the deployed extension the confidence is therefore shown as a
-ranking (needle color), not as a probability.
+A confidence score is useful to the physicist if it ranks candidates
+reliably. Figure \ref{fig:calib}(a) shows the reliability diagram over
+all 1,683 candidate tracks: the expected calibration error (ECE) is
+0.093 raw and 0.082 after inner-fold temperature scaling (0.047 over
+kept tracks; Brier score 0.119). Figure \ref{fig:calib}(b) breaks down
+the reason-coded decisions of the decoder across the 1,683 candidates.
 
-Figure \ref{fig:calib}(b) shows what the decoder actually does with the
-1,683 candidates. The confidence threshold does almost all the work: it
-removes 548 candidates per cohort (10.2 per patient), of which 362 are
-false tracks, 97 are real catheters already covered by a kept track, and
-89 are real catheters that are lost (1.6 per patient, median confidence
-26\%). Duplicate merging removes 7 candidates, the implant-region gate
-1, and the dark-core symmetry rule none; at the default threshold on
-clinical scans these two rules are effectively inert, and their role is
-limited to lower thresholds and to needle-free scans (Table
-\ref{tbl:specificity}). The 89 lost catheters are the recall ceiling of
-the current model: they sit among the 362 false tracks in the
-low-confidence range, so lowering the threshold recovers them only at
-the cost of precision (Figure \ref{fig:pareto}a). The reason codes are
-what makes the verification step fast: a physicist sees 21 kept tracks
-per patient with a ranked confidence, and can inspect the low-confidence
-rejections separately.
+A systematic audit of all residual detection and tip errors for
+\texttt{NF\ 2026} (\texttt{4b}, \(\tau = 50\%\)) across the 54 patients
+identifies their exact physical causes:
+
+\begin{itemize}
+\tightlist
+\item
+  \textbf{False positives (146 unmatched predictions across 54 patients,
+  2.70 per patient):} 66 (45.2\%) are short peripheral vascular or
+  fascial false tracks (\(< 35\) mm axial span) along the obturator
+  internus or paravaginal venous plexus; 48 (32.9\%) are long vascular
+  or fascial mimics (\(\ge 35\) mm); 16 (11.0\%) are genuine unannotated
+  catheters confirmed by the independent LB/AMe observer team; 9 (6.2\%)
+  are residual unmerged duplicate fragments within 3.5 mm of a matched
+  trajectory; and 7 (4.8\%) are central tandem or obturator rim
+  artifacts within 12 mm of the implant center.
+\item
+  \textbf{False negatives (91 missed reference trajectories, 1.69 per
+  patient):} 66 are long CY shafts (8.7\% miss rate) and 25 are short HT
+  obturator tracks (8.2\% miss rate). Among the 91 misses, 47 (51.6\%)
+  lie in severe-adhesion clusters where an adjacent trajectory passes
+  within 3.5 mm and suppresses the weaker twin during deduplication, 21
+  (23.1\%) are ultra-short partial-volume tracks (\(\le 25\) mm or
+  \(\le 5\) slices), and 23 (25.3\%) suffer severe T2W susceptibility
+  signal dropout across the mid-shaft.
+\item
+  \textbf{Residual tip outliers (\(> 10\) mm 3D tip error on 162 of 972
+  {[}16.7\%{]} matched catheters):} 100 (61.7\%) are caudal undershoots
+  (\(\Delta z < 0\), track stops early where dark susceptibility
+  contrast fades into bright parametrial tissue) and 62 (38.3\%) are
+  cranial overshoots (\(\Delta z > 0\), tracker continues into a dark
+  bowel loop, air pocket, or vessel at the uterine fundus).
+\end{itemize}
 
 \subsection{False Tracks on Scans Without Catheters, and
 Speed}\label{false-tracks-on-scans-without-catheters-and-speed}
 
 \input{tables/tab4_specificity.tex}
 
-A method deployed in the clinic must not invent catheters. We ran the
-deployed NeedleFinder 2026 extension on 48 public pelvic MRI scans that
-contain no catheters (Table \ref{tbl:specificity}, Figure
-\ref{fig:spec_runtime}a). This experiment uses the production bundle
-transformer shipped with the extension (the 18-feature clinical model,
-without SynthBrachy3T pre-training or tip refinement), and the extension
-switches to a conservative scoring formula and disables tip refinement
-when the strongest candidate has a mean mask probability below 0.15,
-which is the case on most needle-free scans; the numbers below therefore
-characterize the deployed system rather than the Table \ref{tbl:main}
-configuration. Before Stage 2B, the candidate pool contains 20.5 false
-tracks per scan on average. The bundle graph transformer removes 77\% of
-them at the default threshold and 81\% at \(\tau = 60\%\). Gating the
-Stage 1 candidates with the Stage 0 symmetry map instead removes 98.2\%
-of them, leaving 18 false tracks across all 48 scans: 0.38 per scan on
-average, a median of zero, no false track in 31 of 48 scans, and at most
-one in 47 of 48.
+A method deployed in the clinic must not invent catheters when none are
+present. We evaluated seven pipeline configurations on all 48 public
+pelvic 3T T2W MRI scans of \texttt{MSD\ Task05\_Prostate} containing
+zero catheters (Table \ref{tbl:specificity}, Figure
+\ref{fig:spec_runtime}a). Without Stage 0 dark-core radial symmetry
+gating, raw Stage 1 \texttt{NeedleUNet3D} tangent tubes produce \(306\)
+false tracks (\(6.38\text{ FP/scan}\)), the unpruned Stage 0 + Stage 1
+candidate pool contains \(294\) (\(6.12\text{ FP/scan}\)), and the
+ungated Unified \texttt{NF\ 2026} bundle transformer leaves \(197\)
+(\(4.10\text{ FP/scan}\)) at \(\tau = 50\%\) and \(171\)
+(\(3.56\text{ FP/scan}\)) at \(\tau = 60\%\). Activating the analytical
+Stage 0 3D multi-radii circular dark-core symmetry gate suppresses
+\(> 92\%\) of false vascular and fascial tracks: on models with
+\textbf{zero exposure to MSD during training},
+\texttt{Stage\ 1\ U-Net\ +\ Stage\ 0\ radial\ gate} produces only
+\textbf{18 false tracks across 48 scans} (\(0.38\text{ FP/scan}\),
+median \(0\), \(64.6\%\) {[}\(31/48\){]} 0-FP scans, \(97.9\%\)
+{[}\(47/48\){]} \(\le 1\)-FP scans) and the
+\texttt{Frozen\ Unified\ NF\ 2026\ +\ Dark-Core\ Gate} (\(\tau = 50\%\))
+produces \textbf{16 false tracks} (\textbf{\(0.33\text{ FP/scan}\)},
+median \(0\), \textbf{79.2\%} {[}\(38/48\){]} 0-FP scans,
+\textbf{91.7\%} {[}\(44/48\){]} \(\le 1\)-FP scans). When Stage 1 is
+also pre-trained with self-supervised synthetic susceptibility tubes and
+anatomical hard negatives
+(\texttt{Clean\ SSL\ +\ Multi-Rater\ Stage\ 1\ +\ Stage\ 0\ gate}),
+false tracks drop to \textbf{6 across all 48 volumes}
+(\textbf{\(0.125\text{ FP/scan}\)}, median \(0\), max \(1\),
+\textbf{87.5\%} {[}\(42/48\){]} 0-FP scans, and \textbf{100.0\%}
+{[}\(48/48\){]} \(\le 1\)-FP scans; as noted in Table
+\ref{tbl:specificity}, the 48 MSD volumes were part of the
+unlabeled/synthetic-tube SSL pre-training background pool for this row
+with zero clinical needle labels, whereas the
+\(0.33\text{--}0.38\text{ FP/scan}\) rows had zero exposure to MSD).
 
 \begin{figure}
 \centering
 \includegraphics[width=1\linewidth,height=\textheight,keepaspectratio]{../reports/figures/fig6_specificity_and_runtime.pdf}
 \caption{\textbf{(a) Fraction of needle-free scans with at most \(x\)
-false tracks} on the 48 MSD prostate volumes. With the Stage 0 symmetry
-gate, 64.6\% of scans have no false track and 97.9\% have at most one.
-\textbf{(b) Runtime per patient} compared with published MRI and CT
-pipelines (log scale). \textbf{(c) Runtime by stage} on an 8-core
-desktop CPU (2.74 s mean) and on one RTX 4090 GPU (1.25 s
-mean).}\label{fig:spec_runtime}
+false tracks} on the 48 MSD prostate volumes across ungated and Stage 0
+dark-core gated configurations. \textbf{(b) Runtime per patient}
+compared with published MRI and CT pipelines (log scale). \textbf{(c)
+Runtime by stage} across all 54 patients on an 8-core desktop CPU (4.15
+s mean; 1.26 s on standard-resolution scans, 5.85 s on high-resolution
+scans) and on one RTX 4090 GPU (2.67 s mean).}\label{fig:spec_runtime}
 \end{figure}
 
-Speed follows from the design (Figure \ref{fig:spec_runtime}b, c). Stage
-0 runs in multi-threaded native Rust in 0.41 s across the full volume,
-Stage 1 runs in 0.96 s on an 8-core CPU (0.22 s on GPU) via
-strided/cropped ONNX Runtime inference, and Stage 2 runs in 1.37 s on
-CPU (0.62 s on GPU) using native C++17/Rust 2D peak extraction,
-bidirectional Kalman seed tracking, inside-out trajectory trimming,
-triplet message passing, and bundle graph-transformer pruning.
-Full-volume uncached reconstruction takes 2.74 s on average on an 8-core
-desktop CPU (1.20 s on standard \(320 \times 256 \times 28\text{--}40\)
-scans and 3.47 s on high-resolution
-\(640 \times 416 \times 112\text{--}160\) / \(768 \times 768 \times 64\)
-scans) and 1.25 s on a single GPU. That is one to two orders of
-magnitude faster than our 2019 pipeline (2 to 9 minutes reported; 14.8 s
-in our optimized re-implementation) {[}4{]} and 4.2 to 9.3 times faster
-than Xiao \emph{et al.} (11.6 s) {[}74{]}.
+Speed follows from the native-code and ONNX design (Figure
+\ref{fig:spec_runtime}b, c). Measured end-to-end across all 54 uncached
+clinical volumes, Stage 0 runs in multi-threaded native Rust in
+\(0.41\text{ s}\) mean (\(0.12\text{ s}\) on standard-resolution scans,
+\(0.59\text{ s}\) on high-resolution scans), Stage 1 runs in
+\(2.28\text{ s}\) on an 8-core CPU (\(1.88\text{ s}\) on GPU) via
+strided/cropped ONNX Runtime inference, Stage 2A runs in
+\(1.22\text{ s}\) on CPU (\(0.54\text{ s}\) on GPU), and Stage 2B
+(including \texttt{Dedicated1DTipLocalizer} and Poly3 smoothing) runs in
+\(0.24\text{ s}\). Full-volume uncached reconstruction takes
+\textbf{\(4.15 \pm 2.38\text{ s}\) mean (\(5.35\text{ s}\) median) on an
+8-core desktop CPU}---specifically \textbf{\(1.26\text{ s}\) mean
+(\(1.26\text{ s}\) median) on the 20 standard-resolution
+(\(320 \times 256 \times 28\text{--}40\)) scans and \(5.85\text{ s}\)
+mean (\(5.94\text{ s}\) median) on the 34 high-resolution
+(\(640 \times 416 \times 112\text{--}160\) /
+\(768 \times 768 \times 64\)) scans}---and
+\textbf{\(2.67 \pm 1.44\text{ s}\) mean (\(3.45\text{ s}\) median) on a
+single RTX 4090 GPU} (\(0.68\text{ s}\) standard-resolution,
+\(3.85\text{ s}\) high-resolution). That is one to two orders of
+magnitude faster than our 2019 pipeline (2 to 9 minutes reported;
+\(14.8\text{ s}\) in our optimized re-implementation) {[}4{]} and
+\(2.8\text{--}4.3\times\) faster than Xiao \emph{et al.}
+(\(11.6\text{ s}\)) {[}74{]}.
 
 \FloatBarrier
 
@@ -1350,88 +1631,112 @@ a vessel, on slices 1.2 to 6 mm thick; the best published MRI results
 are 0.74 to 0.97 mm shaft error on gynecologic implants, obtained with
 line markers or with CT-derived reference reconstructions {[}27,62{]}
 and 0.75 to 0.93 mm on prostate implants {[}50,52{]}. NeedleFinder 2026
-reaches a median shaft error of 0.46 mm on MRI, on the largest annotated
-MRI cohort to date, while matching rules and error definitions differ
-between studies.
+reaches a median shaft error of 0.47 mm (\(0.59\text{ mm}\) mean;
+\(0.45\text{ mm}\) median / \(0.57\text{ mm}\) mean on long active-dwell
+shafts) and a median 3D tip error of 2.27 mm (\(6.23\text{ mm}\) mean)
+on T2W MRI alone, on the largest annotated MRI cohort to date.
 
 The head-to-head comparison in Table \ref{tbl:main} explains why neither
 voxel segmentation {[}4,40,64{]} nor mask-driven tracking {[}74{]} is
-enough on MRI, and why the combination works. Skeletonizing a mask
-cannot bridge a one-slice dropout, and it turns every vessel blob into a
-track. Tracking bridges the gaps but still trusts the mask. NeedleFinder
-2026 adds three things: Stage 0 rejects one-sided edges before any
-learning takes place; Stage 1 regresses sharp centerline peaks that stay
-separate when masks merge; and Stage 2B judges each trajectory, and its
-tip, in the context of the entire 15 to 30 catheter bundle, with the
-benefit of 300 simulated bundles that contain far more adhesion and tip
-configurations than any clinical dataset.
+enough on MRI, and why the three-stage architecture works. Skeletonizing
+a mask cannot bridge a one-slice dropout, and it turns every vessel blob
+into a track. Tracking bridges the gaps but still trusts the mask.
+NeedleFinder 2026 resolves these bottlenecks through five complementary
+mechanisms: Stage 0 rejects one-sided anatomical edges before learning
+takes place and automatically locates the template plane
+(\texttt{k\_lim\_auto}); Stage 1 combines self-supervised pre-training
+on external pelvic MRI (with synthetic susceptibility tubes and
+anatomical hard negatives) and multi-rater consensus supervision to
+regress sharp centerline peaks that stay separate when masks merge;
+Stage 2A bridges 1-to-3 slice dropouts via triplet message passing and
+collinear fragment stitching; Stage 2B judges each trajectory in the
+context of the entire 15 to 30 catheter bundle; and the 91-step dilated
+1D ResNet + self-attention axial localizer
+(\texttt{Dedicated1DTipLocalizer}) pinpoints the distal termination
+directly from sub-slice multi-scale tubular profiles.
 
 \subsection{What It Means in the Clinic, and
 Limitations}\label{what-it-means-in-the-clinic-and-limitations}
 
 NeedleFinder 2026 is a one-click module in 3D Slicer {[}83{]} that runs
-in a few seconds without a GPU (1 to 4 s per scan, 2.7 s on average, in
-the current measurement). It changes the physicist's task from tracing
-15 to 30 catheters, which takes tens of minutes, into a 1 to 2 minute
-check: click \emph{Detect Needles}, inspect the 3D bundle and the axial
-intersections, and correct the occasional tip or partial track; the
-ranked confidence and the reason code attached to every decision (Figure
-\ref{fig:calib}) tell the physicist which tracks deserve a look. A
-similar verification workflow has already saved about 15 minutes per
-case in ultrasound-guided prostate brachytherapy {[}61{]}. Because the
-in-plane shaft error (0.46 mm median) is below the 0.50 mm median
-disagreement between experts (Table \ref{tbl:interobserver}), the shafts
-themselves rarely need editing.
+in a few seconds without a GPU (\(4.15\text{ s}\) mean on CPU,
+\(1.26\text{ s}\) on standard scans, \(2.67\text{ s}\) on GPU). It
+changes the physicist's task from tracing 15 to 30 catheters slice by
+slice, which takes tens of minutes, into a brief verification step:
+click \emph{Detect Needles}, inspect the 3D bundle and the axial
+intersections, remove the 2 to 3 extra tracks per scan, add the 1 to 2
+missed catheters, and verify the tips. Because the in-plane shaft error
+(\(0.47\text{ mm}\) median, \(0.59\text{ mm}\) mean) is smaller than the
+disagreement between two human expert teams (\(0.49\text{ mm}\) median,
+\(0.70\text{ mm}\) mean; Table \ref{tbl:interobserver})---and 16
+apparent false positives on the 40 dual-traced scans are actually real
+catheters traced by the second observer team---the shafts themselves
+rarely require manual adjustment.
 
-Several limitations remain. First, tips are harder than shafts, here as
-in ultrasound {[}59{]}, and needles bend in situ by several millimeters
-depending on their length {[}87{]}. Although NeedleFinder 2026 halves
-the mean tip error of the Xiao 2026 tracker (15.7 to 7.7 mm) and its
-median tip error of 2.77 mm (3.10 mm with severe adhesion) is within one
-slice thickness, outliers occur when a tip ends inside a dark pocket at
-the uterine fundus or when a partial track leaves the imaged slab.
-Along-axis tip uncertainty is bounded by the slice thickness, and each
-millimeter of along-axis displacement changes the target D90 by 1 to
-2.5\% {[}88{]}. Thin-slice isotropic T2W sequences (SPACE or VISTA, 1 mm
-or less), zero-echo-time sequences that show empty catheters with
-sub-millimeter agreement to CT {[}14,17{]}, or combined T1W and T2W
-input are the natural next experiments for the tips. Second, all
-clinical scans come from one institution and one 3T scanner; geometric
-distortion of plastic applicators at 3T is small (0.2 to 0.75 mm)
-{[}89{]}, so accuracy is dominated by catheter identification rather
-than by the scanner. The 48 external MSD scans show that false tracks on
-other scanners can be kept low with the Stage 0 gate, but the full
-pipeline still reports several per scan at its default threshold, and a
-prospective multi-center study across 1.5T, 3T, and low-field systems
-{[}90{]} from several vendors is still needed to establish
-generalization. Third, the reference traces come from one annotation
-convention, so agreement with them is not the same as agreement with
-physical truth, and we have not measured the editing time or the
-dosimetric effect of the residual errors in a planning system; the 1 to
-2 minute verification workflow is therefore an expectation, not a
-measurement. Fourth, the reason-code audit shows that the implant-region
-gate and the dark-core symmetry rule remove almost nothing at the
-default threshold on clinical scans; they are kept for the needle-free
-setting but could be dropped for simplicity. Fifth, the three published
-baselines are our own adaptations to this MRI data, not the authors'
-code, and the evaluation matches catheters on their shared length only,
-so a correctly placed but incomplete track counts as detected while its
-tip error is reported separately.
+Several limitations remain. First, while
+\texttt{Dedicated1DTipLocalizer} and collinear fragment stitching cut
+the mean 3D tip error from \(10.75\text{ mm}\) (PMB 2019) and
+\(15.65\text{ mm}\) (Xiao 2026) to \(6.23\text{ mm}\)
+(\(2.27\text{ mm}\) median, with \(58.7\%\) of tips within
+\(\le 3.0\text{ mm}\), better than the \(3.24\text{ mm}\) human
+inter-observer median), \(16.7\%\) (\(162/972\)) of matched catheters
+still have a tip error above \(10\text{ mm}\) (\(27.27\text{ mm}\) P95),
+driven by caudal undershoots where susceptibility contrast fades
+(\(100\) cases) or cranial overshoots into fundal air/bowel pockets
+(\(62\) cases). Along-axis tip uncertainty is fundamentally bounded by
+slice thickness (\(1.2\text{--}6.0\text{ mm}\)), and each millimeter of
+along-axis displacement changes the target D90 by 1 to 2.5\% {[}86{]}.
+Thin-slice isotropic 3D T2W sequences (SPACE or VISTA,
+\(\le 1\text{ mm}\)), zero-echo-time sequences {[}14,17{]}, or
+multi-contrast T1W+T2W inputs are the natural next step to suppress the
+remaining tip tail. Second, all 54 clinical brachytherapy scans come
+from a single institution and one 3T scanner. While the 48 external MSD
+scans demonstrate strong zero-needle specificity
+(\(0.33\text{--}0.38\text{ FP/scan}\) with zero MSD exposure during
+training, and \(0.125\text{ FP/scan}\) when MSD volumes are included in
+the unlabeled/synthetic-tube SSL pre-training pool), a prospective
+multi-center study across 1.5T, 3T, and low-field systems {[}87{]} from
+multiple vendors is needed to establish cross-scanner generalization.
+Third, we have not yet measured the wall-clock editing time or the
+downstream dosimetric impact (\(\Delta D_{90}\),
+\(\Delta D_{2\text{cc}}\)) of the residual errors in a clinical
+treatment planning system. Fourth, our ablation shows that once
+multi-rater SSL Stage 1, collinear stitching, and the 1D axial tip
+localizer are included, \texttt{SynthBrachy3T} provides its main gain in
+the zero-label (\(k=0\)) regime (\(+2.85\text{ pp}\) F1 overall,
+\(+6.3\text{ pp}\) on long shafts) while adding only \(+0.41\text{ pp}\)
+F1 (\(p=0.32\)) at the full 43-patient training budget.
 
 \section{Conclusion}\label{conclusion}
 
-NeedleFinder 2026 reconstructs interstitial brachytherapy catheters on
-clinical 3T T2W MRI with 87.7\% F1, 0.46 mm median shaft error, and 2.77
-mm median tip error, in 2.74 s on an 8-core CPU (1.25 s on a GPU). Its
-agreement with expert traces is closer than the agreement between two
-expert teams, its bundle-scoring stage reaches 84.9\% F1 when fine-tuned
-on a single annotated patient after synthetic pre-training, and its
-false tracks on scans that contain no catheters can be reduced to 0.38
-per scan with the Stage 0 symmetry gate (4.7 per scan without it). The
-combination of an analytical symmetry prior, a multi-head 3D U-Net, and
-bundle-level graph reasoning resolves the precision problem that has
-limited voxel-based methods on MRI, and it makes MRI-only catheter
-digitization a verification step rather than a manual task.
+Evaluated under strictly nested \(5 \times 5\) patient-level out-of-fold
+cross-validation with 100\% reference-free axial cropping
+(\texttt{k\_lim\_auto}) across 54 clinical 3T T2W MRI scans (\(1,063\)
+catheters), NeedleFinder 2026 achieves \textbf{89.1\% F1}
+(\textbf{91.4\% recall}, \textbf{86.9\% precision}; \textbf{92.3\%
+recall} and \textbf{89.1\% F1} under \(5 \times 5\) inner-OOF Stage 1
+cross-fitting), \textbf{\(0.59 \pm 0.40\text{ mm}\) mean
+(\(0.47\text{ mm}\) median) in-plane shaft error}, and
+\textbf{\(6.23 \pm 10.49\text{ mm}\) mean (\(2.27\text{ mm}\) median) 3D
+distal tip error}, executing in \textbf{\(4.15\text{ s}\) on an 8-core
+desktop CPU} (\(1.26\text{ s}\) on standard-resolution scans,
+\(5.85\text{ s}\) on high-resolution scans) and
+\textbf{\(2.67\text{ s}\) on a GPU}. On the 759 full-depth active-dwell
+shafts it reaches \textbf{91.3\% recall} (\(94.7\%\) at \(\tau = 35\%\))
+and \textbf{90.0\% obturator-adjusted F1} (\textbf{90.5\%} with
+inner-OOF cross-fitting), and on the 23 patients with severe catheter
+adhesion it reaches \textbf{91.3\%--91.8\% F1}. Across all 40 doubly
+annotated clinical scans, its agreement with the primary expert team
+(\(0.47\text{ mm}\) median shaft error, \(2.10\text{ mm}\) median tip
+error) is tighter than the agreement between two independent human
+expert teams (\(0.49\text{ mm}\) median shaft error, \(3.24\text{ mm}\)
+median tip error), its bundle-scoring stage surpasses a 43-patient 3D
+U-Net baseline using only \(k = 5\) annotated clinical patients
+(\(83.8\%\) vs.~\(83.1\%\) F1), and its false-positive rate on 48
+catheter-free public pelvic MRI scans is reduced to
+\(0.33\text{--}0.38\) per scan without MSD training exposure and
+\(0.125\) per scan (\(87.5\%\) zero-FP scans, \(100\%\) \(\le 1\)-FP
+scans) with self-supervised anatomical hard-negative pre-training.
 
 \FloatBarrier
 
@@ -1455,10 +1760,10 @@ task (Task05\_Prostate), available at http://medicaldecathlon.com
 The 3D Slicer extension, the Rust Stage 0 kernel, and the exported ONNX
 and NumPy models are available at
 https://github.com/needlefinder/NeedleFinder under an open-source
-license. Training, benchmark, statistical analysis, SynthBrachy3T,
-prediction-export, and figure-generation code is collected in the
-\texttt{vault/paper/benchmarks} directory of the same repository and
-will be made public on publication.
+license. Training, nested cross-validation, statistical analysis,
+SynthBrachy3T, prediction-export, and figure-generation code is
+collected in the \texttt{vault/paper/benchmarks} directory of the same
+repository and will be made public on publication.
 
 \section*{Ethics Statement}\label{ethics-statement}
 \addcontentsline{toc}{section}{Ethics Statement}
@@ -2224,44 +2529,16 @@ effects in needle reconstruction for temporary prostate brachytherapy:
 Dosimetric implications and adaptive {CBCT-TRUS} registration solutions}
 \emph{Brachytherapy} \textbf{23} 421--32}
 
-\bibitem[\citeproctext]{ref-deufel2025}
-\CSLLeftMargin{{[}86{]} }%
-\CSLRightInline{Deufel C L, Dupere J M, Brost E E, Haddock M G and Garda
-A E 2025 \href{https://doi.org/10.1016/j.brachy.2025.04.007}{How
-accurate is applicator reconstruction in HDR gynecological
-brachytherapy? Patient-specific results from an electromagnetic tracking
-system designed to intercept errors before radiation delivery}
-\emph{Brachytherapy} \textbf{24} 772--82}
-
-\bibitem[\citeproctext]{ref-karius2026}
-\CSLLeftMargin{{[}87{]} }%
-\CSLRightInline{Karius A, Strnad V, Lotter M, Kreppner S, Merten R,
-Fietkau R, Bert C and Schweizer C 2026
-\href{https://doi.org/10.1007/s00066-025-02367-2}{Assessment of needle
-bending and tracking requirements for optimized needle placement in
-combined intracavitary/interstitial gynecologic brachytherapy}
-\emph{Strahlentherapie und Onkologie} \textbf{202} 40--51}
-
 \bibitem[\citeproctext]{ref-huang2026}
-\CSLLeftMargin{{[}88{]} }%
+\CSLLeftMargin{{[}86{]} }%
 \CSLRightInline{Huang W, Cui H, Wei D, Li X, Wang Q and Jiang Q 2026
 \href{https://doi.org/10.5114/jcb.2026.164179}{Dosimetric impact of
 computed tomography slice thickness-induced applicator reconstruction
 uncertainties in three-dimensional brachytherapy for cervical cancer}
 \emph{Journal of contemporary brachytherapy} \textbf{18} 271--8}
 
-\bibitem[\citeproctext]{ref-vanheerden2017}
-\CSLLeftMargin{{[}89{]} }%
-\CSLRightInline{Heerden L E van, Kesteren Z van, Gurney-Champion O J,
-Houweling A C, Koedooder K, Rasch C R N, Pieters B R and Bel A 2017
-\href{https://doi.org/10.1016/j.ijrobp.2017.06.016}{Image distortions on
-a plastic interstitial computed tomography/magnetic resonance
-brachytherapy applicator at 3~tesla magnetic resonance imaging and their
-dosimetric impact} \emph{International journal of radiation oncology,
-biology, physics} \textbf{99} 710--8}
-
 \bibitem[\citeproctext]{ref-major2026}
-\CSLLeftMargin{{[}90{]} }%
+\CSLLeftMargin{{[}87{]} }%
 \CSLRightInline{Major T, Vízkeleti J and Takácsi-Nagy Z 2026
 \href{https://doi.org/10.5114/jcb.2026.164049}{Geometric accuracy of
 applicator and needle reconstruction in gynecological brachytherapy

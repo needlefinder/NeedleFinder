@@ -1,21 +1,21 @@
 method,tau,recall_1to1,precision_1to1,f1_1to1,shaft_mean_mm,shaft_med_mm,tip_med_mm
 Baseline 1: PMB 2019 Isotropic 1mm³ 3D U-Net + DBSCAN/Skeleton,,88.81,78.02,83.06,0.515,0.417,3.386
 Baseline 2: Native-Resolution 3D ResUNet + clDice + Skeleton (Mask-Only),,92.38,24.46,38.68,0.555,0.433,3.100
-Stage 0/1A: Pure Physics 3D CV + HybridNeedleNet,,82.88,69.15,75.40,0.600,0.473,3.062
-Stage 1B: Multi-Head NeedleUNet3D + Tangent Tube Tracking,,94.17,63.31,75.72,0.576,0.467,2.924
-Stage 1B: Hybrid AxialTransUNet3D + Tangent Tube Tracking,,94.36,61.53,74.49,0.573,0.471,2.980
-Stage 2A: Pure NeedleSliceMPNN (4-Layer Triplet GraphNet),,91.25,80.30,85.42,0.517,0.397,3.348
-Unified NeedleFinder 2026 (tau=25%),25,92.94,77.61,84.59,0.571,0.466,2.892
-Unified NeedleFinder 2026 (tau=35%),35,92.19,78.97,85.07,0.571,0.466,2.849
-Unified NeedleFinder 2026 (tau=45%),45,90.22,82.53,86.20,0.567,0.464,2.832
-Unified NeedleFinder 2026 (tau=50%),50,88.90,84.60,86.70,0.572,0.464,2.807
-Unified NeedleFinder 2026 (tau=60%),60,87.39,86.02,86.70,0.571,0.464,2.807
 Baseline 3: Xiao 2026 IRGM + 3D Hough + Sync Inward Tracking + Poly3,,87.68,39.21,54.19,0.657,0.475,6.036
 "Xiao 2026 3D Hough + Sync Inward Tracking + Poly3 (on Ground-Truth Masks, Table 2B)",,97.74,83.45,90.03,0.203,0.106,1.682
-Unified NeedleFinder 2026 + IRGM + SyncTrack + Poly3 (tau=50%),50,90.31,84.88,87.51,0.564,0.463,2.905
-NeedleFinder 2026 + SynthBrachy3T + Tip-Aware (tau=50%),50,89.84,85.57,87.65,0.565,0.458,2.765
-NeedleFinder 2026 + SynthBrachy3T + Tip-Aware (tau=25%),25,93.89,78.27,85.37,0.571,0.465,2.809
-NeedleFinder 2026 + SynthBrachy3T + Tip-Aware (tau=35%),35,92.85,80.64,86.31,0.566,0.463,2.795
-NeedleFinder 2026 + SynthBrachy3T + Tip-Aware (tau=45%),45,91.16,83.53,87.18,0.561,0.461,2.772
-NeedleFinder 2026 + SynthBrachy3T + Tip-Aware (tau=55%),55,89.46,86.53,87.97,0.566,0.459,2.765
-NeedleFinder 2026 + SynthBrachy3T + Tip-Aware (tau=60%),60,88.81,87.73,88.27,0.568,0.458,2.759
+Stage 0/1A: Pure Physics 3D CV + HybridNeedleNet,,82.78,69.13,75.34,0.599,0.472,3.076
+Stage 1B: Multi-Head NeedleUNet3D + Tangent Tube Tracking,,94.17,61.52,74.42,0.573,0.463,2.950
+Stage 2A: Pure NeedleSliceMPNN (4-Layer Triplet GraphNet),,93.89,73.54,82.48,0.580,0.467,2.827
+Unified NeedleFinder 2026 (tau=25%),25,95.01,77.57,85.41,0.599,0.474,2.272
+Unified NeedleFinder 2026 (tau=35%),35,94.26,80.68,86.94,0.594,0.471,2.272
+Unified NeedleFinder 2026 (tau=45%),45,93.13,83.54,88.08,0.588,0.468,2.266
+Unified NeedleFinder 2026 (tau=50%),50,92.47,85.26,88.72,0.587,0.467,2.261
+Unified NeedleFinder 2026 (tau=60%),60,91.25,87.15,89.15,0.583,0.465,2.241
+Unified NeedleFinder 2026 + IRGM + SyncTrack + Poly3 (tau=50%),50,92.47,85.26,88.72,0.587,0.467,2.261
+NeedleFinder 2026 + SynthBrachy3T + Tip-Aware (tau=25%),25,94.54,81.38,87.47,0.598,0.474,2.322
+NeedleFinder 2026 + SynthBrachy3T + Tip-Aware (tau=35%),35,93.60,83.40,88.21,0.594,0.474,2.322
+NeedleFinder 2026 + SynthBrachy3T + Tip-Aware (tau=45%),45,92.57,85.71,89.01,0.592,0.471,2.302
+NeedleFinder 2026 + SynthBrachy3T + Tip-Aware (tau=50%),50,91.44,86.94,89.13,0.589,0.469,2.265
+NeedleFinder 2026 + SynthBrachy3T + Tip-Aware (tau=55%),55,91.25,87.55,89.36,0.587,0.469,2.269
+NeedleFinder 2026 + SynthBrachy3T + Tip-Aware (tau=60%),60,89.84,88.59,89.21,0.589,0.469,2.264
+NeedleFinder 2026 + SynthBrachy3T + Inner-OOF Cross-Fit (tau=50%),50,92.29,86.13,89.10,0.586,0.468,2.242
