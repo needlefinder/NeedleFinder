@@ -5,7 +5,7 @@
 Primary evaluation uses strictly nested $5\times 5$ patient-level out-of-fold (OOF) cross-validation with 100\,\% reference-free axial cropping (\texttt{k\_lim\_auto}) on 54 clinical 3T T2W MRI datasets from Brigham and Women's Hospital (BWH AMIGO).}
 \label{tbl:cohorts}
 \scriptsize
-\setlength{\tabcolsep}{2.5pt}
+\setlength{\tabcolsep}{2.3pt}
 \begin{tabular}{@{}L L R R L L L@{}}
 \toprule
 Cohort / Subset & Source & {Pts} & {Cath.} & {XY (mm)} & {$\Delta z$ (mm)} & {Evaluation role}\\
@@ -16,13 +16,18 @@ BWH GYN full cohort\tnote{a} & BWH (3T T2W) & 54 & 1063 & $0.31\text{--}0.88$ & 
 \quad Adhesion subgroup\tnote{b} & BWH (3T T2W) & 23 & 571 & $0.31\text{--}0.88$ & $1.2\text{--}6.0$ & Touching / crossing shaft test\\
 Dual-observer subset\tnote{c} & BWH (3T T2W) & 40 & 723 & $0.31\text{--}0.88$ & $1.2\text{--}6.0$ & Inter-observer floor (\texttt{CY+HT}, \texttt{LB}/\texttt{AMe})\\
 External SSL \& specificity\tnote{d} & MSD + BWH & 50 (51) & 0 & $0.47\text{--}0.88$ & $1.6\text{--}4.8$ & 3D SSL (51) \& 0-needle test (48)\\
+Prostate 3T implant (\texttt{Case 100})\tnote{e} & BWH (3T T2W) & 1 (1) & 14 & $0.47$ & $1.6$ & Zero-shot cross-organ transfer\\
+Secondary GYN MRI sequences\tnote{e} & BWH (wbSSFP/2D) & 54 (243) & 929 & $0.31\text{--}0.94$ & $2.0\text{--}6.0$ & Zero-shot multi-sequence test\\
+4D serial insertion (\texttt{Cases 68--71})\tnote{e} & BWH (3T T2W) & 4 (23) & 108 & $0.31\text{--}0.75$ & $1.6\text{--}3.0$ & Causal 4D tracking \& biomechanics\\
+Paired post-implant Pelvic CT\tnote{e} & BWH (Pelvic CT) & 38 (40) & 801 & $0.49\text{--}0.98$ & $1.25\text{--}2.5$ & CT adjudication \& cross-modality\\
 \bottomrule
 \end{tabular}
 \begin{tablenotes}[flushleft]\footnotesize
-\item[a] Consolidated superset of the cohorts of Pernelle \emph{et al.}\ (2013, 10 patients) and Zaffino \emph{et al.}\ (2019, 50 patients), extended with new implants; 9--42 reference trajectories per patient (20 standard-resolution $320\times256$ scans and 34 high-resolution $640\times416$ / $768\times768$ scans).
+\item[a] Consolidated superset of the cohorts of Pernelle \emph{et al.}\ (2013, 10 patients) and Zaffino \emph{et al.}\ (2019, 50 patients), extended with new implants; 9--42 reference trajectories per patient (20 standard-resolution $320\times256$ scans and 34 high-resolution $640\times416$ / $768\times768$ scans). In the Pts column, parentheses indicate total volumes when multiple scans per subject are analysed.
 \item[b] Severe catheter-adhesion subgroup: the 23/54 patients in which $\ge 4$ long or $\ge 6$ total reference catheters pass within $\le 3.0$\,mm of another catheter on shared axial slices. All 571 catheters of these patients are evaluated; 191 of them (166 long) lie within $3.0$\,mm of a neighbour (233 across the whole cohort).
 \item[c] All 40/40 dual-traced clinical scenes independently contoured by two expert medical physics teams (\texttt{CY+HT}: 723 total trajectories = 505 \texttt{CY} long + 218 \texttt{HT} short/obturator; \texttt{LB}/\texttt{AMe}: 513 trajectories, with 465 consensus-fused with \texttt{CY}, 12 matched to \texttt{HT} within $\le 5.0$\,mm [$11$ within $\le 3.5$\,mm], and $36$ unique \texttt{LB}/\texttt{AMe} trajectories forming the $759$-trajectory union).
 \item[d] Fifty-one external pelvic 3T T2W MRI volumes from 50 distinct subjects: 48 public CC-BY-SA 4.0 volumes from MSD \texttt{Task05\_Prostate} ($0.60\text{--}0.75$\,mm in-plane, $3.0\text{--}4.0$\,mm slices; zero implanted catheters, evaluated for false-positive specificity) plus 3 non-benchmark BWH pelvic T2W volumes from 2 distinct subjects (\texttt{Case 061} [2 series, $0.88$\,mm in-plane, $4.8$\,mm slices] and \texttt{Case 100 Prostate} [1 series, $0.47$\,mm in-plane, $1.6$\,mm slices], zero patient overlap with the 54 benchmark cases) used for self-supervised 3D U-Net pre-training.
+\item[e] Cross-domain validation cohorts detailed in Table~\ref{tbl:dosimetry_generalization} (Part~C): zero-shot 3T prostate brachytherapy MRI (\texttt{Case 100}, 14 plastic needles); 243 secondary MRI volumes across the 54 sessions (including 2 \texttt{3D wbSSFP} volumes [47 catheters] and 49 thick-slice \texttt{2D AX TSE T2} volumes [882 physically visible catheters]); 23 sequential 4D intra-procedural insertion scans across 4 patients (\texttt{Cases 68--71}, 108 final catheters); and 40 post-implant Pelvic CT scans (38 paired with benchmark MRI patients, 801 reference catheters).
 \end{tablenotes}
 \end{threeparttable}
 \end{table}

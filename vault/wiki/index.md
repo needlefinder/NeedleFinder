@@ -53,6 +53,7 @@
 ---
 
 ## Raw Sources & Reviews (`sources/` & `reports/`)
+- [[sources/2026-10-23-pmb-v2-peer-review-and-response|2026-10-23 PMB V2 Readability Transformation (Claudia Clopath & Tina Kapur Style) & Three-Reviewer Peer-Review Record]] — Complete record of the V2 readability transformation and point-by-point responses to PMB Reviewers 1 (Clinical Brachytherapy & MRI Physics), 2 (Claudia Clopath Style & ML Pedagogy), and 3 (Biostatistics & Zero-Drift Audit)
 - [[sources/2026-10-23-central-claim-verification-ledger|2026-10-23 Central Claim Verification & Reproducibility Ledger (`V-01`–`V-10`, 5-Agent Audit Squad)]] — Complete verification and resolution ledger across Verifiers 1–3 (`flash` subagents), Claude Haiku (`sources/2026-10-23-audit-haiku.md`), and Codex Luna (`sources/2026-10-23-audit-luna.md`), confirming 100% digit-for-digit agreement between code, JSON artifacts, tables, figures, and manuscript prose
 - [[sources/2026-10-23-audit-haiku|2026-10-23 Independent Full-Manuscript Audit by Claude Haiku (`claude-haiku`)]] — Internal consistency, statistical unit-of-analysis, and reader-clarity audit
 - [[sources/2026-10-23-audit-luna|2026-10-23 Independent JSON-to-Paper Verification Audit by Codex Luna (`gpt-6-luna`)]] — Independent cross-check of all JSON artifacts against manuscript claims and tables
