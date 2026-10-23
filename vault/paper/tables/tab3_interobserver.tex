@@ -26,12 +26,20 @@ Comparison pair (eval.\ vs.\ reference) & {$n_{\text{match}}$} & {Rec.} & {Prec.
 \oursrow \quad \NF{} ($\tau=35\,\%$) vs.\ \texttt{CY+HT} ($825$ vs.\ $723$) & 669 & \best{92.5} & 81.1 & 86.4 & \second{0.59} & \second{0.40} & \best{0.47} & \best{1.32} & 5.54 & 2.20\\
 \oursrow \quad \NF{} ($\tau=50\,\%$) vs.\ union \texttt{CY+HT+LB} ($768$ vs.\ $759$)\tnote{b} & 669 & 88.1 & \second{87.1} & \second{87.6} & \second{0.59} & \second{0.40} & \best{0.47} & 1.36 & \second{5.44} & \second{2.17}\\
 \oursrow \quad \NF{} ($\tau=50\,\%$) vs.\ \texttt{LB}/\texttt{AMe} ($768$ vs.\ $513$)\tnote{c} & 465 & \second{90.6} & 60.5 & 72.6 & 0.77 & 0.62 & 0.51 & 2.11 & 7.87 & 3.97\\
+\midrule
+\multicolumn{11}{@{}l}{\textit{Grubbs' three-cornered-hat intrinsic source error SD ($n=432$ 3-way matched) \& Pelvic CT adjudication ($n=70$ disputed tips)}\tnote{d}}\\
+\addlinespace[1pt]
+\quad Human Rater 1 (\texttt{CY} primary) & 432 & {--} & {--} & {--} & \best{0.39} & {--} & \best{0.35} & {--} & \best{3.77} & \second{4.31}\\
+\oursrow \quad \NF{} ($\tau=50\,\%$, OOF)\tnote{e} & 432 & {--} & {--} & {--} & \second{0.56} & {--} & \second{0.39} & {--} & \second{4.94} & \best{4.20}\\
+\quad Human Rater 2 (\texttt{LB}/\texttt{AMe} secondary) & 432 & {--} & {--} & {--} & 0.86 & {--} & 0.48 & {--} & 5.09 & 8.00\\
 \bottomrule
 \end{tabular}
 \begin{tablenotes}[flushleft]\footnotesize
 \item[a] Strict long-shaft inter-observer comparison ($424$ matched pairs out of $460$ \texttt{LB}/\texttt{AMe} long vs.\ $505$ \texttt{CY} long: $83.96\,\%$ recall, $92.17\,\%$ strict precision [$93.6\,\%$ obturator-adjusted], $87.88\,\%$ strict F1 [$88.5\,\%$ obturator-adjusted], $0.70 \pm 0.58$\,mm shaft error [$0.70 \pm 0.60$\,mm across all $465$ \texttt{LB}/\texttt{AMe} trajectories matched to \texttt{CY}]).
 \item[b] Evaluated against the de-duplicated union of both expert teams ($723$ \texttt{CY+HT} + $36$ unique \texttt{LB}/\texttt{AMe} trajectories $= 759$ union catheters), showing that 16 apparent false positives against \texttt{CY+HT} alone are genuine catheters traced by \texttt{LB}/\texttt{AMe} (precision rises from $85.0\,\%$ to $87.1\,\%$).
 \item[c] Because \texttt{LB}/\texttt{AMe} primarily traced long interstitial shafts ($513$ traces vs.\ $723$ for \texttt{CY+HT}), unadjusted precision against \texttt{LB}/\texttt{AMe} alone penalizes valid short obturator predictions; recall is $90.6\,\%$.
+\item[d] Bottom block reports reference-free Grubbs' three-cornered-hat intrinsic source error SD across the $n=432$ three-way matched catheters (Mean col.: classic RMS $\sigma$ in mm; Median col.: robust MAD $\sigma$ in mm; Tip Mean col.: Winsorized axial tip $\sigma_z$ in mm; Tip Median col.: median 3D tip error against independent post-implant Pelvic CT across the $n=70$ catheters where \texttt{CY} and \texttt{LB}/\texttt{AMe} disagreed by $\ge 5.0$\,mm on MRI, where \NF{} is closer to CT than single-rater MRI on $78.6\,\%$ [$55/70$] of disputed tips).
+\item[e] Formal two-one-sided tests (TOST) confirm non-inferiority of \NF{} to the human inter-observer floor at $\alpha=0.05$ for both shaft error ($\Delta=0.25$\,mm margin: $p=1.6\times 10^{-41}$ Wilcoxon, TOST equivalence $p=5.5\times 10^{-10}$) and 3D tip error ($\Delta=1.0$\,mm median margin: $p=2.2\times 10^{-14}$; $\Delta=1.5$\,mm mean margin: $p=6.8\times 10^{-19}$ Wilcoxon, $p_{\mathrm{boot}}=0.0014$).
 \end{tablenotes}
 \end{threeparttable}
 \end{table}

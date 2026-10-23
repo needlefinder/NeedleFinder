@@ -942,6 +942,136 @@ def make_fig7_calibration_and_reasons():
     plt.close(fig)
 
 
+def make_fig8_clinical_translation_and_generalization():
+    with open(os.path.join(SOURCES_DIR, "2026-10-23-exp1-tg43-dosimetry.json")) as f:
+        e1 = json.load(f)
+    with open(os.path.join(SOURCES_DIR, "2026-10-23-exp2-uncertainty-conformal-grubbs.json")) as f:
+        e2 = json.load(f)
+    with open(os.path.join(SOURCES_DIR, "2026-10-23-exp3-prostate-and-cross-sequence.json")) as f:
+        e3 = json.load(f)
+    with open(os.path.join(SOURCES_DIR, "2026-10-23-exp4-4d-insertion-and-ct.json")) as f:
+        e4 = json.load(f)
+
+    fig, axes = plt.subplots(2, 2, figsize=(W2, 118 * MM), constrained_layout=True)
+    ax_a, ax_b, ax_c, ax_d = axes[0, 0], axes[0, 1], axes[1, 0], axes[1, 1]
+
+    # --- Panel a: AAPM TG-43U1 HDR 192Ir Dosimetric Impact ---
+    c54 = e1["cohort_54_patients_summary"]
+    c40 = e1["cohort_40_dual_traced_patients_summary"]
+    methods_a = [
+        ("PMB 2019 U-Net\n(N=54)", c54["PMB_2019_3D_UNet_Walk"], C["b_pmb"]),
+        ("Stage 0 Physics\n(N=54)", c54["Stage_0_Physics_Tracker"], C["st0"]),
+        ("Human Rater 2\nLB/AMe (N=40)", c40["Human_Rater_2_LB_AMe"], "#7F7F7F"),
+        ("NF 2026 (4b)\n(N=54)", c54["NeedleFinder_2026_Proposed_4b"], C["nf"]),
+        ("NF 2026 + Top-2\nTip Review (N=54)", c54["NeedleFinder_2026_Top2_Uncertainty_Review"], C["st2"]),
+    ]
+    y_a = np.arange(len(methods_a))[::-1]
+    prot_a_d90 = [m[1]["protocol_A_fixed_plan_sensitivity"]["abs_delta_d90_pct"]["mean"] for m in methods_a]
+    prot_b_d90 = [m[1]["protocol_B_optimize_on_pred_deliver_on_ref"]["abs_delta_d90_pct"]["mean"] for m in methods_a]
+    g22_a = [m[1]["protocol_A_fixed_plan_sensitivity"]["gamma_2pct_2mm_global_pass_pct"]["mean"] for m in methods_a]
+
+    h_a = 0.34
+    ax_a.barh(y_a + h_a / 2, prot_a_d90, height=h_a, color="#90A4AE", label="Protocol A fixed-plan $|\\Delta D_{90}|$ (%)")
+    ax_a.barh(y_a - h_a / 2, prot_b_d90, height=h_a, color=C["nf"], label="Protocol B re-optimized $|\\Delta D_{90}|$ (%)")
+    for yy, pa_val, pb_val, g_val in zip(y_a, prot_a_d90, prot_b_d90, g22_a):
+        mx = max(pa_val, pb_val)
+        ax_a.text(mx + 0.8, yy, f"{pa_val:.1f}% / {pb_val:.1f}% ($\\gamma_{{2/2}}$ {g_val:.0f}%)", va="center", fontsize=5.5, color="#222222")
+    ax_a.set_yticks(y_a)
+    ax_a.set_yticklabels([m[0] for m in methods_a], fontsize=5.8)
+    ax_a.set_xlim(0, 64)
+    ax_a.set_ylim(-1.15, len(methods_a) - 0.35)
+    ax_a.set_xlabel("Target $|\\Delta D_{90}|$ mean error (% of 7 Gy Rx)", fontsize=6.8)
+    ax_a.set_title("a   AAPM TG-43U1 $^{192}$Ir dosimetric impact", fontsize=7.2, fontweight="bold", loc="left")
+    ax_a.legend(loc="lower right", ncol=2, fontsize=5.0, frameon=True, facecolor="white", framealpha=0.9, edgecolor="none")
+    ax_a.grid(axis="x", color="#E6E6E6", lw=0.4, zorder=0)
+
+    # --- Panel b: Uncertainty-Guided Clinician Review-Budget Curve ---
+    q1 = e2["part2c_clinician_in_the_loop_review_simulation"]["queue1_tip_verification_and_relocation"]
+    ks = [0, 1, 2, 3, 5, 8, 10]
+    k_keys = [f"k_{k}" for k in ks]
+    unc_p95 = [q1["uncertainty_guided_sigma_tip"][kk]["p95_mm"] for kk in k_keys]
+    unc_mean = [q1["uncertainty_guided_sigma_tip"][kk]["mean_mm"] for kk in k_keys]
+    rnd_p95 = [q1["random_order"][kk]["p95_mm"] for kk in k_keys]
+    ora_p95 = [q1["oracle_largest_error_first"][kk]["p95_mm"] for kk in k_keys]
+
+    ax_b.plot(ks, rnd_p95, color="#888888", lw=1.1, ls="--", marker="^", ms=3.4, label="Random review P95 (mm)")
+    ax_b.plot(ks, unc_p95, color=C["nf"], lw=1.5, marker="o", ms=4.0, label="Uncertainty $\\hat{\\sigma}_{\\mathrm{tip}}$ P95 (90.2% conf. cov)")
+    ax_b.plot(ks, ora_p95, color=C["st2"], lw=1.1, ls=":", marker="d", ms=3.4, label="Oracle P95 (mm)")
+    ax_b.plot(ks, unc_mean, color=C["st1"], lw=1.4, marker="s", ms=3.6, label="Uncertainty-guided mean $E_{\\mathrm{tip}}$ (mm)")
+    ax_b.axhline(10.0, color="#B03F41", lw=0.7, ls="-.", zorder=1)
+    ax_b.annotate("k=8: P95 9.9 mm, mean 2.8 mm", xy=(8, 9.9), xytext=(3.8, 12.6),
+                  fontsize=5.4, color="#222222", arrowprops=dict(arrowstyle="->", lw=0.5, color="#555555"))
+    ax_b.set_xlim(-0.3, 10.4)
+    ax_b.set_ylim(0, 31)
+    ax_b.set_xticks(ks)
+    ax_b.set_xlabel("Flagged tips reviewed per patient $k$", fontsize=6.8)
+    ax_b.set_ylabel("3D tip error $E_{\\mathrm{tip}}$ (mm)", fontsize=6.8)
+    ax_b.set_title("b   Uncertainty-guided tip triage budget", fontsize=7.2, fontweight="bold", loc="left")
+    ax_b.legend(loc="upper right", fontsize=5.2, frameon=True, facecolor="white", framealpha=0.9, edgecolor="none")
+    ax_b.grid(True, color="#E6E6E6", lw=0.4, zorder=0)
+
+    # --- Panel c: Cross-Organ, Multi-Sequence & Cross-Modality Generalization ---
+    p3a = e3["part_3a_prostate_zero_shot_transfer"]
+    p3b = e3["part_3b_same_session_cross_sequence"]["cross_sequence_benchmarks"]
+    p4b = e4["part4b_paired_pelvic_ct_cross_modality"]
+
+    items_c = [
+        ("Prostate MRI: NF 2026\n(template ACSV, N=14)", p3a["operating_modes"]["standard_template_acsv_klim47"]["nf2026_full_stage2_zero_exposure_gyn_tau50"]["f1_1to1_pct"], C["nf"], "100.0% F1 (0.34 mm shaft)"),
+        ("Prostate MRI: NF 2026\n(auto k_lim, 0% exposure)", p3a["operating_modes"]["reference_free_auto_klim40"]["nf2026_full_stage2_zero_exposure_gyn_tau50"]["f1_1to1_pct"], C["nf"], "96.3% F1 (0.99 mm med tip)"),
+        ("Prostate MRI: 1-ch\nResUNet + clDice", p3a["operating_modes"]["reference_free_auto_klim40"]["baseline2_resunet_cldice_1ch"]["f1_1to1_pct"], C["b_nnu"], "71.8% F1 (11 false tracks)"),
+        ("Prostate MRI: NF 2026\nPhysics X[1:4] = 0", p3a["physics_channel_ablations"]["reference_free_auto_klim40"]["stage1_physics_zeroed_X1to3_eq_0"]["f1_1to1_pct"], "#B03F41", "0.0% F1 (985x peak drop)"),
+        ("3D wbSSFP / True-FISP\n(N=47 catheters)", p3b["AX_3D_wbSSFP_FISP"]["vs_dark_core_present_gt"]["nf2026_z_upsampled_1p6mm_full_stage2"]["f1_1to1_pct"], C["st2"], "92.9% F1 (97.9% recall)"),
+        ("Thick 2D AX TSE T2\n(49 scans, N=882)", p3b["2D_AX_TSE_T2"]["vs_dark_core_present_gt"]["nf2026_z_upsampled_1p6mm_full_stage2"]["recall_1to1_pct"], C["st1"], "88.4% rec (76.9% F1)"),
+        ("Paired Pelvic CT\n(38 pts, N=801, 0-shot)", p4b["cross_modality_ct_to_mri_registration_metrics"]["dual_polarity_matched_le_5p0mm_recall_pct"], C["st0"], "79.2% rec (52% extra MRI=CT)"),
+    ]
+    y_c = np.arange(len(items_c))[::-1]
+    vals_c = [it[1] for it in items_c]
+    cols_c = [it[2] for it in items_c]
+    ax_c.barh(y_c, vals_c, height=0.58, color=cols_c)
+    for yy, val, it in zip(y_c, vals_c, items_c):
+        ax_c.text(val + 1.5, yy, it[3], va="center", fontsize=5.4, color="#222222")
+    ax_c.set_yticks(y_c)
+    ax_c.set_yticklabels([it[0] for it in items_c], fontsize=5.5)
+    ax_c.set_xlim(0, 148)
+    ax_c.set_xlabel("Detection F1 or recall (%)", fontsize=7.0)
+    ax_c.set_title("c   Cross-organ, multi-sequence & CT transfer", fontsize=7.2, fontweight="bold", loc="left")
+    ax_c.grid(axis="x", color="#E6E6E6", lw=0.4, zorder=0)
+
+    # --- Panel d: 4D Intra-Procedural Insertion & Biomechanics ---
+    bend = e4["part4a_4d_intraprocedural_tracking"]["depth_dependent_bending_biomechanics"]["deflection_by_depth_bin"]
+    push = e4["part4a_4d_intraprocedural_tracking"]["tissue_push_biomechanics"]
+    depth_bins = ["0_30mm", "30_60mm", "60_90mm", "gt_90mm"]
+    depth_x = np.arange(len(depth_bins))
+    bend_med = [bend[b]["median_deflection_mm"] for b in depth_bins]
+    bend_mean = [bend[b]["mean_deflection_mm"] for b in depth_bins]
+    bend_p90 = [bend[b]["p90_deflection_mm"] for b in depth_bins]
+
+    ax_d.plot(depth_x, bend_p90, color="#B03F41", lw=1.2, ls="--", marker="^", ms=3.5, label="Shaft deflection P90 (mm)")
+    ax_d.plot(depth_x, bend_mean, color=C["nf"], lw=1.5, marker="o", ms=4.0, label="Shaft deflection mean (mm)")
+    ax_d.plot(depth_x, bend_med, color=C["st2"], lw=1.4, marker="s", ms=3.6, label="Shaft deflection median (mm)")
+
+    push_x = np.array([0.3, 1.5, 2.7])
+    push_med = [
+        push["near_newly_inserted_le_10mm"]["median_lateral_shift_mm"],
+        push["intermediate_10_to_20mm"]["median_lateral_shift_mm"],
+        push["far_from_newly_inserted_gt_20mm"]["median_lateral_shift_mm"],
+    ]
+    ax_d.plot(push_x, push_med, color=C["st0"], lw=1.3, ls="-.", marker="D", ms=3.6,
+              label="Tissue-push shift ($\\leq$10 vs $>$20 mm: 1.41 vs 0.93 mm)")
+    ax_d.set_xticks(depth_x)
+    ax_d.set_xticklabels(["0-30 mm\n(near <=10)", "30-60 mm\n(10-20 mm)", "60-90 mm\n(far >20)", ">90 mm\ndeep tip"], fontsize=5.6)
+    ax_d.set_xlim(-0.3, 3.3)
+    ax_d.set_ylim(0, 10.5)
+    ax_d.set_xlabel("Insertion depth / neighbor distance bin (4D Kalman +8.2% F1)", fontsize=6.6)
+    ax_d.set_ylabel("Displacement / deflection (mm)", fontsize=7.0)
+    ax_d.set_title("d   4D insertion deflection & tissue-push biomechanics", fontsize=7.2, fontweight="bold", loc="left")
+    ax_d.legend(loc="upper left", fontsize=5.1, frameon=True, facecolor="white", framealpha=0.9, edgecolor="none")
+    ax_d.grid(True, color="#E6E6E6", lw=0.4, zorder=0)
+
+    assert_no_overlap(fig, pad_px=1)
+    save_all_formats(fig, "fig8_clinical_translation_and_generalization")
+    plt.close(fig)
+
 
 def main():
     bench, inter, spec, qual = load_all_sources()
@@ -953,7 +1083,8 @@ def main():
     make_fig5_qualitative_mri_3d(qual)
     make_fig6_specificity_and_runtime(spec)
     make_fig7_calibration_and_reasons()
-    print("All 7 publication vector PDF figures + CSV data files generated successfully!")
+    make_fig8_clinical_translation_and_generalization()
+    print("All 8 publication vector PDF figures + CSV data files generated successfully!")
 
 
 if __name__ == "__main__":

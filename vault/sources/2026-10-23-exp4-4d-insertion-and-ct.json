@@ -1,0 +1,2142 @@
+{
+  "experiment": "Experiment 4: 4D Intra-Procedural Serial Insertion & Deflection Tracking (Cases 68-71) & Paired Post-Implant Pelvic CT (40 NRRD-CT Volumes) Cross-Modality Evaluation",
+  "date": "2026-10-23",
+  "script": "vault/paper/benchmarks_clean/run_exp4_4d_insertion_and_ct.py",
+  "elapsed_sec": 1669.99,
+  "part4a_4d_intraprocedural_tracking": {
+    "n_patients_4d": 4,
+    "patient_ids": [
+      "Case 068",
+      "Case 069",
+      "Case 070",
+      "Case 071"
+    ],
+    "total_serial_scans_evaluated": 23,
+    "mean_monitoring_scan_runtime_sec": 1.205,
+    "tissue_push_biomechanics": {
+      "total_persisted_catheter_transitions": 204,
+      "near_newly_inserted_le_10mm": {
+        "n": 82,
+        "mean_lateral_shift_mm": 1.616,
+        "median_lateral_shift_mm": 1.414,
+        "iqr_lateral_shift_mm": [
+          0.889,
+          2.119
+        ],
+        "p90_lateral_shift_mm": 3.189
+      },
+      "intermediate_10_to_20mm": {
+        "n": 78,
+        "mean_lateral_shift_mm": 1.225,
+        "median_lateral_shift_mm": 1.033,
+        "iqr_lateral_shift_mm": [
+          0.645,
+          1.57
+        ]
+      },
+      "far_from_newly_inserted_gt_20mm": {
+        "n": 44,
+        "mean_lateral_shift_mm": 1.081,
+        "median_lateral_shift_mm": 0.932,
+        "iqr_lateral_shift_mm": [
+          0.581,
+          1.249
+        ]
+      },
+      "mann_whitney_near_le_12mm_vs_far_gt_12mm_p": 0.0006113420352449186,
+      "spearman_distance_vs_lateral_push_r": -0.2598,
+      "spearman_distance_vs_lateral_push_p": 0.00017548824662959813
+    },
+    "depth_dependent_bending_biomechanics": {
+      "n_catheters_analyzed": 129,
+      "deflection_by_depth_bin": {
+        "0_30mm": {
+          "n_samples": 1312,
+          "mean_deflection_mm": 0.053,
+          "median_deflection_mm": 0.003,
+          "iqr_deflection_mm": [
+            0.0,
+            0.032
+          ],
+          "p90_deflection_mm": 0.13
+        },
+        "30_60mm": {
+          "n_samples": 978,
+          "mean_deflection_mm": 0.467,
+          "median_deflection_mm": 0.19,
+          "iqr_deflection_mm": [
+            0.029,
+            0.719
+          ],
+          "p90_deflection_mm": 1.349
+        },
+        "60_90mm": {
+          "n_samples": 750,
+          "mean_deflection_mm": 1.677,
+          "median_deflection_mm": 1.215,
+          "iqr_deflection_mm": [
+            0.382,
+            2.501
+          ],
+          "p90_deflection_mm": 3.841
+        },
+        "gt_90mm": {
+          "n_samples": 830,
+          "mean_deflection_mm": 3.858,
+          "median_deflection_mm": 2.814,
+          "iqr_deflection_mm": [
+            1.061,
+            5.344
+          ],
+          "p90_deflection_mm": 8.617
+        }
+      },
+      "overall_tip_deflection_mean_mm": 4.098,
+      "overall_tip_deflection_median_mm": 2.515,
+      "overall_tip_deflection_p90_mm": 10.082,
+      "spearman_depth_vs_tip_deflection_r": 0.5136,
+      "spearman_p_value": 4.851238056762859e-10
+    },
+    "per_patient_4d_results": {
+      "Case_068": {
+        "case_num": 68,
+        "bench_idx": 44,
+        "held_out_outer_fold": 4,
+        "n_timepoints": 6,
+        "step_by_step_timeline": [
+          {
+            "step_index": 0,
+            "series_name": "6 AX TSE T2 MONITORING CATH PLACEMENT",
+            "n_indep_50": 8,
+            "n_causal_4d": 8,
+            "n_persisted": 0,
+            "n_newly_inserted": 8,
+            "n_recovered_dropout": 0,
+            "rigid_shift_xyz_mm": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "mean_tip_advance_mm": 0.0,
+            "max_tip_advance_mm": 0.0,
+            "tissue_push_near_le_12mm_median": null,
+            "tissue_push_far_gt_12mm_median": null
+          },
+          {
+            "step_index": 1,
+            "series_name": "7 AX TSE T2 MONITORING CATH PLACEMENT",
+            "n_indep_50": 21,
+            "n_causal_4d": 19,
+            "n_persisted": 8,
+            "n_newly_inserted": 11,
+            "n_recovered_dropout": 1,
+            "rigid_shift_xyz_mm": [
+              -1.27,
+              1.59,
+              0.0
+            ],
+            "mean_tip_advance_mm": 1.17,
+            "max_tip_advance_mm": 8.19,
+            "tissue_push_near_le_12mm_median": 1.337,
+            "tissue_push_far_gt_12mm_median": 0.651
+          },
+          {
+            "step_index": 2,
+            "series_name": "8 AX TSE T2 MONITORING CATH PLACEMENT",
+            "n_indep_50": 27,
+            "n_causal_4d": 29,
+            "n_persisted": 18,
+            "n_newly_inserted": 11,
+            "n_recovered_dropout": 7,
+            "rigid_shift_xyz_mm": [
+              -3.02,
+              -0.48,
+              0.0
+            ],
+            "mean_tip_advance_mm": 16.99,
+            "max_tip_advance_mm": 72.45,
+            "tissue_push_near_le_12mm_median": 3.249,
+            "tissue_push_far_gt_12mm_median": 0.609
+          },
+          {
+            "step_index": 3,
+            "series_name": "9 AX TSE T2 MONITORING CATH PLACEMENT",
+            "n_indep_50": 29,
+            "n_causal_4d": 27,
+            "n_persisted": 22,
+            "n_newly_inserted": 5,
+            "n_recovered_dropout": 1,
+            "rigid_shift_xyz_mm": [
+              -0.47,
+              -0.25,
+              0.0
+            ],
+            "mean_tip_advance_mm": 4.34,
+            "max_tip_advance_mm": 36.35,
+            "tissue_push_near_le_12mm_median": 1.067,
+            "tissue_push_far_gt_12mm_median": 0.735
+          },
+          {
+            "step_index": 4,
+            "series_name": "11 AX space trial 1.6 SLICE COVER TEMPLATE",
+            "n_indep_50": 36,
+            "n_causal_4d": 34,
+            "n_persisted": 26,
+            "n_newly_inserted": 8,
+            "n_recovered_dropout": 5,
+            "rigid_shift_xyz_mm": [
+              1.9,
+              -0.52,
+              0.0
+            ],
+            "mean_tip_advance_mm": 2.33,
+            "max_tip_advance_mm": 32.16,
+            "tissue_push_near_le_12mm_median": 0.915,
+            "tissue_push_far_gt_12mm_median": 0.99
+          },
+          {
+            "step_index": 5,
+            "series_name": "12 AX space trial 1.6 SLICE COVER TEMPLATE",
+            "n_indep_50": 33,
+            "n_causal_4d": 51,
+            "n_persisted": 29,
+            "n_newly_inserted": 22,
+            "n_recovered_dropout": 22,
+            "rigid_shift_xyz_mm": [
+              4.38,
+              4.8,
+              -89.27
+            ],
+            "mean_tip_advance_mm": 32.88,
+            "max_tip_advance_mm": 54.53,
+            "tissue_push_near_le_12mm_median": 2.49,
+            "tissue_push_far_gt_12mm_median": null
+          }
+        ],
+        "annotation_evaluations": {
+          "final_3d_space_vs_cy_ht": {
+            "n_gt": 24,
+            "indep_recall_pct": 91.67,
+            "indep_precision_pct": 66.67,
+            "indep_f1_pct": 77.19,
+            "causal_4d_recall_pct": 91.67,
+            "causal_4d_precision_pct": 43.14,
+            "causal_4d_f1_pct": 58.67,
+            "causal_4d_shaft_median_mm": 0.797,
+            "causal_4d_tip_median_mm": 2.086
+          },
+          "series_11_space_vs_manual_eh": {
+            "n_gt_eh": 20,
+            "causal_4d_recall_pct": 100.0,
+            "causal_4d_f1_pct": 74.07,
+            "shaft_median_mm": 0.711
+          }
+        },
+        "bending_analysis": {
+          "n_catheters_analyzed": 50,
+          "deflection_by_depth_bin": {
+            "0_30mm": {
+              "n_samples": 428,
+              "mean_deflection_mm": 0.026,
+              "median_deflection_mm": 0.0,
+              "iqr_deflection_mm": [
+                0.0,
+                0.02
+              ],
+              "p90_deflection_mm": 0.078
+            },
+            "30_60mm": {
+              "n_samples": 353,
+              "mean_deflection_mm": 0.555,
+              "median_deflection_mm": 0.296,
+              "iqr_deflection_mm": [
+                0.051,
+                0.859
+              ],
+              "p90_deflection_mm": 1.489
+            },
+            "60_90mm": {
+              "n_samples": 334,
+              "mean_deflection_mm": 2.252,
+              "median_deflection_mm": 1.768,
+              "iqr_deflection_mm": [
+                0.774,
+                3.082
+              ],
+              "p90_deflection_mm": 4.6
+            },
+            "gt_90mm": {
+              "n_samples": 385,
+              "mean_deflection_mm": 5.287,
+              "median_deflection_mm": 4.129,
+              "iqr_deflection_mm": [
+                1.929,
+                7.354
+              ],
+              "p90_deflection_mm": 11.056
+            }
+          },
+          "overall_tip_deflection_mean_mm": 6.577,
+          "overall_tip_deflection_median_mm": 4.899,
+          "overall_tip_deflection_p90_mm": 16.231,
+          "spearman_depth_vs_tip_deflection_r": 0.3454,
+          "spearman_p_value": 0.014032503307768156
+        }
+      },
+      "Case_069": {
+        "case_num": 69,
+        "bench_idx": 45,
+        "held_out_outer_fold": 0,
+        "n_timepoints": 5,
+        "step_by_step_timeline": [
+          {
+            "step_index": 0,
+            "series_name": "9 AX TSE T2 MONITORING CATH PLACEMENT",
+            "n_indep_50": 26,
+            "n_causal_4d": 26,
+            "n_persisted": 0,
+            "n_newly_inserted": 26,
+            "n_recovered_dropout": 0,
+            "rigid_shift_xyz_mm": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "mean_tip_advance_mm": 0.0,
+            "max_tip_advance_mm": 0.0,
+            "tissue_push_near_le_12mm_median": null,
+            "tissue_push_far_gt_12mm_median": null
+          },
+          {
+            "step_index": 1,
+            "series_name": "11 AX TSE T2 MONITORING CATH PLACEMENT",
+            "n_indep_50": 22,
+            "n_causal_4d": 32,
+            "n_persisted": 26,
+            "n_newly_inserted": 6,
+            "n_recovered_dropout": 25,
+            "rigid_shift_xyz_mm": [
+              -5.65,
+              -6.89,
+              0.0
+            ],
+            "mean_tip_advance_mm": 0.0,
+            "max_tip_advance_mm": 0.0,
+            "tissue_push_near_le_12mm_median": null,
+            "tissue_push_far_gt_12mm_median": 3.069
+          },
+          {
+            "step_index": 2,
+            "series_name": "13 AX TSE T2 MONITORING CATH PLACEMENT",
+            "n_indep_50": 41,
+            "n_causal_4d": 36,
+            "n_persisted": 17,
+            "n_newly_inserted": 19,
+            "n_recovered_dropout": 8,
+            "rigid_shift_xyz_mm": [
+              6.13,
+              6.77,
+              0.0
+            ],
+            "mean_tip_advance_mm": 2.59,
+            "max_tip_advance_mm": 15.0,
+            "tissue_push_near_le_12mm_median": 2.19,
+            "tissue_push_far_gt_12mm_median": 0.829
+          },
+          {
+            "step_index": 3,
+            "series_name": "15 AX TSE T2 MONITORING CATH PLACEMENT",
+            "n_indep_50": 45,
+            "n_causal_4d": 40,
+            "n_persisted": 31,
+            "n_newly_inserted": 9,
+            "n_recovered_dropout": 4,
+            "rigid_shift_xyz_mm": [
+              1.0,
+              -0.92,
+              0.0
+            ],
+            "mean_tip_advance_mm": 2.4,
+            "max_tip_advance_mm": 32.11,
+            "tissue_push_near_le_12mm_median": 0.819,
+            "tissue_push_far_gt_12mm_median": 0.925
+          },
+          {
+            "step_index": 4,
+            "series_name": "17 AX space trial 1.6 SLICE COVER TEMPLATE",
+            "n_indep_50": 43,
+            "n_causal_4d": 42,
+            "n_persisted": 39,
+            "n_newly_inserted": 3,
+            "n_recovered_dropout": 18,
+            "rigid_shift_xyz_mm": [
+              0.94,
+              -0.12,
+              0.0
+            ],
+            "mean_tip_advance_mm": 7.91,
+            "max_tip_advance_mm": 31.96,
+            "tissue_push_near_le_12mm_median": 1.759,
+            "tissue_push_far_gt_12mm_median": 1.255
+          }
+        ],
+        "annotation_evaluations": {
+          "final_3d_space_vs_cy_ht": {
+            "n_gt": 42,
+            "indep_recall_pct": 85.71,
+            "indep_precision_pct": 83.72,
+            "indep_f1_pct": 84.71,
+            "causal_4d_recall_pct": 92.86,
+            "causal_4d_precision_pct": 92.86,
+            "causal_4d_f1_pct": 92.86,
+            "causal_4d_shaft_median_mm": 0.872,
+            "causal_4d_tip_median_mm": 10.844
+          },
+          "series_11_dropout_recovery_vs_series_9_bundle": {
+            "n_series_9_bundle": 26,
+            "indep_series_11_recall_pct": 42.31,
+            "causal_4d_series_11_recall_pct": 38.46
+          }
+        },
+        "bending_analysis": {
+          "n_catheters_analyzed": 42,
+          "deflection_by_depth_bin": {
+            "0_30mm": {
+              "n_samples": 446,
+              "mean_deflection_mm": 0.08,
+              "median_deflection_mm": 0.005,
+              "iqr_deflection_mm": [
+                0.0,
+                0.027
+              ],
+              "p90_deflection_mm": 0.177
+            },
+            "30_60mm": {
+              "n_samples": 324,
+              "mean_deflection_mm": 0.37,
+              "median_deflection_mm": 0.081,
+              "iqr_deflection_mm": [
+                0.022,
+                0.451
+              ],
+              "p90_deflection_mm": 1.307
+            },
+            "60_90mm": {
+              "n_samples": 232,
+              "mean_deflection_mm": 1.353,
+              "median_deflection_mm": 0.651,
+              "iqr_deflection_mm": [
+                0.168,
+                2.32
+              ],
+              "p90_deflection_mm": 3.69
+            },
+            "gt_90mm": {
+              "n_samples": 258,
+              "mean_deflection_mm": 3.405,
+              "median_deflection_mm": 3.079,
+              "iqr_deflection_mm": [
+                0.758,
+                4.741
+              ],
+              "p90_deflection_mm": 7.131
+            }
+          },
+          "overall_tip_deflection_mean_mm": 3.08,
+          "overall_tip_deflection_median_mm": 2.069,
+          "overall_tip_deflection_p90_mm": 7.338,
+          "spearman_depth_vs_tip_deflection_r": 0.6048,
+          "spearman_p_value": 2.2091208734522128e-05
+        }
+      },
+      "Case_070": {
+        "case_num": 70,
+        "bench_idx": 46,
+        "held_out_outer_fold": 1,
+        "n_timepoints": 5,
+        "step_by_step_timeline": [
+          {
+            "step_index": 0,
+            "series_name": "6 AX TSE T2 MONITORING CATH PLACEMENT",
+            "n_indep_50": 12,
+            "n_causal_4d": 12,
+            "n_persisted": 0,
+            "n_newly_inserted": 12,
+            "n_recovered_dropout": 0,
+            "rigid_shift_xyz_mm": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "mean_tip_advance_mm": 0.0,
+            "max_tip_advance_mm": 0.0,
+            "tissue_push_near_le_12mm_median": null,
+            "tissue_push_far_gt_12mm_median": null
+          },
+          {
+            "step_index": 1,
+            "series_name": "11 AX TSE T2 MONITORING CATH PLACEMENT",
+            "n_indep_50": 12,
+            "n_causal_4d": 19,
+            "n_persisted": 12,
+            "n_newly_inserted": 7,
+            "n_recovered_dropout": 10,
+            "rigid_shift_xyz_mm": [
+              -2.0,
+              6.0,
+              64.1
+            ],
+            "mean_tip_advance_mm": 0.0,
+            "max_tip_advance_mm": 0.0,
+            "tissue_push_near_le_12mm_median": 1.915,
+            "tissue_push_far_gt_12mm_median": null
+          },
+          {
+            "step_index": 2,
+            "series_name": "12 AX TSE T2 MONITORING CATH PLACEMENT",
+            "n_indep_50": 15,
+            "n_causal_4d": 15,
+            "n_persisted": 10,
+            "n_newly_inserted": 5,
+            "n_recovered_dropout": 4,
+            "rigid_shift_xyz_mm": [
+              1.73,
+              3.96,
+              0.0
+            ],
+            "mean_tip_advance_mm": 0.38,
+            "max_tip_advance_mm": 2.21,
+            "tissue_push_near_le_12mm_median": 2.188,
+            "tissue_push_far_gt_12mm_median": 0.844
+          },
+          {
+            "step_index": 3,
+            "series_name": "13 AX TSE T2 MONITORING CATH PLACEMENT",
+            "n_indep_50": 20,
+            "n_causal_4d": 18,
+            "n_persisted": 12,
+            "n_newly_inserted": 6,
+            "n_recovered_dropout": 1,
+            "rigid_shift_xyz_mm": [
+              2.22,
+              -2.02,
+              0.0
+            ],
+            "mean_tip_advance_mm": 3.58,
+            "max_tip_advance_mm": 9.69,
+            "tissue_push_near_le_12mm_median": 0.934,
+            "tissue_push_far_gt_12mm_median": 1.351
+          },
+          {
+            "step_index": 4,
+            "series_name": "14 AX space trial 1.6 SLICE COVER TEMPLATE",
+            "n_indep_50": 27,
+            "n_causal_4d": 24,
+            "n_persisted": 17,
+            "n_newly_inserted": 7,
+            "n_recovered_dropout": 1,
+            "rigid_shift_xyz_mm": [
+              0.35,
+              1.86,
+              0.0
+            ],
+            "mean_tip_advance_mm": 3.1,
+            "max_tip_advance_mm": 20.11,
+            "tissue_push_near_le_12mm_median": 1.125,
+            "tissue_push_far_gt_12mm_median": 1.188
+          }
+        ],
+        "annotation_evaluations": {
+          "final_3d_space_vs_cy_ht": {
+            "n_gt": 22,
+            "indep_recall_pct": 95.45,
+            "indep_precision_pct": 77.78,
+            "indep_f1_pct": 85.71,
+            "causal_4d_recall_pct": 95.45,
+            "causal_4d_precision_pct": 87.5,
+            "causal_4d_f1_pct": 91.3,
+            "causal_4d_shaft_median_mm": 0.552,
+            "causal_4d_tip_median_mm": 4.785
+          },
+          "series_6_monitoring_vs_ht_10_needles": {
+            "n_gt_annotated_subset": 10,
+            "indep_recall_pct": 70.0,
+            "causal_4d_recall_pct": 70.0,
+            "shaft_median_mm": 0.655,
+            "tip_median_mm": 1.884
+          }
+        },
+        "bending_analysis": {
+          "n_catheters_analyzed": 23,
+          "deflection_by_depth_bin": {
+            "0_30mm": {
+              "n_samples": 235,
+              "mean_deflection_mm": 0.043,
+              "median_deflection_mm": 0.007,
+              "iqr_deflection_mm": [
+                0.0,
+                0.048
+              ],
+              "p90_deflection_mm": 0.113
+            },
+            "30_60mm": {
+              "n_samples": 163,
+              "mean_deflection_mm": 0.381,
+              "median_deflection_mm": 0.178,
+              "iqr_deflection_mm": [
+                0.04,
+                0.553
+              ],
+              "p90_deflection_mm": 1.072
+            },
+            "60_90mm": {
+              "n_samples": 122,
+              "mean_deflection_mm": 0.91,
+              "median_deflection_mm": 0.481,
+              "iqr_deflection_mm": [
+                0.206,
+                1.264
+              ],
+              "p90_deflection_mm": 2.426
+            },
+            "gt_90mm": {
+              "n_samples": 170,
+              "mean_deflection_mm": 1.477,
+              "median_deflection_mm": 0.949,
+              "iqr_deflection_mm": [
+                0.404,
+                2.074
+              ],
+              "p90_deflection_mm": 3.726
+            }
+          },
+          "overall_tip_deflection_mean_mm": 2.156,
+          "overall_tip_deflection_median_mm": 1.426,
+          "overall_tip_deflection_p90_mm": 5.174,
+          "spearman_depth_vs_tip_deflection_r": 0.2199,
+          "spearman_p_value": 0.31332131674008434
+        }
+      },
+      "Case_071": {
+        "case_num": 71,
+        "bench_idx": 47,
+        "held_out_outer_fold": 2,
+        "n_timepoints": 7,
+        "step_by_step_timeline": [
+          {
+            "step_index": 0,
+            "series_name": "7 AX TSE T2 MONITORING CATH PLACEMENT",
+            "n_indep_50": 7,
+            "n_causal_4d": 7,
+            "n_persisted": 0,
+            "n_newly_inserted": 7,
+            "n_recovered_dropout": 0,
+            "rigid_shift_xyz_mm": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "mean_tip_advance_mm": 0.0,
+            "max_tip_advance_mm": 0.0,
+            "tissue_push_near_le_12mm_median": null,
+            "tissue_push_far_gt_12mm_median": null
+          },
+          {
+            "step_index": 1,
+            "series_name": "9 AX TSE T2 MONITORING CATH PLACEMENT",
+            "n_indep_50": 5,
+            "n_causal_4d": 10,
+            "n_persisted": 7,
+            "n_newly_inserted": 3,
+            "n_recovered_dropout": 5,
+            "rigid_shift_xyz_mm": [
+              -5.0,
+              0.0,
+              0.0
+            ],
+            "mean_tip_advance_mm": 19.96,
+            "max_tip_advance_mm": 46.45,
+            "tissue_push_near_le_12mm_median": null,
+            "tissue_push_far_gt_12mm_median": 1.466
+          },
+          {
+            "step_index": 2,
+            "series_name": "11 AX TSE T2 MONITORING CATH PLACEMENT",
+            "n_indep_50": 14,
+            "n_causal_4d": 16,
+            "n_persisted": 8,
+            "n_newly_inserted": 8,
+            "n_recovered_dropout": 8,
+            "rigid_shift_xyz_mm": [
+              -6.0,
+              -6.0,
+              0.0
+            ],
+            "mean_tip_advance_mm": 0.0,
+            "max_tip_advance_mm": 0.0,
+            "tissue_push_near_le_12mm_median": null,
+            "tissue_push_far_gt_12mm_median": null
+          },
+          {
+            "step_index": 3,
+            "series_name": "13 AX TSE T2 MONITORING CATH PLACEMENT",
+            "n_indep_50": 17,
+            "n_causal_4d": 17,
+            "n_persisted": 9,
+            "n_newly_inserted": 8,
+            "n_recovered_dropout": 4,
+            "rigid_shift_xyz_mm": [
+              -0.58,
+              2.13,
+              0.0
+            ],
+            "mean_tip_advance_mm": 4.5,
+            "max_tip_advance_mm": 16.95,
+            "tissue_push_near_le_12mm_median": 1.645,
+            "tissue_push_far_gt_12mm_median": 0.643
+          },
+          {
+            "step_index": 4,
+            "series_name": "15 AX TSE T2 MONITORING CATH PLACEMENT",
+            "n_indep_50": 17,
+            "n_causal_4d": 17,
+            "n_persisted": 14,
+            "n_newly_inserted": 3,
+            "n_recovered_dropout": 5,
+            "rigid_shift_xyz_mm": [
+              0.35,
+              -0.51,
+              0.0
+            ],
+            "mean_tip_advance_mm": 0.0,
+            "max_tip_advance_mm": 0.0,
+            "tissue_push_near_le_12mm_median": 2.192,
+            "tissue_push_far_gt_12mm_median": 0.952
+          },
+          {
+            "step_index": 5,
+            "series_name": "18 AX TSE T2 MONITORING CATH PLACEMENT",
+            "n_indep_50": 15,
+            "n_causal_4d": 14,
+            "n_persisted": 14,
+            "n_newly_inserted": 0,
+            "n_recovered_dropout": 3,
+            "rigid_shift_xyz_mm": [
+              -2.3,
+              -3.95,
+              0.0
+            ],
+            "mean_tip_advance_mm": 8.86,
+            "max_tip_advance_mm": 29.72,
+            "tissue_push_near_le_12mm_median": null,
+            "tissue_push_far_gt_12mm_median": null
+          },
+          {
+            "step_index": 6,
+            "series_name": "19 AX space trial 1.6 SLICE COVER TEMPLATE",
+            "n_indep_50": 22,
+            "n_causal_4d": 14,
+            "n_persisted": 13,
+            "n_newly_inserted": 1,
+            "n_recovered_dropout": 5,
+            "rigid_shift_xyz_mm": [
+              0.71,
+              -0.79,
+              0.0
+            ],
+            "mean_tip_advance_mm": 0.0,
+            "max_tip_advance_mm": 0.0,
+            "tissue_push_near_le_12mm_median": null,
+            "tissue_push_far_gt_12mm_median": 0.755
+          }
+        ],
+        "annotation_evaluations": {
+          "final_3d_space_vs_cy_ht": {
+            "n_gt": 20,
+            "indep_recall_pct": 80.0,
+            "indep_precision_pct": 72.73,
+            "indep_f1_pct": 76.19,
+            "causal_4d_recall_pct": 65.0,
+            "causal_4d_precision_pct": 92.86,
+            "causal_4d_f1_pct": 76.47,
+            "causal_4d_shaft_median_mm": 0.876,
+            "causal_4d_tip_median_mm": 3.411
+          },
+          "series_9_monitoring_vs_ht_6_obturator_needles": {
+            "n_gt_annotated_subset": 6,
+            "indep_recall_pct": 16.67,
+            "causal_4d_recall_pct": 33.33,
+            "shaft_median_mm": 3.092
+          },
+          "series_11_monitoring_vs_ht_6_obturator_needles": {
+            "n_gt_annotated_subset": 6,
+            "indep_recall_pct": 66.67,
+            "causal_4d_recall_pct": 66.67,
+            "shaft_median_mm": 2.547
+          },
+          "series_19_vs_ht_4_tracked_needles": {
+            "n_gt_annotated_subset": 4,
+            "recall_pct": 50.0,
+            "shaft_median_mm": 2.081
+          }
+        },
+        "bending_analysis": {
+          "n_catheters_analyzed": 14,
+          "deflection_by_depth_bin": {
+            "0_30mm": {
+              "n_samples": 203,
+              "mean_deflection_mm": 0.065,
+              "median_deflection_mm": 0.021,
+              "iqr_deflection_mm": [
+                0.0,
+                0.078
+              ],
+              "p90_deflection_mm": 0.181
+            },
+            "30_60mm": {
+              "n_samples": 138,
+              "mean_deflection_mm": 0.567,
+              "median_deflection_mm": 0.433,
+              "iqr_deflection_mm": [
+                0.021,
+                0.958
+              ],
+              "p90_deflection_mm": 1.367
+            },
+            "60_90mm": {
+              "n_samples": 62,
+              "mean_deflection_mm": 1.301,
+              "median_deflection_mm": 1.302,
+              "iqr_deflection_mm": [
+                0.663,
+                1.903
+              ],
+              "p90_deflection_mm": 2.471
+            },
+            "gt_90mm": {
+              "n_samples": 17,
+              "mean_deflection_mm": 2.194,
+              "median_deflection_mm": 2.408,
+              "iqr_deflection_mm": [
+                1.431,
+                2.808
+              ],
+              "p90_deflection_mm": 3.077
+            }
+          },
+          "overall_tip_deflection_mean_mm": 1.484,
+          "overall_tip_deflection_median_mm": 1.275,
+          "overall_tip_deflection_p90_mm": 2.928,
+          "spearman_depth_vs_tip_deflection_r": 0.7011,
+          "spearman_p_value": 0.005211861769946939
+        }
+      }
+    }
+  },
+  "part4b_paired_pelvic_ct_cross_modality": {
+    "total_unique_ct_patients": 40,
+    "paired_with_54_mri_benchmark_patients": 38,
+    "non_benchmark_ct_patients": 2,
+    "total_mri_gt_catheters_across_38_paired_cases": 801,
+    "polarity_mode_detections_mean_per_case": {
+      "bright_core_metallic_stylet_mode": 19.45,
+      "dark_core_air_lumen_mode": 2.2,
+      "dual_polarity_unified_mode": 20.32,
+      "combined_dual_polarity_pool": 22.65
+    },
+    "cross_modality_ct_to_mri_registration_metrics": {
+      "bright_only_matched_le_5p0mm_recall_pct": 73.16,
+      "dark_only_matched_le_5p0mm_recall_pct": 7.99,
+      "dual_polarity_matched_le_3p5mm_count": 552,
+      "dual_polarity_matched_le_3p5mm_recall_pct": 68.91,
+      "dual_polarity_matched_le_5p0mm_count": 634,
+      "dual_polarity_matched_le_5p0mm_recall_pct": 79.15,
+      "inlier_shaft_xy_mean_mm": 2.148,
+      "inlier_shaft_xy_median_mm": 2.011,
+      "inlier_shaft_xy_iqr_mm": [
+        1.321,
+        2.762
+      ],
+      "inlier_tip_z_mean_mm": 6.817,
+      "inlier_tip_z_median_mm": 2.776,
+      "inlier_tip_z_iqr_mm": [
+        1.057,
+        7.429
+      ]
+    },
+    "cross_modality_ct_adjudication": {
+      "nf2026_unmatched_extra_mri_detections_total": 100,
+      "nf2026_unmatched_extra_confirmed_by_ct_count": 52,
+      "nf2026_unmatched_extra_confirmed_by_ct_pct": 52.0,
+      "lb_extra_mri_traces_total": 27,
+      "lb_extra_confirmed_by_ct_count": 10,
+      "lb_extra_confirmed_by_ct_pct": 37.04,
+      "tip_disagreements_ge_5mm_adjudicated_count": 70,
+      "tip_disagreement_nf_vs_ct_median_mm": 4.2,
+      "tip_disagreement_cy_vs_ct_median_mm": 4.31,
+      "tip_disagreement_lb_vs_ct_median_mm": 8.0,
+      "tip_disagreement_consensus_vs_ct_median_mm": 5.965,
+      "nf_closer_to_ct_than_single_rater_pct": 78.57
+    },
+    "per_case_ct_results": [
+      {
+        "case_num": 27,
+        "case_id": "Case 027",
+        "in_54_mri_benchmark": true,
+        "ct_filename": "2 Pelvis  1.5  B31f.CT._.2.169.2013.02.15.14.02.06.287.63237190.nrrd",
+        "shape_kji": [
+          169,
+          512,
+          512
+        ],
+        "spacing_ras_mm": [
+          0.553,
+          0.553,
+          1.0
+        ],
+        "runtime_sec": 97.69,
+        "n_detected_bright_stylet_mode": 11,
+        "n_detected_dark_air_lumen_mode": 1,
+        "n_detected_dual_polarity_unified": 11,
+        "n_detected_combined_ct_pool": 12,
+        "n_mri_gt_all": 10,
+        "n_matched_le_3p5mm": 9,
+        "n_matched_le_5p0mm": 10,
+        "n_matched_bright_only_le_5p0mm": 10,
+        "n_matched_dark_only_le_5p0mm": 1,
+        "recall_le_3p5mm_pct": 90.0,
+        "recall_le_5p0mm_pct": 100.0,
+        "recall_bright_only_le_5p0mm_pct": 100.0,
+        "recall_dark_only_le_5p0mm_pct": 10.0,
+        "inlier_shaft_xy_median_mm": 1.783,
+        "inlier_tip_z_median_mm": 8.624
+      },
+      {
+        "case_num": 29,
+        "case_id": "Case 029",
+        "in_54_mri_benchmark": true,
+        "ct_filename": "1 Pelvis  1.5  B31f.CT._.2.168.2013.02.15.14.35.48.678.18508648.nrrd",
+        "shape_kji": [
+          168,
+          512,
+          512
+        ],
+        "spacing_ras_mm": [
+          0.361,
+          0.361,
+          1.0
+        ],
+        "runtime_sec": 61.71,
+        "n_detected_bright_stylet_mode": 11,
+        "n_detected_dark_air_lumen_mode": 4,
+        "n_detected_dual_polarity_unified": 13,
+        "n_detected_combined_ct_pool": 13,
+        "n_mri_gt_all": 9,
+        "n_matched_le_3p5mm": 6,
+        "n_matched_le_5p0mm": 6,
+        "n_matched_bright_only_le_5p0mm": 6,
+        "n_matched_dark_only_le_5p0mm": 4,
+        "recall_le_3p5mm_pct": 66.67,
+        "recall_le_5p0mm_pct": 66.67,
+        "recall_bright_only_le_5p0mm_pct": 66.67,
+        "recall_dark_only_le_5p0mm_pct": 44.44,
+        "inlier_shaft_xy_median_mm": 1.969,
+        "inlier_tip_z_median_mm": 0.903
+      },
+      {
+        "case_num": 30,
+        "case_id": "Case 030",
+        "in_54_mri_benchmark": true,
+        "ct_filename": "1 Pelvis  5.0  B31f.CT._.3.36.2013.02.15.13.30.45.489.75109173.nrrd",
+        "shape_kji": [
+          36,
+          512,
+          512
+        ],
+        "spacing_ras_mm": [
+          0.377,
+          0.377,
+          5.0
+        ],
+        "runtime_sec": 3.43,
+        "n_detected_bright_stylet_mode": 11,
+        "n_detected_dark_air_lumen_mode": 6,
+        "n_detected_dual_polarity_unified": 16,
+        "n_detected_combined_ct_pool": 18,
+        "n_mri_gt_all": 20,
+        "n_matched_le_3p5mm": 9,
+        "n_matched_le_5p0mm": 9,
+        "n_matched_bright_only_le_5p0mm": 7,
+        "n_matched_dark_only_le_5p0mm": 3,
+        "recall_le_3p5mm_pct": 45.0,
+        "recall_le_5p0mm_pct": 45.0,
+        "recall_bright_only_le_5p0mm_pct": 35.0,
+        "recall_dark_only_le_5p0mm_pct": 15.0,
+        "inlier_shaft_xy_median_mm": 1.275,
+        "inlier_tip_z_median_mm": 3.329
+      },
+      {
+        "case_num": 31,
+        "case_id": "Case 031",
+        "in_54_mri_benchmark": true,
+        "ct_filename": "2 Pelvis  1.5  B31f.CT._.2.227.2013.02.15.14.37.16.485.62237243.nrrd",
+        "shape_kji": [
+          227,
+          512,
+          512
+        ],
+        "spacing_ras_mm": [
+          0.826,
+          0.826,
+          1.0
+        ],
+        "runtime_sec": 133.69,
+        "n_detected_bright_stylet_mode": 11,
+        "n_detected_dark_air_lumen_mode": 3,
+        "n_detected_dual_polarity_unified": 16,
+        "n_detected_combined_ct_pool": 22,
+        "n_mri_gt_all": 23,
+        "n_matched_le_3p5mm": 14,
+        "n_matched_le_5p0mm": 16,
+        "n_matched_bright_only_le_5p0mm": 4,
+        "n_matched_dark_only_le_5p0mm": 3,
+        "recall_le_3p5mm_pct": 60.87,
+        "recall_le_5p0mm_pct": 69.57,
+        "recall_bright_only_le_5p0mm_pct": 17.39,
+        "recall_dark_only_le_5p0mm_pct": 13.04,
+        "inlier_shaft_xy_median_mm": 2.822,
+        "inlier_tip_z_median_mm": 3.485
+      },
+      {
+        "case_num": 33,
+        "case_id": "Case 033",
+        "in_54_mri_benchmark": true,
+        "ct_filename": "1 Pelvis  5.0  B31f.CT._.3.34.2013.02.15.13.21.55.334.15778081.nrrd",
+        "shape_kji": [
+          34,
+          512,
+          512
+        ],
+        "spacing_ras_mm": [
+          0.371,
+          0.371,
+          5.0
+        ],
+        "runtime_sec": 3.13,
+        "n_detected_bright_stylet_mode": 11,
+        "n_detected_dark_air_lumen_mode": 1,
+        "n_detected_dual_polarity_unified": 11,
+        "n_detected_combined_ct_pool": 11,
+        "n_mri_gt_all": 11,
+        "n_matched_le_3p5mm": 7,
+        "n_matched_le_5p0mm": 7,
+        "n_matched_bright_only_le_5p0mm": 7,
+        "n_matched_dark_only_le_5p0mm": 1,
+        "recall_le_3p5mm_pct": 63.64,
+        "recall_le_5p0mm_pct": 63.64,
+        "recall_bright_only_le_5p0mm_pct": 63.64,
+        "recall_dark_only_le_5p0mm_pct": 9.09,
+        "inlier_shaft_xy_median_mm": 2.15,
+        "inlier_tip_z_median_mm": 5.963
+      },
+      {
+        "case_num": 34,
+        "case_id": "Case 034",
+        "in_54_mri_benchmark": true,
+        "ct_filename": "2 Pelvis  1.5  B31f.CT._.2.215.2013.02.15.15.00.06.909.54373424.nrrd",
+        "shape_kji": [
+          215,
+          512,
+          512
+        ],
+        "spacing_ras_mm": [
+          0.709,
+          0.709,
+          1.0
+        ],
+        "runtime_sec": 115.07,
+        "n_detected_bright_stylet_mode": 13,
+        "n_detected_dark_air_lumen_mode": 1,
+        "n_detected_dual_polarity_unified": 13,
+        "n_detected_combined_ct_pool": 13,
+        "n_mri_gt_all": 13,
+        "n_matched_le_3p5mm": 2,
+        "n_matched_le_5p0mm": 8,
+        "n_matched_bright_only_le_5p0mm": 8,
+        "n_matched_dark_only_le_5p0mm": 1,
+        "recall_le_3p5mm_pct": 15.38,
+        "recall_le_5p0mm_pct": 61.54,
+        "recall_bright_only_le_5p0mm_pct": 61.54,
+        "recall_dark_only_le_5p0mm_pct": 7.69,
+        "inlier_shaft_xy_median_mm": 4.01,
+        "inlier_tip_z_median_mm": 3.625
+      },
+      {
+        "case_num": 35,
+        "case_id": "Case 035",
+        "in_54_mri_benchmark": true,
+        "ct_filename": "2 Pelvis  1.5  B31f.CT._.2.218.2013.02.15.13.15.31.223.33400194.nrrd",
+        "shape_kji": [
+          218,
+          512,
+          512
+        ],
+        "spacing_ras_mm": [
+          0.477,
+          0.477,
+          1.0
+        ],
+        "runtime_sec": 104.54,
+        "n_detected_bright_stylet_mode": 21,
+        "n_detected_dark_air_lumen_mode": 5,
+        "n_detected_dual_polarity_unified": 23,
+        "n_detected_combined_ct_pool": 25,
+        "n_mri_gt_all": 21,
+        "n_matched_le_3p5mm": 17,
+        "n_matched_le_5p0mm": 17,
+        "n_matched_bright_only_le_5p0mm": 17,
+        "n_matched_dark_only_le_5p0mm": 5,
+        "recall_le_3p5mm_pct": 80.95,
+        "recall_le_5p0mm_pct": 80.95,
+        "recall_bright_only_le_5p0mm_pct": 80.95,
+        "recall_dark_only_le_5p0mm_pct": 23.81,
+        "inlier_shaft_xy_median_mm": 1.68,
+        "inlier_tip_z_median_mm": 4.964
+      },
+      {
+        "case_num": 37,
+        "case_id": "Case 037",
+        "in_54_mri_benchmark": true,
+        "ct_filename": "2 Pelvis  1.5  B31f.CT._.2.188.2013.02.15.13.01.25.598.73760414.nrrd",
+        "shape_kji": [
+          188,
+          512,
+          512
+        ],
+        "spacing_ras_mm": [
+          0.512,
+          0.512,
+          1.0
+        ],
+        "runtime_sec": 82.53,
+        "n_detected_bright_stylet_mode": 5,
+        "n_detected_dark_air_lumen_mode": 1,
+        "n_detected_dual_polarity_unified": 5,
+        "n_detected_combined_ct_pool": 6,
+        "n_mri_gt_all": 12,
+        "n_matched_le_3p5mm": 5,
+        "n_matched_le_5p0mm": 6,
+        "n_matched_bright_only_le_5p0mm": 4,
+        "n_matched_dark_only_le_5p0mm": 1,
+        "recall_le_3p5mm_pct": 41.67,
+        "recall_le_5p0mm_pct": 50.0,
+        "recall_bright_only_le_5p0mm_pct": 33.33,
+        "recall_dark_only_le_5p0mm_pct": 8.33,
+        "inlier_shaft_xy_median_mm": 2.094,
+        "inlier_tip_z_median_mm": 0.718
+      },
+      {
+        "case_num": 38,
+        "case_id": "Case 038",
+        "in_54_mri_benchmark": true,
+        "ct_filename": "2 Pelvis  1.5  B31f.CT._.2.224.2013.02.15.12.31.21.495.32027912.nrrd",
+        "shape_kji": [
+          224,
+          512,
+          512
+        ],
+        "spacing_ras_mm": [
+          0.6,
+          0.6,
+          1.0
+        ],
+        "runtime_sec": 114.03,
+        "n_detected_bright_stylet_mode": 16,
+        "n_detected_dark_air_lumen_mode": 1,
+        "n_detected_dual_polarity_unified": 16,
+        "n_detected_combined_ct_pool": 16,
+        "n_mri_gt_all": 15,
+        "n_matched_le_3p5mm": 9,
+        "n_matched_le_5p0mm": 13,
+        "n_matched_bright_only_le_5p0mm": 14,
+        "n_matched_dark_only_le_5p0mm": 0,
+        "recall_le_3p5mm_pct": 60.0,
+        "recall_le_5p0mm_pct": 86.67,
+        "recall_bright_only_le_5p0mm_pct": 93.33,
+        "recall_dark_only_le_5p0mm_pct": 0.0,
+        "inlier_shaft_xy_median_mm": 2.107,
+        "inlier_tip_z_median_mm": 0.917
+      },
+      {
+        "case_num": 39,
+        "case_id": "Case 039",
+        "in_54_mri_benchmark": true,
+        "ct_filename": "2 Pelvis  1.5  B31f.CT._.2.210.2013.02.15.13.07.05.754.23547617.nrrd",
+        "shape_kji": [
+          210,
+          512,
+          512
+        ],
+        "spacing_ras_mm": [
+          0.504,
+          0.504,
+          1.0
+        ],
+        "runtime_sec": 84.23,
+        "n_detected_bright_stylet_mode": 14,
+        "n_detected_dark_air_lumen_mode": 1,
+        "n_detected_dual_polarity_unified": 14,
+        "n_detected_combined_ct_pool": 17,
+        "n_mri_gt_all": 20,
+        "n_matched_le_3p5mm": 10,
+        "n_matched_le_5p0mm": 12,
+        "n_matched_bright_only_le_5p0mm": 12,
+        "n_matched_dark_only_le_5p0mm": 1,
+        "recall_le_3p5mm_pct": 50.0,
+        "recall_le_5p0mm_pct": 60.0,
+        "recall_bright_only_le_5p0mm_pct": 60.0,
+        "recall_dark_only_le_5p0mm_pct": 5.0,
+        "inlier_shaft_xy_median_mm": 2.311,
+        "inlier_tip_z_median_mm": 8.13
+      },
+      {
+        "case_num": 40,
+        "case_id": "Case 040",
+        "in_54_mri_benchmark": true,
+        "ct_filename": "2 Pelvis  1.5  B31f.CT._.2.178.2013.02.15.13.05.01.742.73242180.nrrd",
+        "shape_kji": [
+          178,
+          512,
+          512
+        ],
+        "spacing_ras_mm": [
+          0.578,
+          0.578,
+          1.0
+        ],
+        "runtime_sec": 34.11,
+        "n_detected_bright_stylet_mode": 21,
+        "n_detected_dark_air_lumen_mode": 1,
+        "n_detected_dual_polarity_unified": 21,
+        "n_detected_combined_ct_pool": 21,
+        "n_mri_gt_all": 21,
+        "n_matched_le_3p5mm": 21,
+        "n_matched_le_5p0mm": 21,
+        "n_matched_bright_only_le_5p0mm": 21,
+        "n_matched_dark_only_le_5p0mm": 1,
+        "recall_le_3p5mm_pct": 100.0,
+        "recall_le_5p0mm_pct": 100.0,
+        "recall_bright_only_le_5p0mm_pct": 100.0,
+        "recall_dark_only_le_5p0mm_pct": 4.76,
+        "inlier_shaft_xy_median_mm": 1.18,
+        "inlier_tip_z_median_mm": 0.945
+      },
+      {
+        "case_num": 41,
+        "case_id": "Case 041",
+        "in_54_mri_benchmark": true,
+        "ct_filename": "2 Pelvis  1.5  B31f.CT._.2.239.2013.07.15.13.00.43.407.22305565.nrrd",
+        "shape_kji": [
+          239,
+          512,
+          512
+        ],
+        "spacing_ras_mm": [
+          0.598,
+          0.598,
+          1.0
+        ],
+        "runtime_sec": 71.15,
+        "n_detected_bright_stylet_mode": 41,
+        "n_detected_dark_air_lumen_mode": 0,
+        "n_detected_dual_polarity_unified": 41,
+        "n_detected_combined_ct_pool": 41,
+        "n_mri_gt_all": 38,
+        "n_matched_le_3p5mm": 34,
+        "n_matched_le_5p0mm": 37,
+        "n_matched_bright_only_le_5p0mm": 38,
+        "n_matched_dark_only_le_5p0mm": 0,
+        "recall_le_3p5mm_pct": 89.47,
+        "recall_le_5p0mm_pct": 97.37,
+        "recall_bright_only_le_5p0mm_pct": 100.0,
+        "recall_dark_only_le_5p0mm_pct": 0.0,
+        "inlier_shaft_xy_median_mm": 2.288,
+        "inlier_tip_z_median_mm": 2.017
+      },
+      {
+        "case_num": 42,
+        "case_id": "Case 042",
+        "in_54_mri_benchmark": true,
+        "ct_filename": "2 Pelvis  1.5  B31f.CT._.2.209.2013.07.15.13.06.59.486.23029088.nrrd",
+        "shape_kji": [
+          209,
+          512,
+          512
+        ],
+        "spacing_ras_mm": [
+          0.371,
+          0.371,
+          1.0
+        ],
+        "runtime_sec": 56.79,
+        "n_detected_bright_stylet_mode": 38,
+        "n_detected_dark_air_lumen_mode": 7,
+        "n_detected_dual_polarity_unified": 37,
+        "n_detected_combined_ct_pool": 47,
+        "n_mri_gt_all": 24,
+        "n_matched_le_3p5mm": 18,
+        "n_matched_le_5p0mm": 23,
+        "n_matched_bright_only_le_5p0mm": 22,
+        "n_matched_dark_only_le_5p0mm": 4,
+        "recall_le_3p5mm_pct": 75.0,
+        "recall_le_5p0mm_pct": 95.83,
+        "recall_bright_only_le_5p0mm_pct": 91.67,
+        "recall_dark_only_le_5p0mm_pct": 16.67,
+        "inlier_shaft_xy_median_mm": 2.58,
+        "inlier_tip_z_median_mm": 3.96
+      },
+      {
+        "case_num": 44,
+        "case_id": "Case 044",
+        "in_54_mri_benchmark": true,
+        "ct_filename": "2 Pelvis  1.5  B31f.CT._.3.239.2013.07.15.13.20.14.389.40832942.nrrd",
+        "shape_kji": [
+          239,
+          512,
+          512
+        ],
+        "spacing_ras_mm": [
+          0.502,
+          0.502,
+          1.0
+        ],
+        "runtime_sec": 66.12,
+        "n_detected_bright_stylet_mode": 20,
+        "n_detected_dark_air_lumen_mode": 8,
+        "n_detected_dual_polarity_unified": 21,
+        "n_detected_combined_ct_pool": 28,
+        "n_mri_gt_all": 21,
+        "n_matched_le_3p5mm": 19,
+        "n_matched_le_5p0mm": 21,
+        "n_matched_bright_only_le_5p0mm": 20,
+        "n_matched_dark_only_le_5p0mm": 4,
+        "recall_le_3p5mm_pct": 90.48,
+        "recall_le_5p0mm_pct": 100.0,
+        "recall_bright_only_le_5p0mm_pct": 95.24,
+        "recall_dark_only_le_5p0mm_pct": 19.05,
+        "inlier_shaft_xy_median_mm": 1.699,
+        "inlier_tip_z_median_mm": 4.203
+      },
+      {
+        "case_num": 45,
+        "case_id": "Case 045",
+        "in_54_mri_benchmark": true,
+        "ct_filename": "1 Pelvis  1.5  B31f.CT._.3.199.2013.07.15.13.29.29.55.60045150.nrrd",
+        "shape_kji": [
+          199,
+          512,
+          512
+        ],
+        "spacing_ras_mm": [
+          0.518,
+          0.518,
+          1.0
+        ],
+        "runtime_sec": 39.47,
+        "n_detected_bright_stylet_mode": 19,
+        "n_detected_dark_air_lumen_mode": 1,
+        "n_detected_dual_polarity_unified": 23,
+        "n_detected_combined_ct_pool": 23,
+        "n_mri_gt_all": 23,
+        "n_matched_le_3p5mm": 18,
+        "n_matched_le_5p0mm": 21,
+        "n_matched_bright_only_le_5p0mm": 14,
+        "n_matched_dark_only_le_5p0mm": 1,
+        "recall_le_3p5mm_pct": 78.26,
+        "recall_le_5p0mm_pct": 91.3,
+        "recall_bright_only_le_5p0mm_pct": 60.87,
+        "recall_dark_only_le_5p0mm_pct": 4.35,
+        "inlier_shaft_xy_median_mm": 1.577,
+        "inlier_tip_z_median_mm": 2.104
+      },
+      {
+        "case_num": 48,
+        "case_id": "Case 048",
+        "in_54_mri_benchmark": true,
+        "ct_filename": "3 Pelvis  1.5  B31f.CT._.3.226.2013.07.15.13.56.32.696.35573130.nrrd",
+        "shape_kji": [
+          226,
+          512,
+          512
+        ],
+        "spacing_ras_mm": [
+          0.508,
+          0.508,
+          1.0
+        ],
+        "runtime_sec": 39.1,
+        "n_detected_bright_stylet_mode": 12,
+        "n_detected_dark_air_lumen_mode": 0,
+        "n_detected_dual_polarity_unified": 11,
+        "n_detected_combined_ct_pool": 13,
+        "n_mri_gt_all": 26,
+        "n_matched_le_3p5mm": 13,
+        "n_matched_le_5p0mm": 13,
+        "n_matched_bright_only_le_5p0mm": 12,
+        "n_matched_dark_only_le_5p0mm": 0,
+        "recall_le_3p5mm_pct": 50.0,
+        "recall_le_5p0mm_pct": 50.0,
+        "recall_bright_only_le_5p0mm_pct": 46.15,
+        "recall_dark_only_le_5p0mm_pct": 0.0,
+        "inlier_shaft_xy_median_mm": 1.384,
+        "inlier_tip_z_median_mm": 9.347
+      },
+      {
+        "case_num": 49,
+        "case_id": "Case 049",
+        "in_54_mri_benchmark": true,
+        "ct_filename": "1 Pelvis  1.5  B31f.CT._.3.187.2013.07.29.09.37.31.79.52947977.nrrd",
+        "shape_kji": [
+          187,
+          512,
+          512
+        ],
+        "spacing_ras_mm": [
+          0.662,
+          0.662,
+          1.0
+        ],
+        "runtime_sec": 13.45,
+        "n_detected_bright_stylet_mode": 14,
+        "n_detected_dark_air_lumen_mode": 1,
+        "n_detected_dual_polarity_unified": 16,
+        "n_detected_combined_ct_pool": 17,
+        "n_mri_gt_all": 16,
+        "n_matched_le_3p5mm": 12,
+        "n_matched_le_5p0mm": 16,
+        "n_matched_bright_only_le_5p0mm": 12,
+        "n_matched_dark_only_le_5p0mm": 1,
+        "recall_le_3p5mm_pct": 75.0,
+        "recall_le_5p0mm_pct": 100.0,
+        "recall_bright_only_le_5p0mm_pct": 75.0,
+        "recall_dark_only_le_5p0mm_pct": 6.25,
+        "inlier_shaft_xy_median_mm": 2.241,
+        "inlier_tip_z_median_mm": 1.117
+      },
+      {
+        "case_num": 50,
+        "case_id": "Case 050",
+        "in_54_mri_benchmark": true,
+        "ct_filename": "1 Pelvis  1.5  B31f.CT._.3.200.2013.07.29.09.50.05.991.75222697.nrrd",
+        "shape_kji": [
+          200,
+          512,
+          512
+        ],
+        "spacing_ras_mm": [
+          0.627,
+          0.627,
+          1.0
+        ],
+        "runtime_sec": 14.69,
+        "n_detected_bright_stylet_mode": 26,
+        "n_detected_dark_air_lumen_mode": 1,
+        "n_detected_dual_polarity_unified": 25,
+        "n_detected_combined_ct_pool": 26,
+        "n_mri_gt_all": 26,
+        "n_matched_le_3p5mm": 24,
+        "n_matched_le_5p0mm": 25,
+        "n_matched_bright_only_le_5p0mm": 25,
+        "n_matched_dark_only_le_5p0mm": 1,
+        "recall_le_3p5mm_pct": 92.31,
+        "recall_le_5p0mm_pct": 96.15,
+        "recall_bright_only_le_5p0mm_pct": 96.15,
+        "recall_dark_only_le_5p0mm_pct": 3.85,
+        "inlier_shaft_xy_median_mm": 2.092,
+        "inlier_tip_z_median_mm": 2.557
+      },
+      {
+        "case_num": 51,
+        "case_id": "Case 051",
+        "in_54_mri_benchmark": true,
+        "ct_filename": "3 Pelvis  1.5  B31f.CT._.3.119.2013.07.31.09.14.22.914.31693263.nrrd",
+        "shape_kji": [
+          119,
+          512,
+          512
+        ],
+        "spacing_ras_mm": [
+          0.914,
+          0.914,
+          1.5
+        ],
+        "runtime_sec": 5.86,
+        "n_detected_bright_stylet_mode": 11,
+        "n_detected_dark_air_lumen_mode": 5,
+        "n_detected_dual_polarity_unified": 11,
+        "n_detected_combined_ct_pool": 14,
+        "n_mri_gt_all": 14,
+        "n_matched_le_3p5mm": 2,
+        "n_matched_le_5p0mm": 5,
+        "n_matched_bright_only_le_5p0mm": 5,
+        "n_matched_dark_only_le_5p0mm": 2,
+        "recall_le_3p5mm_pct": 14.29,
+        "recall_le_5p0mm_pct": 35.71,
+        "recall_bright_only_le_5p0mm_pct": 35.71,
+        "recall_dark_only_le_5p0mm_pct": 14.29,
+        "inlier_shaft_xy_median_mm": 4.04,
+        "inlier_tip_z_median_mm": 10.477
+      },
+      {
+        "case_num": 53,
+        "case_id": "Case 053",
+        "in_54_mri_benchmark": true,
+        "ct_filename": "2 Pelvis  1.5  B31f.CT._.2.242.2013.11.25.10.39.14.770.28668412.nrrd",
+        "shape_kji": [
+          242,
+          512,
+          512
+        ],
+        "spacing_ras_mm": [
+          0.68,
+          0.68,
+          1.0
+        ],
+        "runtime_sec": 20.74,
+        "n_detected_bright_stylet_mode": 7,
+        "n_detected_dark_air_lumen_mode": 2,
+        "n_detected_dual_polarity_unified": 15,
+        "n_detected_combined_ct_pool": 17,
+        "n_mri_gt_all": 15,
+        "n_matched_le_3p5mm": 8,
+        "n_matched_le_5p0mm": 10,
+        "n_matched_bright_only_le_5p0mm": 6,
+        "n_matched_dark_only_le_5p0mm": 2,
+        "recall_le_3p5mm_pct": 53.33,
+        "recall_le_5p0mm_pct": 66.67,
+        "recall_bright_only_le_5p0mm_pct": 40.0,
+        "recall_dark_only_le_5p0mm_pct": 13.33,
+        "inlier_shaft_xy_median_mm": 3.152,
+        "inlier_tip_z_median_mm": 2.233
+      },
+      {
+        "case_num": 54,
+        "case_id": "Case 054",
+        "in_54_mri_benchmark": true,
+        "ct_filename": "2 Pelvis  1.5  B31f.CT._.2.187.2013.11.25.10.37.49.285.50223414.nrrd",
+        "shape_kji": [
+          187,
+          512,
+          512
+        ],
+        "spacing_ras_mm": [
+          0.537,
+          0.537,
+          1.0
+        ],
+        "runtime_sec": 12.35,
+        "n_detected_bright_stylet_mode": 20,
+        "n_detected_dark_air_lumen_mode": 1,
+        "n_detected_dual_polarity_unified": 20,
+        "n_detected_combined_ct_pool": 20,
+        "n_mri_gt_all": 18,
+        "n_matched_le_3p5mm": 18,
+        "n_matched_le_5p0mm": 18,
+        "n_matched_bright_only_le_5p0mm": 18,
+        "n_matched_dark_only_le_5p0mm": 1,
+        "recall_le_3p5mm_pct": 100.0,
+        "recall_le_5p0mm_pct": 100.0,
+        "recall_bright_only_le_5p0mm_pct": 100.0,
+        "recall_dark_only_le_5p0mm_pct": 5.56,
+        "inlier_shaft_xy_median_mm": 1.469,
+        "inlier_tip_z_median_mm": 10.037
+      },
+      {
+        "case_num": 56,
+        "case_id": "Case 056",
+        "in_54_mri_benchmark": true,
+        "ct_filename": "2 Pelvis  1.5  B31f.5  B31f.CT._.3.229.2013.11.25.10.36.09.769.79627124.nrrd",
+        "shape_kji": [
+          229,
+          512,
+          512
+        ],
+        "spacing_ras_mm": [
+          0.553,
+          0.553,
+          1.0
+        ],
+        "runtime_sec": 23.58,
+        "n_detected_bright_stylet_mode": 19,
+        "n_detected_dark_air_lumen_mode": 1,
+        "n_detected_dual_polarity_unified": 18,
+        "n_detected_combined_ct_pool": 20,
+        "n_mri_gt_all": 15,
+        "n_matched_le_3p5mm": 13,
+        "n_matched_le_5p0mm": 14,
+        "n_matched_bright_only_le_5p0mm": 12,
+        "n_matched_dark_only_le_5p0mm": 1,
+        "recall_le_3p5mm_pct": 86.67,
+        "recall_le_5p0mm_pct": 93.33,
+        "recall_bright_only_le_5p0mm_pct": 80.0,
+        "recall_dark_only_le_5p0mm_pct": 6.67,
+        "inlier_shaft_xy_median_mm": 2.11,
+        "inlier_tip_z_median_mm": 1.456
+      },
+      {
+        "case_num": 58,
+        "case_id": "Case 058",
+        "in_54_mri_benchmark": true,
+        "ct_filename": "1 Pelvis  1.5  B31f.CT._.4.177.2013.11.25.10.33.31.91.58778133.nrrd",
+        "shape_kji": [
+          177,
+          512,
+          512
+        ],
+        "spacing_ras_mm": [
+          0.449,
+          0.449,
+          1.0
+        ],
+        "runtime_sec": 10.68,
+        "n_detected_bright_stylet_mode": 15,
+        "n_detected_dark_air_lumen_mode": 1,
+        "n_detected_dual_polarity_unified": 15,
+        "n_detected_combined_ct_pool": 16,
+        "n_mri_gt_all": 13,
+        "n_matched_le_3p5mm": 13,
+        "n_matched_le_5p0mm": 13,
+        "n_matched_bright_only_le_5p0mm": 12,
+        "n_matched_dark_only_le_5p0mm": 1,
+        "recall_le_3p5mm_pct": 100.0,
+        "recall_le_5p0mm_pct": 100.0,
+        "recall_bright_only_le_5p0mm_pct": 92.31,
+        "recall_dark_only_le_5p0mm_pct": 7.69,
+        "inlier_shaft_xy_median_mm": 1.046,
+        "inlier_tip_z_median_mm": 0.891
+      },
+      {
+        "case_num": 59,
+        "case_id": "Case 059",
+        "in_54_mri_benchmark": true,
+        "ct_filename": "2 Pelvis  1.5  B31f.CT._.2.255.2013.12.11.14.58.03.948.51102095.nrrd",
+        "shape_kji": [
+          255,
+          512,
+          512
+        ],
+        "spacing_ras_mm": [
+          0.619,
+          0.619,
+          1.0
+        ],
+        "runtime_sec": 33.66,
+        "n_detected_bright_stylet_mode": 29,
+        "n_detected_dark_air_lumen_mode": 1,
+        "n_detected_dual_polarity_unified": 30,
+        "n_detected_combined_ct_pool": 34,
+        "n_mri_gt_all": 42,
+        "n_matched_le_3p5mm": 6,
+        "n_matched_le_5p0mm": 10,
+        "n_matched_bright_only_le_5p0mm": 8,
+        "n_matched_dark_only_le_5p0mm": 1,
+        "recall_le_3p5mm_pct": 14.29,
+        "recall_le_5p0mm_pct": 23.81,
+        "recall_bright_only_le_5p0mm_pct": 19.05,
+        "recall_dark_only_le_5p0mm_pct": 2.38,
+        "inlier_shaft_xy_median_mm": 2.137,
+        "inlier_tip_z_median_mm": 5.088
+      },
+      {
+        "case_num": 60,
+        "case_id": "Case 060",
+        "in_54_mri_benchmark": true,
+        "ct_filename": "2 Pelvis  1.5  B31f.CT._.2.170.2013.12.11.15.03.46.429.14347068.nrrd",
+        "shape_kji": [
+          170,
+          512,
+          512
+        ],
+        "spacing_ras_mm": [
+          0.375,
+          0.375,
+          1.0
+        ],
+        "runtime_sec": 9.14,
+        "n_detected_bright_stylet_mode": 15,
+        "n_detected_dark_air_lumen_mode": 2,
+        "n_detected_dual_polarity_unified": 14,
+        "n_detected_combined_ct_pool": 16,
+        "n_mri_gt_all": 17,
+        "n_matched_le_3p5mm": 8,
+        "n_matched_le_5p0mm": 8,
+        "n_matched_bright_only_le_5p0mm": 12,
+        "n_matched_dark_only_le_5p0mm": 2,
+        "recall_le_3p5mm_pct": 47.06,
+        "recall_le_5p0mm_pct": 47.06,
+        "recall_bright_only_le_5p0mm_pct": 70.59,
+        "recall_dark_only_le_5p0mm_pct": 11.76,
+        "inlier_shaft_xy_median_mm": 2.175,
+        "inlier_tip_z_median_mm": 2.449
+      },
+      {
+        "case_num": 61,
+        "case_id": "Case 061",
+        "in_54_mri_benchmark": false,
+        "ct_filename": "1 Pelvis  1.5  B31f.CT._.3.248.2014.01.29.12.13.16.162.38713666.nrrd",
+        "shape_kji": [
+          248,
+          512,
+          512
+        ],
+        "spacing_ras_mm": [
+          0.666,
+          0.666,
+          1.0
+        ],
+        "runtime_sec": 21.22,
+        "n_detected_bright_stylet_mode": 31,
+        "n_detected_dark_air_lumen_mode": 2,
+        "n_detected_dual_polarity_unified": 31,
+        "n_detected_combined_ct_pool": 34
+      },
+      {
+        "case_num": 63,
+        "case_id": "Case 063",
+        "in_54_mri_benchmark": true,
+        "ct_filename": "1 Pelvis  1.5  B31f.nrrd",
+        "shape_kji": [
+          248,
+          512,
+          512
+        ],
+        "spacing_ras_mm": [
+          0.666,
+          0.666,
+          1.0
+        ],
+        "runtime_sec": 32.6,
+        "n_detected_bright_stylet_mode": 31,
+        "n_detected_dark_air_lumen_mode": 2,
+        "n_detected_dual_polarity_unified": 31,
+        "n_detected_combined_ct_pool": 34,
+        "n_mri_gt_all": 33,
+        "n_matched_le_3p5mm": 28,
+        "n_matched_le_5p0mm": 31,
+        "n_matched_bright_only_le_5p0mm": 30,
+        "n_matched_dark_only_le_5p0mm": 1,
+        "recall_le_3p5mm_pct": 84.85,
+        "recall_le_5p0mm_pct": 93.94,
+        "recall_bright_only_le_5p0mm_pct": 90.91,
+        "recall_dark_only_le_5p0mm_pct": 3.03,
+        "inlier_shaft_xy_median_mm": 1.699,
+        "inlier_tip_z_median_mm": 7.166
+      },
+      {
+        "case_num": 64,
+        "case_id": "Case 064",
+        "in_54_mri_benchmark": true,
+        "ct_filename": "1 Pelvis  1.5  B31f.nrrd",
+        "shape_kji": [
+          201,
+          512,
+          512
+        ],
+        "spacing_ras_mm": [
+          0.447,
+          0.447,
+          1.0
+        ],
+        "runtime_sec": 12.4,
+        "n_detected_bright_stylet_mode": 27,
+        "n_detected_dark_air_lumen_mode": 1,
+        "n_detected_dual_polarity_unified": 27,
+        "n_detected_combined_ct_pool": 27,
+        "n_mri_gt_all": 26,
+        "n_matched_le_3p5mm": 18,
+        "n_matched_le_5p0mm": 24,
+        "n_matched_bright_only_le_5p0mm": 23,
+        "n_matched_dark_only_le_5p0mm": 1,
+        "recall_le_3p5mm_pct": 69.23,
+        "recall_le_5p0mm_pct": 92.31,
+        "recall_bright_only_le_5p0mm_pct": 88.46,
+        "recall_dark_only_le_5p0mm_pct": 3.85,
+        "inlier_shaft_xy_median_mm": 2.358,
+        "inlier_tip_z_median_mm": 2.093
+      },
+      {
+        "case_num": 65,
+        "case_id": "Case 065",
+        "in_54_mri_benchmark": true,
+        "ct_filename": "1 Pelvis  1.5  B31f.nrrd",
+        "shape_kji": [
+          201,
+          512,
+          512
+        ],
+        "spacing_ras_mm": [
+          0.406,
+          0.406,
+          1.0
+        ],
+        "runtime_sec": 11.53,
+        "n_detected_bright_stylet_mode": 25,
+        "n_detected_dark_air_lumen_mode": 1,
+        "n_detected_dual_polarity_unified": 29,
+        "n_detected_combined_ct_pool": 33,
+        "n_mri_gt_all": 30,
+        "n_matched_le_3p5mm": 17,
+        "n_matched_le_5p0mm": 26,
+        "n_matched_bright_only_le_5p0mm": 25,
+        "n_matched_dark_only_le_5p0mm": 1,
+        "recall_le_3p5mm_pct": 56.67,
+        "recall_le_5p0mm_pct": 86.67,
+        "recall_bright_only_le_5p0mm_pct": 83.33,
+        "recall_dark_only_le_5p0mm_pct": 3.33,
+        "inlier_shaft_xy_median_mm": 2.712,
+        "inlier_tip_z_median_mm": 1.702
+      },
+      {
+        "case_num": 66,
+        "case_id": "Case 066",
+        "in_54_mri_benchmark": true,
+        "ct_filename": "1 Pelvis  1.5  B31f.nrrd",
+        "shape_kji": [
+          242,
+          512,
+          512
+        ],
+        "spacing_ras_mm": [
+          0.602,
+          0.602,
+          1.0
+        ],
+        "runtime_sec": 16.86,
+        "n_detected_bright_stylet_mode": 23,
+        "n_detected_dark_air_lumen_mode": 0,
+        "n_detected_dual_polarity_unified": 27,
+        "n_detected_combined_ct_pool": 28,
+        "n_mri_gt_all": 24,
+        "n_matched_le_3p5mm": 16,
+        "n_matched_le_5p0mm": 18,
+        "n_matched_bright_only_le_5p0mm": 17,
+        "n_matched_dark_only_le_5p0mm": 0,
+        "recall_le_3p5mm_pct": 66.67,
+        "recall_le_5p0mm_pct": 75.0,
+        "recall_bright_only_le_5p0mm_pct": 70.83,
+        "recall_dark_only_le_5p0mm_pct": 0.0,
+        "inlier_shaft_xy_median_mm": 2.347,
+        "inlier_tip_z_median_mm": 5.095
+      },
+      {
+        "case_num": 68,
+        "case_id": "Case 068",
+        "in_54_mri_benchmark": true,
+        "ct_filename": "2 Pelvis  1.5  B31f.nrrd",
+        "shape_kji": [
+          259,
+          512,
+          512
+        ],
+        "spacing_ras_mm": [
+          0.564,
+          0.564,
+          1.0
+        ],
+        "runtime_sec": 34.99,
+        "n_detected_bright_stylet_mode": 31,
+        "n_detected_dark_air_lumen_mode": 2,
+        "n_detected_dual_polarity_unified": 28,
+        "n_detected_combined_ct_pool": 33,
+        "n_mri_gt_all": 24,
+        "n_matched_le_3p5mm": 6,
+        "n_matched_le_5p0mm": 13,
+        "n_matched_bright_only_le_5p0mm": 14,
+        "n_matched_dark_only_le_5p0mm": 2,
+        "recall_le_3p5mm_pct": 25.0,
+        "recall_le_5p0mm_pct": 54.17,
+        "recall_bright_only_le_5p0mm_pct": 58.33,
+        "recall_dark_only_le_5p0mm_pct": 8.33,
+        "inlier_shaft_xy_median_mm": 3.957,
+        "inlier_tip_z_median_mm": 5.715
+      },
+      {
+        "case_num": 69,
+        "case_id": "Case 069",
+        "in_54_mri_benchmark": true,
+        "ct_filename": "Pelvis  1.nrrd",
+        "shape_kji": [
+          176,
+          512,
+          512
+        ],
+        "spacing_ras_mm": [
+          0.297,
+          0.297,
+          1.0
+        ],
+        "runtime_sec": 11.08,
+        "n_detected_bright_stylet_mode": 38,
+        "n_detected_dark_air_lumen_mode": 3,
+        "n_detected_dual_polarity_unified": 41,
+        "n_detected_combined_ct_pool": 45,
+        "n_mri_gt_all": 42,
+        "n_matched_le_3p5mm": 37,
+        "n_matched_le_5p0mm": 41,
+        "n_matched_bright_only_le_5p0mm": 37,
+        "n_matched_dark_only_le_5p0mm": 3,
+        "recall_le_3p5mm_pct": 88.1,
+        "recall_le_5p0mm_pct": 97.62,
+        "recall_bright_only_le_5p0mm_pct": 88.1,
+        "recall_dark_only_le_5p0mm_pct": 7.14,
+        "inlier_shaft_xy_median_mm": 1.51,
+        "inlier_tip_z_median_mm": 2.131
+      },
+      {
+        "case_num": 70,
+        "case_id": "Case 070",
+        "in_54_mri_benchmark": true,
+        "ct_filename": "4 Pelvis  1.5  B31f.nrrd",
+        "shape_kji": [
+          209,
+          512,
+          512
+        ],
+        "spacing_ras_mm": [
+          0.605,
+          0.605,
+          1.0
+        ],
+        "runtime_sec": 13.7,
+        "n_detected_bright_stylet_mode": 18,
+        "n_detected_dark_air_lumen_mode": 6,
+        "n_detected_dual_polarity_unified": 18,
+        "n_detected_combined_ct_pool": 22,
+        "n_mri_gt_all": 22,
+        "n_matched_le_3p5mm": 16,
+        "n_matched_le_5p0mm": 16,
+        "n_matched_bright_only_le_5p0mm": 16,
+        "n_matched_dark_only_le_5p0mm": 3,
+        "recall_le_3p5mm_pct": 72.73,
+        "recall_le_5p0mm_pct": 72.73,
+        "recall_bright_only_le_5p0mm_pct": 72.73,
+        "recall_dark_only_le_5p0mm_pct": 13.64,
+        "inlier_shaft_xy_median_mm": 1.353,
+        "inlier_tip_z_median_mm": 9.105
+      },
+      {
+        "case_num": 71,
+        "case_id": "Case 071",
+        "in_54_mri_benchmark": true,
+        "ct_filename": "3 Pelvis  1.5  B31f.nrrd",
+        "shape_kji": [
+          206,
+          512,
+          512
+        ],
+        "spacing_ras_mm": [
+          0.977,
+          0.977,
+          1.0
+        ],
+        "runtime_sec": 8.9,
+        "n_detected_bright_stylet_mode": 10,
+        "n_detected_dark_air_lumen_mode": 1,
+        "n_detected_dual_polarity_unified": 10,
+        "n_detected_combined_ct_pool": 16,
+        "n_mri_gt_all": 20,
+        "n_matched_le_3p5mm": 13,
+        "n_matched_le_5p0mm": 14,
+        "n_matched_bright_only_le_5p0mm": 10,
+        "n_matched_dark_only_le_5p0mm": 1,
+        "recall_le_3p5mm_pct": 65.0,
+        "recall_le_5p0mm_pct": 70.0,
+        "recall_bright_only_le_5p0mm_pct": 50.0,
+        "recall_dark_only_le_5p0mm_pct": 5.0,
+        "inlier_shaft_xy_median_mm": 2.177,
+        "inlier_tip_z_median_mm": 2.324
+      },
+      {
+        "case_num": 72,
+        "case_id": "Case 072",
+        "in_54_mri_benchmark": true,
+        "ct_filename": "2 Pelvis  1.5  B31f.nrrd",
+        "shape_kji": [
+          175,
+          512,
+          512
+        ],
+        "spacing_ras_mm": [
+          0.691,
+          0.691,
+          1.0
+        ],
+        "runtime_sec": 10.16,
+        "n_detected_bright_stylet_mode": 28,
+        "n_detected_dark_air_lumen_mode": 4,
+        "n_detected_dual_polarity_unified": 27,
+        "n_detected_combined_ct_pool": 32,
+        "n_mri_gt_all": 27,
+        "n_matched_le_3p5mm": 25,
+        "n_matched_le_5p0mm": 25,
+        "n_matched_bright_only_le_5p0mm": 25,
+        "n_matched_dark_only_le_5p0mm": 3,
+        "recall_le_3p5mm_pct": 92.59,
+        "recall_le_5p0mm_pct": 92.59,
+        "recall_bright_only_le_5p0mm_pct": 92.59,
+        "recall_dark_only_le_5p0mm_pct": 11.11,
+        "inlier_shaft_xy_median_mm": 1.345,
+        "inlier_tip_z_median_mm": 4.183
+      },
+      {
+        "case_num": 75,
+        "case_id": "Case 075",
+        "in_54_mri_benchmark": true,
+        "ct_filename": "2 Pelvis  1.5  B31f.nrrd",
+        "shape_kji": [
+          214,
+          512,
+          512
+        ],
+        "spacing_ras_mm": [
+          0.566,
+          0.566,
+          1.0
+        ],
+        "runtime_sec": 12.19,
+        "n_detected_bright_stylet_mode": 13,
+        "n_detected_dark_air_lumen_mode": 0,
+        "n_detected_dual_polarity_unified": 13,
+        "n_detected_combined_ct_pool": 13,
+        "n_mri_gt_all": 13,
+        "n_matched_le_3p5mm": 12,
+        "n_matched_le_5p0mm": 13,
+        "n_matched_bright_only_le_5p0mm": 13,
+        "n_matched_dark_only_le_5p0mm": 0,
+        "recall_le_3p5mm_pct": 92.31,
+        "recall_le_5p0mm_pct": 100.0,
+        "recall_bright_only_le_5p0mm_pct": 100.0,
+        "recall_dark_only_le_5p0mm_pct": 0.0,
+        "inlier_shaft_xy_median_mm": 2.326,
+        "inlier_tip_z_median_mm": 2.648
+      },
+      {
+        "case_num": 76,
+        "case_id": "Case 076",
+        "in_54_mri_benchmark": true,
+        "ct_filename": "3 Pelvis  1.5  B31f.nrrd",
+        "shape_kji": [
+          191,
+          512,
+          512
+        ],
+        "spacing_ras_mm": [
+          0.568,
+          0.568,
+          1.0
+        ],
+        "runtime_sec": 11.04,
+        "n_detected_bright_stylet_mode": 19,
+        "n_detected_dark_air_lumen_mode": 2,
+        "n_detected_dual_polarity_unified": 19,
+        "n_detected_combined_ct_pool": 20,
+        "n_mri_gt_all": 19,
+        "n_matched_le_3p5mm": 15,
+        "n_matched_le_5p0mm": 18,
+        "n_matched_bright_only_le_5p0mm": 17,
+        "n_matched_dark_only_le_5p0mm": 1,
+        "recall_le_3p5mm_pct": 78.95,
+        "recall_le_5p0mm_pct": 94.74,
+        "recall_bright_only_le_5p0mm_pct": 89.47,
+        "recall_dark_only_le_5p0mm_pct": 5.26,
+        "inlier_shaft_xy_median_mm": 2.647,
+        "inlier_tip_z_median_mm": 4.575
+      },
+      {
+        "case_num": 77,
+        "case_id": "Case 077",
+        "in_54_mri_benchmark": true,
+        "ct_filename": "3 Pelvis  1.5  B31f_1.nrrd",
+        "shape_kji": [
+          209,
+          512,
+          512
+        ],
+        "spacing_ras_mm": [
+          0.617,
+          0.617,
+          1.0
+        ],
+        "runtime_sec": 14.01,
+        "n_detected_bright_stylet_mode": 10,
+        "n_detected_dark_air_lumen_mode": 1,
+        "n_detected_dual_polarity_unified": 13,
+        "n_detected_combined_ct_pool": 14,
+        "n_mri_gt_all": 13,
+        "n_matched_le_3p5mm": 12,
+        "n_matched_le_5p0mm": 12,
+        "n_matched_bright_only_le_5p0mm": 9,
+        "n_matched_dark_only_le_5p0mm": 1,
+        "recall_le_3p5mm_pct": 92.31,
+        "recall_le_5p0mm_pct": 92.31,
+        "recall_bright_only_le_5p0mm_pct": 69.23,
+        "recall_dark_only_le_5p0mm_pct": 7.69,
+        "inlier_shaft_xy_median_mm": 1.585,
+        "inlier_tip_z_median_mm": 3.387
+      },
+      {
+        "case_num": 78,
+        "case_id": "Case 078",
+        "in_54_mri_benchmark": true,
+        "ct_filename": "2 Pelvis  1.5  B31f.nrrd",
+        "shape_kji": [
+          178,
+          512,
+          512
+        ],
+        "spacing_ras_mm": [
+          0.529,
+          0.529,
+          1.0
+        ],
+        "runtime_sec": 11.83,
+        "n_detected_bright_stylet_mode": 29,
+        "n_detected_dark_air_lumen_mode": 6,
+        "n_detected_dual_polarity_unified": 28,
+        "n_detected_combined_ct_pool": 34,
+        "n_mri_gt_all": 25,
+        "n_matched_le_3p5mm": 22,
+        "n_matched_le_5p0mm": 24,
+        "n_matched_bright_only_le_5p0mm": 24,
+        "n_matched_dark_only_le_5p0mm": 5,
+        "recall_le_3p5mm_pct": 88.0,
+        "recall_le_5p0mm_pct": 96.0,
+        "recall_bright_only_le_5p0mm_pct": 96.0,
+        "recall_dark_only_le_5p0mm_pct": 20.0,
+        "inlier_shaft_xy_median_mm": 2.012,
+        "inlier_tip_z_median_mm": 1.466
+      },
+      {
+        "case_num": 100,
+        "case_id": "Case 100",
+        "in_54_mri_benchmark": false,
+        "ct_filename": "3 Pelvis  1.5  B31f.nrrd",
+        "shape_kji": [
+          225,
+          512,
+          512
+        ],
+        "spacing_ras_mm": [
+          0.695,
+          0.695,
+          1.0
+        ],
+        "runtime_sec": 14.34,
+        "n_detected_bright_stylet_mode": 14,
+        "n_detected_dark_air_lumen_mode": 1,
+        "n_detected_dual_polarity_unified": 15,
+        "n_detected_combined_ct_pool": 15
+      }
+    ]
+  }
+}

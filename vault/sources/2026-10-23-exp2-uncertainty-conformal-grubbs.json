@@ -1,0 +1,1493 @@
+{
+  "generated_at": "2026-10-23",
+  "experiment": "Experiment 2: Uncertainty-Guided Clinician-in-the-Loop Audit, Nested Split-Conformal Tip Intervals, Along/Lateral Tip-Tail Taxonomy, and Grubbs' Three-Cornered-Hat & TOST Non-Inferiority",
+  "script": "vault/paper/benchmarks_clean/run_exp2_uncertainty_triage_conformal_grubbs.py",
+  "elapsed_sec": 42.64,
+  "part2a_tip_error_decomposition_and_tail_taxonomy": {
+    "n_matched_all": 972,
+    "all_972_decomposition": {
+      "n": 972,
+      "e_tip_3d_mm": {
+        "mean": 6.2335,
+        "sd": 10.4856,
+        "median": 2.265,
+        "iqr": 4.9301,
+        "q25": 1.1317,
+        "q75": 6.0618,
+        "p95": 27.2682
+      },
+      "abs_ds_parallel_mm": {
+        "mean": 5.9801,
+        "sd": 10.5449,
+        "median": 1.9909,
+        "iqr": 5.0529,
+        "q25": 0.7973,
+        "q75": 5.8502,
+        "p95": 27.1506
+      },
+      "ds_parallel_signed_mm": {
+        "mean": -1.2501,
+        "sd": 12.0579,
+        "median": -0.0207,
+        "iqr": 3.9807,
+        "q25": -1.8239,
+        "q75": 2.1568,
+        "p95": 11.2993
+      },
+      "dr_perp_lateral_mm": {
+        "mean": 0.9782,
+        "sd": 0.9446,
+        "median": 0.7151,
+        "iqr": 0.7334,
+        "q25": 0.4451,
+        "q75": 1.1785,
+        "p95": 2.6419
+      },
+      "energy_fraction_parallel_pct": 98.76,
+      "energy_fraction_lateral_pct": 1.24
+    },
+    "long_693_decomposition": {
+      "n": 714,
+      "e_tip_3d_mm": {
+        "mean": 6.8158,
+        "sd": 11.0768,
+        "median": 2.3928,
+        "iqr": 5.5359,
+        "q25": 1.1336,
+        "q75": 6.6695,
+        "p95": 31.5569
+      },
+      "abs_ds_parallel_mm": {
+        "mean": 6.5746,
+        "sd": 11.1427,
+        "median": 2.177,
+        "iqr": 5.6199,
+        "q25": 0.8527,
+        "q75": 6.4727,
+        "p95": 31.5172
+      },
+      "ds_parallel_signed_mm": {
+        "mean": -1.2714,
+        "sd": 12.8751,
+        "median": 0.0454,
+        "iqr": 4.5519,
+        "q25": -1.8957,
+        "q75": 2.6561,
+        "p95": 12.8832
+      },
+      "dr_perp_lateral_mm": {
+        "mean": 0.9737,
+        "sd": 0.9033,
+        "median": 0.7299,
+        "iqr": 0.7476,
+        "q25": 0.4311,
+        "q75": 1.1788,
+        "p95": 2.6634
+      },
+      "energy_fraction_parallel_pct": 98.96,
+      "energy_fraction_lateral_pct": 1.04
+    },
+    "short_279_decomposition": {
+      "n": 258,
+      "e_tip_3d_mm": {
+        "mean": 4.6221,
+        "sd": 8.4343,
+        "median": 1.7948,
+        "iqr": 3.3343,
+        "q25": 1.1328,
+        "q75": 4.4671,
+        "p95": 18.6674
+      },
+      "abs_ds_parallel_mm": {
+        "mean": 4.3346,
+        "sd": 8.4633,
+        "median": 1.6719,
+        "iqr": 3.694,
+        "q25": 0.6501,
+        "q75": 4.3441,
+        "p95": 18.4116
+      },
+      "ds_parallel_signed_mm": {
+        "mean": -1.1912,
+        "sd": 9.4339,
+        "median": -0.2352,
+        "iqr": 3.3356,
+        "q25": -1.734,
+        "q75": 1.6017,
+        "p95": 7.6892
+      },
+      "dr_perp_lateral_mm": {
+        "mean": 0.9907,
+        "sd": 1.0504,
+        "median": 0.6824,
+        "iqr": 0.6853,
+        "q25": 0.4831,
+        "q75": 1.1684,
+        "p95": 2.422
+      },
+      "energy_fraction_parallel_pct": 97.75,
+      "energy_fraction_lateral_pct": 2.25
+    },
+    "tail_162_gt_10mm_decomposition": {
+      "n": 162,
+      "e_tip_3d_mm": {
+        "mean": 24.542,
+        "sd": 15.3212,
+        "median": 18.896,
+        "iqr": 18.5054,
+        "q25": 13.479,
+        "q75": 31.9844,
+        "p95": 60.179
+      },
+      "abs_ds_parallel_mm": {
+        "mean": 24.4018,
+        "sd": 15.3602,
+        "median": 18.7433,
+        "iqr": 18.7679,
+        "q25": 13.1327,
+        "q75": 31.9006,
+        "p95": 60.1643
+      },
+      "ds_parallel_signed_mm": {
+        "mean": -9.8907,
+        "sd": 27.0842,
+        "median": -12.7731,
+        "iqr": 39.4994,
+        "q25": -26.1989,
+        "q75": 13.3004,
+        "p95": 28.2793
+      },
+      "dr_perp_lateral_mm": {
+        "mean": 1.7939,
+        "sd": 1.5649,
+        "median": 1.3338,
+        "iqr": 1.4879,
+        "q25": 0.7829,
+        "q75": 2.2708,
+        "p95": 4.7125
+      },
+      "energy_fraction_parallel_pct": 99.32,
+      "energy_fraction_lateral_pct": 0.68
+    },
+    "tail_162_mutually_exclusive_taxonomy": {
+      "5_adhesion_or_lateral_jump_dr_gt_3p5mm": 20,
+      "4_top_of_fov_truncation": 7,
+      "2_cranial_susceptibility_overshoot_into_void": 41,
+      "1_caudal_signal_dropout_premature_termination": 67,
+      "3_inter_rater_tip_ambiguity_dz_gt_6mm": 27
+    },
+    "tail_162_non_exclusive_mechanisms": {
+      "n_total_gt_10mm": 162,
+      "n_longitudinal_abs_ds_gt_5mm": 162,
+      "n_longitudinal_abs_ds_gt_10mm": 157,
+      "n_pure_lateral_abs_ds_le_5mm": 0,
+      "n_caudal_undershoot_ds_lt_minus5mm": 100,
+      "n_cranial_overshoot_ds_gt_plus5mm": 62,
+      "n_inter_rater_ambiguity_dz_gt_6mm": 33,
+      "n_top_of_fov_truncation": 7,
+      "n_lateral_jump_dr_gt_3p5mm": 20
+    },
+    "uncertainty_score_diagnostics": {
+      "calibrated_oof_sigma_tip": {
+        "spearman_r": 0.5317,
+        "spearman_p_value": 4.882602780178404e-72,
+        "auroc_gt_5mm": 0.7798,
+        "auroc_gt_5mm_95ci": [
+          0.7454,
+          0.8131
+        ],
+        "auroc_gt_10mm": 0.8049,
+        "auroc_gt_10mm_95ci": [
+          0.7634,
+          0.8414
+        ],
+        "distribution_mm": {
+          "mean": 6.4939,
+          "sd": 3.2099,
+          "median": 5.7113,
+          "iqr": 4.2981,
+          "q25": 3.9842,
+          "q75": 8.2823,
+          "p95": 12.6073
+        }
+      },
+      "analytical_physical_sigma_tip": {
+        "spearman_r": 0.5061,
+        "spearman_p_value": 2.4298382603043498e-64,
+        "auroc_gt_5mm": 0.7648,
+        "auroc_gt_5mm_95ci": [
+          0.7299,
+          0.7987
+        ],
+        "auroc_gt_10mm": 0.7918,
+        "auroc_gt_10mm_95ci": [
+          0.7486,
+          0.8297
+        ],
+        "distribution_mm": {
+          "mean": 9.6971,
+          "sd": 4.5605,
+          "median": 8.713,
+          "iqr": 6.6517,
+          "q25": 5.9566,
+          "q75": 12.6082,
+          "p95": 17.9402
+        }
+      }
+    }
+  },
+  "part2b_nested_split_conformal_tip_intervals": {
+    "target_80pct": {
+      "nominal_coverage_pct": 80.0,
+      "adaptive_uncertainty_scaled": {
+        "empirical_coverage_pct": 79.32,
+        "per_fold_coverage_pct": [
+          76.19,
+          83.16,
+          81.19,
+          87.57,
+          68.16
+        ],
+        "per_fold_conformal_quantile_q": [
+          1.0989,
+          1.1552,
+          1.1265,
+          1.2145,
+          1.0289
+        ],
+        "interval_half_width_mm": {
+          "mean": 7.3129,
+          "sd": 3.6592,
+          "median": 6.4649,
+          "iqr": 4.8671,
+          "q25": 4.4573,
+          "q75": 9.3244,
+          "p95": 14.3123
+        },
+        "low_uncertainty_half_subset_median_width_mm": 4.46,
+        "low_uncertainty_half_subset_coverage_pct": 85.07,
+        "high_uncertainty_half_subset_median_width_mm": 9.34,
+        "high_uncertainty_half_subset_coverage_pct": 73.5
+      },
+      "fixed_width_unscaled": {
+        "empirical_coverage_pct": 80.25,
+        "per_fold_coverage_pct": [
+          81.43,
+          80.61,
+          82.67,
+          85.95,
+          69.83
+        ],
+        "per_fold_fixed_radius_mm": [
+          7.7333,
+          7.6246,
+          7.8486,
+          8.3232,
+          6.8334
+        ],
+        "interval_half_width_mm": {
+          "mean": 7.6819,
+          "sd": 0.4668,
+          "median": 7.7333,
+          "iqr": 0.224,
+          "q25": 7.6246,
+          "q75": 7.8486,
+          "p95": 8.3232
+        }
+      },
+      "median_width_reduction_adaptive_vs_fixed_pct": 16.4
+    },
+    "target_85pct": {
+      "nominal_coverage_pct": 85.0,
+      "adaptive_uncertainty_scaled": {
+        "empirical_coverage_pct": 84.36,
+        "per_fold_coverage_pct": [
+          81.43,
+          86.22,
+          86.63,
+          91.35,
+          75.98
+        ],
+        "per_fold_conformal_quantile_q": [
+          1.4291,
+          1.5609,
+          1.5671,
+          1.6243,
+          1.3473
+        ],
+        "interval_half_width_mm": {
+          "mean": 9.795,
+          "sd": 4.9265,
+          "median": 8.7115,
+          "iqr": 6.5287,
+          "q25": 5.9563,
+          "q75": 12.485,
+          "p95": 19.1056
+        },
+        "low_uncertainty_half_subset_median_width_mm": 5.96,
+        "low_uncertainty_half_subset_coverage_pct": 89.37,
+        "high_uncertainty_half_subset_median_width_mm": 12.5,
+        "high_uncertainty_half_subset_coverage_pct": 79.3
+      },
+      "fixed_width_unscaled": {
+        "empirical_coverage_pct": 85.49,
+        "per_fold_coverage_pct": [
+          86.19,
+          87.76,
+          86.14,
+          88.65,
+          78.21
+        ],
+        "per_fold_fixed_radius_mm": [
+          11.4304,
+          11.8976,
+          11.4304,
+          11.9868,
+          10.192
+        ],
+        "interval_half_width_mm": {
+          "mean": 11.4024,
+          "sd": 0.6202,
+          "median": 11.4304,
+          "iqr": 0.4673,
+          "q25": 11.4304,
+          "q75": 11.8976,
+          "p95": 11.9868
+        }
+      },
+      "median_width_reduction_adaptive_vs_fixed_pct": 23.79
+    },
+    "target_90pct": {
+      "nominal_coverage_pct": 90.0,
+      "adaptive_uncertainty_scaled": {
+        "empirical_coverage_pct": 90.23,
+        "per_fold_coverage_pct": [
+          87.62,
+          88.78,
+          91.58,
+          92.97,
+          90.5
+        ],
+        "per_fold_conformal_quantile_q": [
+          2.0167,
+          2.082,
+          2.1448,
+          2.1906,
+          2.1146
+        ],
+        "interval_half_width_mm": {
+          "mean": 13.712,
+          "sd": 6.8508,
+          "median": 12.1107,
+          "iqr": 9.2771,
+          "q25": 8.3982,
+          "q75": 17.6753,
+          "p95": 26.8471
+        },
+        "low_uncertainty_half_subset_median_width_mm": 8.41,
+        "low_uncertainty_half_subset_coverage_pct": 93.25,
+        "high_uncertainty_half_subset_median_width_mm": 17.78,
+        "high_uncertainty_half_subset_coverage_pct": 87.16
+      },
+      "fixed_width_unscaled": {
+        "empirical_coverage_pct": 89.92,
+        "per_fold_coverage_pct": [
+          91.43,
+          91.33,
+          88.61,
+          91.89,
+          86.03
+        ],
+        "per_fold_fixed_radius_mm": [
+          17.6758,
+          17.6758,
+          16.1317,
+          17.6808,
+          15.9576
+        ],
+        "interval_half_width_mm": {
+          "mean": 17.0394,
+          "sd": 0.7963,
+          "median": 17.6758,
+          "iqr": 1.5441,
+          "q25": 16.1317,
+          "q75": 17.6758,
+          "p95": 17.6808
+        }
+      },
+      "median_width_reduction_adaptive_vs_fixed_pct": 31.48
+    },
+    "target_95pct": {
+      "nominal_coverage_pct": 95.0,
+      "adaptive_uncertainty_scaled": {
+        "empirical_coverage_pct": 95.37,
+        "per_fold_coverage_pct": [
+          94.76,
+          94.39,
+          98.51,
+          95.68,
+          93.3
+        ],
+        "per_fold_conformal_quantile_q": [
+          3.1905,
+          3.1905,
+          3.3893,
+          3.2296,
+          3.1884
+        ],
+        "interval_half_width_mm": {
+          "mean": 21.0498,
+          "sd": 10.4612,
+          "median": 18.4229,
+          "iqr": 13.9976,
+          "q25": 12.8878,
+          "q75": 26.8854,
+          "p95": 41.1294
+        },
+        "low_uncertainty_half_subset_median_width_mm": 12.89,
+        "low_uncertainty_half_subset_coverage_pct": 96.11,
+        "high_uncertainty_half_subset_median_width_mm": 26.97,
+        "high_uncertainty_half_subset_coverage_pct": 94.62
+      },
+      "fixed_width_unscaled": {
+        "empirical_coverage_pct": 95.16,
+        "per_fold_coverage_pct": [
+          96.67,
+          96.94,
+          95.05,
+          94.05,
+          92.74
+        ],
+        "per_fold_fixed_radius_mm": [
+          30.3303,
+          31.1062,
+          28.3911,
+          27.9237,
+          26.3446
+        ],
+        "interval_half_width_mm": {
+          "mean": 28.8917,
+          "sd": 1.6915,
+          "median": 28.3911,
+          "iqr": 2.4066,
+          "q25": 27.9237,
+          "q75": 30.3303,
+          "p95": 31.1062
+        }
+      },
+      "median_width_reduction_adaptive_vs_fixed_pct": 35.11
+    }
+  },
+  "part2c_clinician_in_the_loop_review_simulation": {
+    "queue1_tip_verification_and_relocation": {
+      "uncertainty_guided_sigma_tip": {
+        "k_0": {
+          "k_inspected_per_patient": 0,
+          "mean_relocated_tips_total_54cases": 0.0,
+          "mean_mm": 6.23,
+          "median_mm": 2.27,
+          "iqr_mm": 4.93,
+          "p90_mm": 16.2,
+          "p95_mm": 27.27,
+          "pct_le_2mm": 45.58,
+          "pct_le_3mm": 58.74,
+          "pct_le_5mm": 70.99,
+          "pct_gt_10mm": 16.67
+        },
+        "k_1": {
+          "k_inspected_per_patient": 1,
+          "mean_relocated_tips_total_54cases": 35.0,
+          "mean_mm": 5.54,
+          "median_mm": 2.06,
+          "iqr_mm": 4.28,
+          "p90_mm": 14.6,
+          "p95_mm": 23.54,
+          "pct_le_2mm": 48.56,
+          "pct_le_3mm": 61.93,
+          "pct_le_5mm": 73.97,
+          "pct_gt_10mm": 14.4
+        },
+        "k_2": {
+          "k_inspected_per_patient": 2,
+          "mean_relocated_tips_total_54cases": 69.0,
+          "mean_mm": 5.07,
+          "median_mm": 1.95,
+          "iqr_mm": 3.64,
+          "p90_mm": 12.58,
+          "p95_mm": 21.48,
+          "pct_le_2mm": 51.34,
+          "pct_le_3mm": 64.81,
+          "pct_le_5mm": 76.23,
+          "pct_gt_10mm": 12.76
+        },
+        "k_3": {
+          "k_inspected_per_patient": 3,
+          "mean_relocated_tips_total_54cases": 105.0,
+          "mean_mm": 4.57,
+          "median_mm": 1.81,
+          "iqr_mm": 3.17,
+          "p90_mm": 10.91,
+          "p95_mm": 19.16,
+          "pct_le_2mm": 54.01,
+          "pct_le_3mm": 67.18,
+          "pct_le_5mm": 78.6,
+          "pct_gt_10mm": 11.11
+        },
+        "k_5": {
+          "k_inspected_per_patient": 5,
+          "mean_relocated_tips_total_54cases": 169.0,
+          "mean_mm": 3.72,
+          "median_mm": 1.67,
+          "iqr_mm": 2.31,
+          "p90_mm": 7.79,
+          "p95_mm": 14.26,
+          "pct_le_2mm": 59.47,
+          "pct_le_3mm": 72.63,
+          "pct_le_5mm": 83.02,
+          "pct_gt_10mm": 8.02
+        },
+        "k_8": {
+          "k_inspected_per_patient": 8,
+          "mean_relocated_tips_total_54cases": 251.0,
+          "mean_mm": 2.77,
+          "median_mm": 1.51,
+          "iqr_mm": 1.6,
+          "p90_mm": 5.98,
+          "p95_mm": 9.9,
+          "pct_le_2mm": 65.53,
+          "pct_le_3mm": 78.5,
+          "pct_le_5mm": 87.76,
+          "pct_gt_10mm": 5.04
+        },
+        "k_10": {
+          "k_inspected_per_patient": 10,
+          "mean_relocated_tips_total_54cases": 301.0,
+          "mean_mm": 2.52,
+          "median_mm": 1.44,
+          "iqr_mm": 1.35,
+          "p90_mm": 4.97,
+          "p95_mm": 8.3,
+          "pct_le_2mm": 69.24,
+          "pct_le_3mm": 81.79,
+          "pct_le_5mm": 90.02,
+          "pct_gt_10mm": 4.32
+        }
+      },
+      "confidence_ascending": {
+        "k_0": {
+          "k_inspected_per_patient": 0,
+          "mean_relocated_tips_total_54cases": 0.0,
+          "mean_mm": 6.23,
+          "median_mm": 2.27,
+          "iqr_mm": 4.93,
+          "p90_mm": 16.2,
+          "p95_mm": 27.27,
+          "pct_le_2mm": 45.58,
+          "pct_le_3mm": 58.74,
+          "pct_le_5mm": 70.99,
+          "pct_gt_10mm": 16.67
+        },
+        "k_1": {
+          "k_inspected_per_patient": 1,
+          "mean_relocated_tips_total_54cases": 25.0,
+          "mean_mm": 5.91,
+          "median_mm": 2.09,
+          "iqr_mm": 4.47,
+          "p90_mm": 15.73,
+          "p95_mm": 24.35,
+          "pct_le_2mm": 47.74,
+          "pct_le_3mm": 60.8,
+          "pct_le_5mm": 72.84,
+          "pct_gt_10mm": 15.53
+        },
+        "k_2": {
+          "k_inspected_per_patient": 2,
+          "mean_relocated_tips_total_54cases": 53.0,
+          "mean_mm": 5.51,
+          "median_mm": 1.99,
+          "iqr_mm": 4.07,
+          "p90_mm": 14.85,
+          "p95_mm": 23.13,
+          "pct_le_2mm": 50.21,
+          "pct_le_3mm": 63.07,
+          "pct_le_5mm": 74.49,
+          "pct_gt_10mm": 14.2
+        },
+        "k_3": {
+          "k_inspected_per_patient": 3,
+          "mean_relocated_tips_total_54cases": 75.0,
+          "mean_mm": 5.37,
+          "median_mm": 1.9,
+          "iqr_mm": 3.84,
+          "p90_mm": 14.1,
+          "p95_mm": 22.39,
+          "pct_le_2mm": 51.95,
+          "pct_le_3mm": 64.4,
+          "pct_le_5mm": 75.72,
+          "pct_gt_10mm": 13.58
+        },
+        "k_5": {
+          "k_inspected_per_patient": 5,
+          "mean_relocated_tips_total_54cases": 125.0,
+          "mean_mm": 4.68,
+          "median_mm": 1.73,
+          "iqr_mm": 3.16,
+          "p90_mm": 11.19,
+          "p95_mm": 19.16,
+          "pct_le_2mm": 55.35,
+          "pct_le_3mm": 67.7,
+          "pct_le_5mm": 78.81,
+          "pct_gt_10mm": 11.32
+        },
+        "k_8": {
+          "k_inspected_per_patient": 8,
+          "mean_relocated_tips_total_54cases": 196.0,
+          "mean_mm": 3.8,
+          "median_mm": 1.62,
+          "iqr_mm": 2.18,
+          "p90_mm": 8.25,
+          "p95_mm": 16.08,
+          "pct_le_2mm": 61.11,
+          "pct_le_3mm": 73.46,
+          "pct_le_5mm": 83.33,
+          "pct_gt_10mm": 8.54
+        },
+        "k_10": {
+          "k_inspected_per_patient": 10,
+          "mean_relocated_tips_total_54cases": 244.0,
+          "mean_mm": 3.31,
+          "median_mm": 1.51,
+          "iqr_mm": 1.76,
+          "p90_mm": 6.85,
+          "p95_mm": 13.94,
+          "pct_le_2mm": 65.02,
+          "pct_le_3mm": 76.85,
+          "pct_le_5mm": 85.6,
+          "pct_gt_10mm": 7.3
+        }
+      },
+      "short_z_span_first": {
+        "k_0": {
+          "k_inspected_per_patient": 0,
+          "mean_relocated_tips_total_54cases": 0.0,
+          "mean_mm": 6.23,
+          "median_mm": 2.27,
+          "iqr_mm": 4.93,
+          "p90_mm": 16.2,
+          "p95_mm": 27.27,
+          "pct_le_2mm": 45.58,
+          "pct_le_3mm": 58.74,
+          "pct_le_5mm": 70.99,
+          "pct_gt_10mm": 16.67
+        },
+        "k_1": {
+          "k_inspected_per_patient": 1,
+          "mean_relocated_tips_total_54cases": 25.0,
+          "mean_mm": 5.89,
+          "median_mm": 2.08,
+          "iqr_mm": 4.68,
+          "p90_mm": 15.73,
+          "p95_mm": 25.47,
+          "pct_le_2mm": 47.84,
+          "pct_le_3mm": 60.6,
+          "pct_le_5mm": 72.22,
+          "pct_gt_10mm": 15.84
+        },
+        "k_2": {
+          "k_inspected_per_patient": 2,
+          "mean_relocated_tips_total_54cases": 48.0,
+          "mean_mm": 5.59,
+          "median_mm": 2.01,
+          "iqr_mm": 4.31,
+          "p90_mm": 14.73,
+          "p95_mm": 23.95,
+          "pct_le_2mm": 49.69,
+          "pct_le_3mm": 62.65,
+          "pct_le_5mm": 73.97,
+          "pct_gt_10mm": 14.81
+        },
+        "k_3": {
+          "k_inspected_per_patient": 3,
+          "mean_relocated_tips_total_54cases": 71.0,
+          "mean_mm": 5.39,
+          "median_mm": 1.95,
+          "iqr_mm": 3.91,
+          "p90_mm": 14.6,
+          "p95_mm": 22.59,
+          "pct_le_2mm": 51.54,
+          "pct_le_3mm": 64.2,
+          "pct_le_5mm": 75.1,
+          "pct_gt_10mm": 14.3
+        },
+        "k_5": {
+          "k_inspected_per_patient": 5,
+          "mean_relocated_tips_total_54cases": 117.0,
+          "mean_mm": 4.7,
+          "median_mm": 1.77,
+          "iqr_mm": 3.14,
+          "p90_mm": 12.06,
+          "p95_mm": 18.89,
+          "pct_le_2mm": 55.25,
+          "pct_le_3mm": 67.8,
+          "pct_le_5mm": 78.09,
+          "pct_gt_10mm": 12.24
+        },
+        "k_8": {
+          "k_inspected_per_patient": 8,
+          "mean_relocated_tips_total_54cases": 175.0,
+          "mean_mm": 4.04,
+          "median_mm": 1.62,
+          "iqr_mm": 2.54,
+          "p90_mm": 9.44,
+          "p95_mm": 16.1,
+          "pct_le_2mm": 60.08,
+          "pct_le_3mm": 72.33,
+          "pct_le_5mm": 81.28,
+          "pct_gt_10mm": 9.77
+        },
+        "k_10": {
+          "k_inspected_per_patient": 10,
+          "mean_relocated_tips_total_54cases": 227.0,
+          "mean_mm": 3.61,
+          "median_mm": 1.5,
+          "iqr_mm": 1.92,
+          "p90_mm": 8.25,
+          "p95_mm": 15.69,
+          "pct_le_2mm": 64.51,
+          "pct_le_3mm": 75.62,
+          "pct_le_5mm": 83.44,
+          "pct_gt_10mm": 8.74
+        }
+      },
+      "random_order": {
+        "k_0": {
+          "k_inspected_per_patient": 0,
+          "mean_relocated_tips_total_54cases": 0.0,
+          "mean_mm": 6.23,
+          "median_mm": 2.27,
+          "iqr_mm": 4.93,
+          "p90_mm": 16.2,
+          "p95_mm": 27.27,
+          "pct_le_2mm": 45.58,
+          "pct_le_3mm": 58.74,
+          "pct_le_5mm": 70.99,
+          "pct_gt_10mm": 16.67
+        },
+        "k_1": {
+          "k_inspected_per_patient": 1,
+          "mean_relocated_tips_total_54cases": 24.6,
+          "mean_mm": 6.03,
+          "median_mm": 2.1,
+          "iqr_mm": 4.62,
+          "p90_mm": 16.0,
+          "p95_mm": 26.15,
+          "pct_le_2mm": 47.6,
+          "pct_le_3mm": 60.45,
+          "pct_le_5mm": 72.19,
+          "pct_gt_10mm": 16.0
+        },
+        "k_2": {
+          "k_inspected_per_patient": 2,
+          "mean_relocated_tips_total_54cases": 49.6,
+          "mean_mm": 5.78,
+          "median_mm": 2.01,
+          "iqr_mm": 4.32,
+          "p90_mm": 15.55,
+          "p95_mm": 24.93,
+          "pct_le_2mm": 49.64,
+          "pct_le_3mm": 62.2,
+          "pct_le_5mm": 73.57,
+          "pct_gt_10mm": 15.12
+        },
+        "k_3": {
+          "k_inspected_per_patient": 3,
+          "mean_relocated_tips_total_54cases": 74.5,
+          "mean_mm": 5.58,
+          "median_mm": 1.91,
+          "iqr_mm": 4.03,
+          "p90_mm": 14.84,
+          "p95_mm": 24.21,
+          "pct_le_2mm": 51.81,
+          "pct_le_3mm": 63.9,
+          "pct_le_5mm": 74.69,
+          "pct_gt_10mm": 14.49
+        },
+        "k_5": {
+          "k_inspected_per_patient": 5,
+          "mean_relocated_tips_total_54cases": 125.6,
+          "mean_mm": 5.1,
+          "median_mm": 1.74,
+          "iqr_mm": 3.36,
+          "p90_mm": 12.82,
+          "p95_mm": 22.13,
+          "pct_le_2mm": 55.87,
+          "pct_le_3mm": 67.47,
+          "pct_le_5mm": 77.51,
+          "pct_gt_10mm": 12.86
+        },
+        "k_8": {
+          "k_inspected_per_patient": 8,
+          "mean_relocated_tips_total_54cases": 200.3,
+          "mean_mm": 4.44,
+          "median_mm": 1.59,
+          "iqr_mm": 2.45,
+          "p90_mm": 10.6,
+          "p95_mm": 19.53,
+          "pct_le_2mm": 61.98,
+          "pct_le_3mm": 72.6,
+          "pct_le_5mm": 81.37,
+          "pct_gt_10mm": 10.67
+        },
+        "k_10": {
+          "k_inspected_per_patient": 10,
+          "mean_relocated_tips_total_54cases": 249.8,
+          "mean_mm": 4.0,
+          "median_mm": 1.48,
+          "iqr_mm": 1.88,
+          "p90_mm": 8.59,
+          "p95_mm": 17.81,
+          "pct_le_2mm": 66.13,
+          "pct_le_3mm": 75.92,
+          "pct_le_5mm": 83.64,
+          "pct_gt_10mm": 9.26
+        }
+      },
+      "oracle_largest_error_first": {
+        "k_0": {
+          "k_inspected_per_patient": 0,
+          "mean_relocated_tips_total_54cases": 0.0,
+          "mean_mm": 6.23,
+          "median_mm": 2.27,
+          "iqr_mm": 4.93,
+          "p90_mm": 16.2,
+          "p95_mm": 27.27,
+          "pct_le_2mm": 45.58,
+          "pct_le_3mm": 58.74,
+          "pct_le_5mm": 70.99,
+          "pct_gt_10mm": 16.67
+        },
+        "k_1": {
+          "k_inspected_per_patient": 1,
+          "mean_relocated_tips_total_54cases": 54.0,
+          "mean_mm": 4.71,
+          "median_mm": 2.04,
+          "iqr_mm": 3.79,
+          "p90_mm": 11.83,
+          "p95_mm": 19.05,
+          "pct_le_2mm": 48.87,
+          "pct_le_3mm": 63.37,
+          "pct_le_5mm": 75.93,
+          "pct_gt_10mm": 12.35
+        },
+        "k_2": {
+          "k_inspected_per_patient": 2,
+          "mean_relocated_tips_total_54cases": 107.0,
+          "mean_mm": 3.76,
+          "median_mm": 1.9,
+          "iqr_mm": 3.05,
+          "p90_mm": 8.61,
+          "p95_mm": 13.67,
+          "pct_le_2mm": 52.06,
+          "pct_le_3mm": 66.98,
+          "pct_le_5mm": 80.04,
+          "pct_gt_10mm": 8.85
+        },
+        "k_3": {
+          "k_inspected_per_patient": 3,
+          "mean_relocated_tips_total_54cases": 158.0,
+          "mean_mm": 3.15,
+          "median_mm": 1.74,
+          "iqr_mm": 2.35,
+          "p90_mm": 6.61,
+          "p95_mm": 10.83,
+          "pct_le_2mm": 55.86,
+          "pct_le_3mm": 71.6,
+          "pct_le_5mm": 84.05,
+          "pct_gt_10mm": 5.86
+        },
+        "k_5": {
+          "k_inspected_per_patient": 5,
+          "mean_relocated_tips_total_54cases": 254.0,
+          "mean_mm": 2.36,
+          "median_mm": 1.55,
+          "iqr_mm": 1.63,
+          "p90_mm": 4.98,
+          "p95_mm": 6.71,
+          "pct_le_2mm": 64.4,
+          "pct_le_3mm": 79.32,
+          "pct_le_5mm": 90.02,
+          "pct_gt_10mm": 2.57
+        },
+        "k_8": {
+          "k_inspected_per_patient": 8,
+          "mean_relocated_tips_total_54cases": 368.0,
+          "mean_mm": 1.79,
+          "median_mm": 1.36,
+          "iqr_mm": 1.06,
+          "p90_mm": 3.54,
+          "p95_mm": 4.67,
+          "pct_le_2mm": 74.49,
+          "pct_le_3mm": 87.55,
+          "pct_le_5mm": 95.68,
+          "pct_gt_10mm": 0.51
+        },
+        "k_10": {
+          "k_inspected_per_patient": 10,
+          "mean_relocated_tips_total_54cases": 418.0,
+          "mean_mm": 1.63,
+          "median_mm": 1.29,
+          "iqr_mm": 0.9,
+          "p90_mm": 2.9,
+          "p95_mm": 4.14,
+          "pct_le_2mm": 78.91,
+          "pct_le_3mm": 90.43,
+          "pct_le_5mm": 97.33,
+          "pct_gt_10mm": 0.1
+        }
+      }
+    },
+    "queue2_count_guided_missing_catheter_recovery": {
+      "k_0": {
+        "max_promoted_per_case": 0,
+        "total_candidates_promoted_54cases": 0,
+        "n_pred_total": 1118,
+        "hungarian_1to1_matched": 972,
+        "recovered_catheters_vs_k0": 0,
+        "hungarian_1to1_recall_pct": 91.44,
+        "closest_recall_pct": 92.85,
+        "precision_1to1_pct": 86.94,
+        "f1_1to1_pct": 89.13
+      },
+      "k_1": {
+        "max_promoted_per_case": 1,
+        "total_candidates_promoted_54cases": 19,
+        "n_pred_total": 1137,
+        "hungarian_1to1_matched": 982,
+        "recovered_catheters_vs_k0": 10,
+        "hungarian_1to1_recall_pct": 92.38,
+        "closest_recall_pct": 93.6,
+        "precision_1to1_pct": 86.37,
+        "f1_1to1_pct": 89.27
+      },
+      "k_2": {
+        "max_promoted_per_case": 2,
+        "total_candidates_promoted_54cases": 30,
+        "n_pred_total": 1148,
+        "hungarian_1to1_matched": 987,
+        "recovered_catheters_vs_k0": 15,
+        "hungarian_1to1_recall_pct": 92.85,
+        "closest_recall_pct": 93.98,
+        "precision_1to1_pct": 85.98,
+        "f1_1to1_pct": 89.28
+      },
+      "k_3": {
+        "max_promoted_per_case": 3,
+        "total_candidates_promoted_54cases": 35,
+        "n_pred_total": 1153,
+        "hungarian_1to1_matched": 989,
+        "recovered_catheters_vs_k0": 17,
+        "hungarian_1to1_recall_pct": 93.04,
+        "closest_recall_pct": 94.17,
+        "precision_1to1_pct": 85.78,
+        "f1_1to1_pct": 89.26
+      },
+      "k_5": {
+        "max_promoted_per_case": 5,
+        "total_candidates_promoted_54cases": 35,
+        "n_pred_total": 1153,
+        "hungarian_1to1_matched": 989,
+        "recovered_catheters_vs_k0": 17,
+        "hungarian_1to1_recall_pct": 93.04,
+        "closest_recall_pct": 94.17,
+        "precision_1to1_pct": 85.78,
+        "f1_1to1_pct": 89.26
+      },
+      "full_deficit_match": {
+        "max_promoted_per_case": 99,
+        "total_candidates_promoted_54cases": 35,
+        "n_pred_total": 1153,
+        "hungarian_1to1_matched": 989,
+        "recovered_catheters_vs_k0": 17,
+        "hungarian_1to1_recall_pct": 93.04,
+        "closest_recall_pct": 94.17,
+        "precision_1to1_pct": 85.78,
+        "f1_1to1_pct": 89.26
+      }
+    },
+    "queue3_combined_full_case_audit": {
+      "k_0": {
+        "budget_actions_per_patient": 0,
+        "mean_actions_used_per_patient": 0.0,
+        "estimated_total_time_per_patient_sec": 2.0,
+        "speedup_vs_20min_manual_tracing_x": 606.1,
+        "n_matched_1to1": 972,
+        "n_pred_total": 1118,
+        "recall_1to1_pct": 91.44,
+        "precision_1to1_pct": 86.94,
+        "f1_1to1_pct": 89.13,
+        "tip_mean_mm": 6.23,
+        "tip_median_mm": 2.27,
+        "tip_iqr_mm": 4.93,
+        "tip_p90_mm": 16.2,
+        "tip_p95_mm": 27.27,
+        "pct_tip_le_2mm": 45.58,
+        "pct_tip_le_3mm": 58.74,
+        "pct_tip_gt_10mm": 16.67
+      },
+      "k_1": {
+        "budget_actions_per_patient": 1,
+        "mean_actions_used_per_patient": 1.0,
+        "estimated_total_time_per_patient_sec": 10.0,
+        "speedup_vs_20min_manual_tracing_x": 120.2,
+        "n_matched_1to1": 982,
+        "n_pred_total": 1112,
+        "recall_1to1_pct": 92.38,
+        "precision_1to1_pct": 88.31,
+        "f1_1to1_pct": 90.3,
+        "tip_mean_mm": 6.32,
+        "tip_median_mm": 2.26,
+        "tip_iqr_mm": 4.93,
+        "tip_p90_mm": 16.2,
+        "tip_p95_mm": 27.86,
+        "pct_tip_le_2mm": 45.72,
+        "pct_tip_le_3mm": 58.96,
+        "pct_tip_gt_10mm": 16.7
+      },
+      "k_2": {
+        "budget_actions_per_patient": 2,
+        "mean_actions_used_per_patient": 2.0,
+        "estimated_total_time_per_patient_sec": 18.0,
+        "speedup_vs_20min_manual_tracing_x": 66.7,
+        "n_matched_1to1": 986,
+        "n_pred_total": 1108,
+        "recall_1to1_pct": 92.76,
+        "precision_1to1_pct": 88.99,
+        "f1_1to1_pct": 90.83,
+        "tip_mean_mm": 6.17,
+        "tip_median_mm": 2.16,
+        "tip_iqr_mm": 4.65,
+        "tip_p90_mm": 16.08,
+        "tip_p95_mm": 27.63,
+        "pct_tip_le_2mm": 46.86,
+        "pct_tip_le_3mm": 60.14,
+        "pct_tip_gt_10mm": 15.82
+      },
+      "k_3": {
+        "budget_actions_per_patient": 3,
+        "mean_actions_used_per_patient": 3.0,
+        "estimated_total_time_per_patient_sec": 26.0,
+        "speedup_vs_20min_manual_tracing_x": 46.2,
+        "n_matched_1to1": 988,
+        "n_pred_total": 1097,
+        "recall_1to1_pct": 92.94,
+        "precision_1to1_pct": 90.06,
+        "f1_1to1_pct": 91.48,
+        "tip_mean_mm": 5.95,
+        "tip_median_mm": 2.06,
+        "tip_iqr_mm": 4.32,
+        "tip_p90_mm": 15.69,
+        "tip_p95_mm": 25.71,
+        "pct_tip_le_2mm": 48.68,
+        "pct_tip_le_3mm": 61.64,
+        "pct_tip_gt_10mm": 15.08
+      },
+      "k_5": {
+        "budget_actions_per_patient": 5,
+        "mean_actions_used_per_patient": 5.0,
+        "estimated_total_time_per_patient_sec": 42.0,
+        "speedup_vs_20min_manual_tracing_x": 28.6,
+        "n_matched_1to1": 988,
+        "n_pred_total": 1083,
+        "recall_1to1_pct": 92.94,
+        "precision_1to1_pct": 91.23,
+        "f1_1to1_pct": 92.08,
+        "tip_mean_mm": 5.33,
+        "tip_median_mm": 1.89,
+        "tip_iqr_mm": 3.52,
+        "tip_p90_mm": 12.6,
+        "tip_p95_mm": 22.24,
+        "pct_tip_le_2mm": 52.43,
+        "pct_tip_le_3mm": 65.28,
+        "pct_tip_gt_10mm": 12.65
+      },
+      "k_8": {
+        "budget_actions_per_patient": 8,
+        "mean_actions_used_per_patient": 8.0,
+        "estimated_total_time_per_patient_sec": 66.0,
+        "speedup_vs_20min_manual_tracing_x": 18.2,
+        "n_matched_1to1": 988,
+        "n_pred_total": 1069,
+        "recall_1to1_pct": 92.94,
+        "precision_1to1_pct": 92.42,
+        "f1_1to1_pct": 92.68,
+        "tip_mean_mm": 4.29,
+        "tip_median_mm": 1.68,
+        "tip_iqr_mm": 2.65,
+        "tip_p90_mm": 9.0,
+        "tip_p95_mm": 17.76,
+        "pct_tip_le_2mm": 58.7,
+        "pct_tip_le_3mm": 70.95,
+        "pct_tip_gt_10mm": 9.51
+      },
+      "k_10": {
+        "budget_actions_per_patient": 10,
+        "mean_actions_used_per_patient": 10.0,
+        "estimated_total_time_per_patient_sec": 82.0,
+        "speedup_vs_20min_manual_tracing_x": 14.6,
+        "n_matched_1to1": 988,
+        "n_pred_total": 1059,
+        "recall_1to1_pct": 92.94,
+        "precision_1to1_pct": 93.3,
+        "f1_1to1_pct": 93.12,
+        "tip_mean_mm": 3.84,
+        "tip_median_mm": 1.58,
+        "tip_iqr_mm": 2.05,
+        "tip_p90_mm": 7.72,
+        "tip_p95_mm": 15.9,
+        "pct_tip_le_2mm": 62.85,
+        "pct_tip_le_3mm": 74.6,
+        "pct_tip_gt_10mm": 8.1
+      },
+      "k_15": {
+        "budget_actions_per_patient": 15,
+        "mean_actions_used_per_patient": 14.57,
+        "estimated_total_time_per_patient_sec": 118.6,
+        "speedup_vs_20min_manual_tracing_x": 10.1,
+        "n_matched_1to1": 988,
+        "n_pred_total": 1046,
+        "recall_1to1_pct": 92.94,
+        "precision_1to1_pct": 94.46,
+        "f1_1to1_pct": 93.69,
+        "tip_mean_mm": 2.76,
+        "tip_median_mm": 1.42,
+        "tip_iqr_mm": 1.27,
+        "tip_p90_mm": 5.42,
+        "tip_p95_mm": 9.96,
+        "pct_tip_le_2mm": 71.05,
+        "pct_tip_le_3mm": 82.19,
+        "pct_tip_gt_10mm": 5.06
+      }
+    }
+  },
+  "part2d_grubbs_three_cornered_hat_and_tost": {
+    "n_dual_traced_scenes": 40,
+    "n_three_way_matched_catheters": 432,
+    "pairwise_discrepancy_distributions": {
+      "shaft_xy_rater1_vs_rater2_mm": {
+        "mean": 0.718,
+        "sd": 0.6047,
+        "median": 0.4949,
+        "iqr": 0.5111,
+        "q25": 0.3333,
+        "q75": 0.8444,
+        "p95": 2.0596
+      },
+      "shaft_xy_nf2026_vs_rater1_mm": {
+        "mean": 0.5579,
+        "sd": 0.3841,
+        "median": 0.4349,
+        "iqr": 0.3377,
+        "q25": 0.3196,
+        "q75": 0.6573,
+        "p95": 1.2454
+      },
+      "shaft_xy_nf2026_vs_rater2_mm": {
+        "mean": 0.774,
+        "sd": 0.6638,
+        "median": 0.5164,
+        "iqr": 0.6337,
+        "q25": 0.3481,
+        "q75": 0.9818,
+        "p95": 2.0799
+      },
+      "tip_3d_rater1_vs_rater2_mm": {
+        "mean": 6.1033,
+        "sd": 7.8995,
+        "median": 3.1786,
+        "iqr": 5.445,
+        "q25": 1.9263,
+        "q75": 7.3713,
+        "p95": 20.9541
+      },
+      "tip_3d_nf2026_vs_rater1_mm": {
+        "mean": 5.5061,
+        "sd": 8.5138,
+        "median": 2.3275,
+        "iqr": 5.012,
+        "q25": 1.0818,
+        "q75": 6.0938,
+        "p95": 20.8315
+      },
+      "tip_3d_nf2026_vs_rater2_mm": {
+        "mean": 7.5343,
+        "sd": 9.5574,
+        "median": 3.9241,
+        "iqr": 6.4241,
+        "q25": 1.9525,
+        "q75": 8.3766,
+        "p95": 27.0286
+      },
+      "dz_tip_signed_rater1_minus_rater2_mm": {
+        "mean": 2.1867,
+        "sd": 9.2447,
+        "median": 1.8479,
+        "iqr": 4.7001,
+        "q25": -0.4439,
+        "q75": 4.2562,
+        "p95": 15.7881
+      },
+      "dz_tip_signed_rater1_minus_nf2026_mm": {
+        "mean": 0.5123,
+        "sd": 9.6422,
+        "median": -0.0,
+        "iqr": 4.3361,
+        "q25": -2.4919,
+        "q75": 1.8442,
+        "p95": 16.7555
+      },
+      "dz_tip_signed_rater2_minus_nf2026_mm": {
+        "mean": -1.6744,
+        "sd": 11.408,
+        "median": -1.9192,
+        "iqr": 6.336,
+        "q25": -5.659,
+        "q75": 0.677,
+        "p95": 19.131
+      }
+    },
+    "intrinsic_source_error_sd_estimates": {
+      "in_plane_shaft_sd_classic_mm": {
+        "Rater1_CY": {
+          "point": 0.3875,
+          "ci95_10000boot": [
+            0.2733,
+            0.4805
+          ]
+        },
+        "Rater2_LB_AMe": {
+          "point": 0.855,
+          "ci95_10000boot": [
+            0.5924,
+            1.091
+          ]
+        },
+        "NeedleFinder_2026_OOF": {
+          "point": 0.5556,
+          "ci95_10000boot": [
+            0.463,
+            0.6441
+          ]
+        }
+      },
+      "in_plane_shaft_sd_robust_mad_mm": {
+        "Rater1_CY": {
+          "point": 0.3475,
+          "ci95_10000boot": [
+            0.2118,
+            0.4443
+          ]
+        },
+        "Rater2_LB_AMe": {
+          "point": 0.4823,
+          "ci95_10000boot": [
+            0.3675,
+            0.7103
+          ]
+        },
+        "NeedleFinder_2026_OOF": {
+          "point": 0.39,
+          "ci95_10000boot": [
+            0.3167,
+            0.4813
+          ]
+        }
+      },
+      "axial_tip_sd_robust_mad_mm": {
+        "Rater1_CY": {
+          "point": 0.001,
+          "ci95_10000boot": [
+            0.001,
+            2.0194
+          ]
+        },
+        "Rater2_LB_AMe": {
+          "point": 3.5545,
+          "ci95_10000boot": [
+            2.5934,
+            4.6245
+          ]
+        },
+        "NeedleFinder_2026_OOF": {
+          "point": 2.9761,
+          "ci95_10000boot": [
+            2.0714,
+            3.7764
+          ]
+        }
+      },
+      "axial_tip_sd_winsorized15_mm": {
+        "Rater1_CY": {
+          "point": 3.7679,
+          "ci95_10000boot": [
+            3.0717,
+            4.3448
+          ]
+        },
+        "Rater2_LB_AMe": {
+          "point": 5.0931,
+          "ci95_10000boot": [
+            4.2158,
+            5.9706
+          ]
+        },
+        "NeedleFinder_2026_OOF": {
+          "point": 4.9355,
+          "ci95_10000boot": [
+            4.2339,
+            5.5377
+          ]
+        }
+      }
+    },
+    "tost_non_inferiority_and_equivalence_tests": {
+      "shaft_mean_noninferiority_margin_0p25mm": {
+        "label": "shaft_mean_nf_vs_cy_compared_to_lb_vs_cy",
+        "statistic_mode": "mean",
+        "margin_delta_mm": 0.25,
+        "nf2026_value_mm": 0.5579,
+        "human_interobserver_value_mm": 0.718,
+        "paired_difference_nf_minus_human_mm": -0.1601,
+        "ci90_patient_bootstrap_mm": [
+          -0.311,
+          -0.0245
+        ],
+        "ci95_patient_bootstrap_mm": [
+          -0.3425,
+          -0.0038
+        ],
+        "non_inferiority_p_value_wilcoxon": 1.6379357966242173e-41,
+        "tost_equivalence_p_value_wilcoxon": 5.546999053611451e-10,
+        "non_inferiority_p_value_parametric": 3.575736452928538e-38,
+        "tost_equivalence_p_value_parametric": 0.0024084644356219265,
+        "non_inferiority_p_value_bootstrap": 0.0,
+        "is_non_inferior_at_alpha_0p05": true,
+        "is_equivalent_tost_at_alpha_0p05": false
+      },
+      "shaft_median_noninferiority_margin_0p25mm": {
+        "label": "shaft_median_nf_vs_cy_compared_to_lb_vs_cy",
+        "statistic_mode": "median",
+        "margin_delta_mm": 0.25,
+        "nf2026_value_mm": 0.4349,
+        "human_interobserver_value_mm": 0.4949,
+        "paired_difference_nf_minus_human_mm": -0.06,
+        "ci90_patient_bootstrap_mm": [
+          -0.1861,
+          0.0124
+        ],
+        "ci95_patient_bootstrap_mm": [
+          -0.2078,
+          0.0229
+        ],
+        "non_inferiority_p_value_wilcoxon": 1.6379357966242173e-41,
+        "tost_equivalence_p_value_wilcoxon": 5.546999053611451e-10,
+        "non_inferiority_p_value_parametric": null,
+        "tost_equivalence_p_value_parametric": null,
+        "non_inferiority_p_value_bootstrap": 0.0,
+        "is_non_inferior_at_alpha_0p05": true,
+        "is_equivalent_tost_at_alpha_0p05": true
+      },
+      "tip_median_noninferiority_margin_1p0mm": {
+        "label": "tip_median_nf_vs_cy_compared_to_lb_vs_cy",
+        "statistic_mode": "median",
+        "margin_delta_mm": 1.0,
+        "nf2026_value_mm": 2.3275,
+        "human_interobserver_value_mm": 3.1786,
+        "paired_difference_nf_minus_human_mm": -0.8511,
+        "ci90_patient_bootstrap_mm": [
+          -1.4636,
+          -0.5161
+        ],
+        "ci95_patient_bootstrap_mm": [
+          -1.6066,
+          -0.4042
+        ],
+        "non_inferiority_p_value_wilcoxon": 2.2321481795114538e-14,
+        "tost_equivalence_p_value_wilcoxon": 0.2501606406195507,
+        "non_inferiority_p_value_parametric": null,
+        "tost_equivalence_p_value_parametric": null,
+        "non_inferiority_p_value_bootstrap": 0.0,
+        "is_non_inferior_at_alpha_0p05": true,
+        "is_equivalent_tost_at_alpha_0p05": false
+      },
+      "tip_mean_noninferiority_margin_1p5mm": {
+        "label": "tip_mean_nf_vs_cy_compared_to_lb_vs_cy",
+        "statistic_mode": "mean",
+        "margin_delta_mm": 1.5,
+        "nf2026_value_mm": 5.5061,
+        "human_interobserver_value_mm": 6.1033,
+        "paired_difference_nf_minus_human_mm": -0.5972,
+        "ci90_patient_bootstrap_mm": [
+          -1.7984,
+          0.5663
+        ],
+        "ci95_patient_bootstrap_mm": [
+          -2.0636,
+          0.757
+        ],
+        "non_inferiority_p_value_wilcoxon": 6.75207940971215e-19,
+        "tost_equivalence_p_value_wilcoxon": 0.0004985312635878291,
+        "non_inferiority_p_value_parametric": 3.5887953247966292e-06,
+        "tost_equivalence_p_value_parametric": 0.026675467619154403,
+        "non_inferiority_p_value_bootstrap": 0.0014,
+        "is_non_inferior_at_alpha_0p05": true,
+        "is_equivalent_tost_at_alpha_0p05": false
+      },
+      "tip_median_vs_rater2_ref_margin_1p0mm": {
+        "label": "tip_median_nf_vs_rater2_ref_compared_to_cy_vs_lb",
+        "statistic_mode": "median",
+        "margin_delta_mm": 1.0,
+        "nf2026_value_mm": 3.9241,
+        "human_interobserver_value_mm": 3.1786,
+        "paired_difference_nf_minus_human_mm": 0.7455,
+        "ci90_patient_bootstrap_mm": [
+          0.2048,
+          0.9842
+        ],
+        "ci95_patient_bootstrap_mm": [
+          0.1132,
+          1.0884
+        ],
+        "non_inferiority_p_value_wilcoxon": 9.631861200075831e-05,
+        "tost_equivalence_p_value_wilcoxon": 9.631861200075831e-05,
+        "non_inferiority_p_value_parametric": null,
+        "tost_equivalence_p_value_parametric": null,
+        "non_inferiority_p_value_bootstrap": 0.046,
+        "is_non_inferior_at_alpha_0p05": true,
+        "is_equivalent_tost_at_alpha_0p05": true
+      },
+      "tip_mean_vs_rater2_ref_margin_1p5mm": {
+        "label": "tip_mean_nf_vs_rater2_ref_compared_to_cy_vs_lb",
+        "statistic_mode": "mean",
+        "margin_delta_mm": 1.5,
+        "nf2026_value_mm": 7.5343,
+        "human_interobserver_value_mm": 6.1033,
+        "paired_difference_nf_minus_human_mm": 1.431,
+        "ci90_patient_bootstrap_mm": [
+          0.794,
+          2.1089
+        ],
+        "ci95_patient_bootstrap_mm": [
+          0.6828,
+          2.261
+        ],
+        "non_inferiority_p_value_wilcoxon": 8.08051677807564e-09,
+        "tost_equivalence_p_value_wilcoxon": 8.08051677807564e-09,
+        "non_inferiority_p_value_parametric": 0.4308308118121986,
+        "tost_equivalence_p_value_parametric": 0.4308308118121986,
+        "non_inferiority_p_value_bootstrap": 0.4168,
+        "is_non_inferior_at_alpha_0p05": false,
+        "is_equivalent_tost_at_alpha_0p05": false
+      }
+    }
+  }
+}
