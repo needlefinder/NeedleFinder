@@ -2977,34 +2977,32 @@ class TrackingAlgorithmsMixin:
     return model
 
   def estimateAxialLimitSlice(self, vol_arr: np.ndarray, sp_k: float) -> int:
-    """Automatically estimate the lower axial template/insertion slice `k_lim` from 3D volume intensities."""
+    """Automatically estimate the lower axial template/insertion slice `k_lim` from 3D volume intensities (tilt-safe)."""
     from scipy.ndimage import gaussian_filter1d
 
     K, J, I = vol_arr.shape
-    if K < 8:
+    if K <= 45:
       return 0
-    c_roi = vol_arr[:, int(0.30 * J):int(0.70 * J), int(0.30 * I):int(0.70 * I)]
+    c_roi = vol_arr[:, int(0.30 * J):int(0.70 * J), int(0.30 * I):int(0.30 * I)]
     p50 = gaussian_filter1d(np.percentile(c_roi, 50, axis=(1, 2)).astype(np.float64), sigma=max(1.0, 2.5 / max(0.5, float(sp_k))))
-    if K <= 42:
-      min_bot = float(np.min(p50[:max(2, int(0.25 * K))]))
-      t_ref = float(np.percentile(p50[int(0.30 * K):max(int(0.30 * K) + 2, int(0.85 * K))], 65))
-      if min_bot > 0.38 * t_ref:
-        return max(0, int(round(3.0 / max(1.0, float(sp_k)))))
-      k_lo, k_hi = int(0.18 * K), max(int(0.18 * K) + 2, int(0.70 * K))
-      k_peak = k_lo + int(np.argmax(p50[k_lo:k_hi]))
-      s_lo = max(1, k_peak - int(round(45.0 / max(0.5, float(sp_k)))))
-    else:
-      k_lo, k_hi = int(0.25 * K), max(int(0.25 * K) + 2, int(0.62 * K))
-      k_peak = k_lo + int(np.argmax(p50[k_lo:k_hi]))
-      s_lo = max(int(0.10 * K), k_peak - int(round(52.0 / max(0.5, float(sp_k)))))
+    k_lo, k_hi = int(0.25 * K), max(int(0.25 * K) + 2, int(0.62 * K))
+    k_peak = k_lo + int(np.argmax(p50[k_lo:k_hi]))
+    s_lo = max(int(0.10 * K), k_peak - int(round(52.0 / max(0.5, float(sp_k)))))
     grad = np.gradient(p50)
     if k_peak <= s_lo:
-      return max(0, int(0.25 * K))
-    k_steep = s_lo + int(np.argmax(grad[s_lo:k_peak]))
-    k_est = k_steep
-    while k_est > s_lo and grad[k_est] > 0.22 * grad[k_steep]:
-      k_est -= 1
-    return int(np.clip(k_est, 0, K - 5))
+      k_est_int = max(0, int(0.25 * K))
+    else:
+      k_steep = s_lo + int(np.argmax(grad[s_lo:k_peak]))
+      k_est = k_steep
+      while k_est > s_lo and grad[k_est] > 0.22 * grad[k_steep]:
+        k_est -= 1
+      k_est_int = int(np.clip(k_est, 0, K - 5))
+    t_pelvis = float(np.percentile(p50[int(0.35 * K):max(int(0.35 * K) + 2, int(0.85 * K))], 60))
+    tissue_active = np.where(p50 >= 0.22 * t_pelvis)[0]
+    k_tissue = int(tissue_active[0]) if len(tissue_active) > 0 else 0
+    safety_slices = int(round(18.0 / max(0.8, float(sp_k))))
+    k_safe = max(0, min(k_est_int, k_tissue) - safety_slices)
+    return int(np.clip(k_safe, 0, max(0, K - 5)))
 
   def _compute_3d_sym_response_numpy(
       self,
@@ -3163,7 +3161,18 @@ class TrackingAlgorithmsMixin:
           marker_found = True
           limit_source = "auto" if is_auto else "marker"
       if marker_found:
-        k_cand = int(round(float((ras_to_ijk @ np.array([0.0, 0.0, best_marker_z, 1.0]))[2])))
+        if abs(float(ijk_to_ras_mat[2, 2])) > 1e-6:
+          ii_c = 0.50 * I
+          jj_ant = 0.43 * J
+          k_bundle = (
+              (float(best_marker_z) - 2.0)
+              - float(ijk_to_ras_mat[2, 3])
+              - float(ijk_to_ras_mat[2, 0]) * ii_c
+              - float(ijk_to_ras_mat[2, 1]) * jj_ant
+          ) / float(ijk_to_ras_mat[2, 2])
+          k_cand = int(np.floor(k_bundle))
+        else:
+          k_cand = int(round(float((ras_to_ijk @ np.array([0.0, 0.0, best_marker_z, 1.0]))[2])))
         if 0 <= k_cand < K:
           k_lim = k_cand
 
@@ -4435,8 +4444,18 @@ class TrackingAlgorithmsMixin:
           ctrl_pts = ras_arr[sample_idx].tolist()
           conf_val = float(t.get("confidence", 0.0))
           len_val = float(t.get("length_mm", 0.0))
-          comment = f"Conf: {conf_val:.1f}% | L: {len_val:.1f} mm"
-          self.addNeedleToScene(ctrl_pts, idx, "Detection", script=script, comment=comment, confidence=conf_val)
+          tip_ci90 = float(t.get("tip_ci90_mm", 0.0))
+          needs_tip_review = bool(t.get("needs_tip_review", False))
+          if tip_ci90 > 0.0:
+            rev_tag = " [REVIEW TIP]" if needs_tip_review else ""
+            comment = f"Conf: {conf_val:.1f}% | L: {len_val:.1f} mm | Tip ±{tip_ci90:.1f} mm{rev_tag}"
+          else:
+            comment = f"Conf: {conf_val:.1f}% | L: {len_val:.1f} mm"
+          model_node = self.addNeedleToScene(ctrl_pts, idx, "Detection", script=script, comment=comment, confidence=conf_val)
+          if model_node is not None and hasattr(model_node, "SetAttribute") and tip_ci90 > 0.0:
+            model_node.SetAttribute("TipUncertainty90mm", f"{tip_ci90:.2f}")
+            model_node.SetAttribute("TipSigmaMm", f"{float(t.get('tip_uncertainty_mm', 0.0)):.2f}")
+            model_node.SetAttribute("NeedsTipReview", "1" if needs_tip_review else "0")
         if filtered:
           widget.deleteNeedleButton.setEnabled(1)
           widget.resetDetectionButton.setEnabled(1)

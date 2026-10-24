@@ -739,9 +739,355 @@ def _forward_tip_bgt_numpy(x_26, adj_feat_8, adj_mask, W):
     return _lin_np(hd, W["tip_bgt.head.2.weight"], W["tip_bgt.head.2.bias"])
 
 
-def _regularize_poly3_np(pts_ras):
-    pts = np.asarray(pts_ras, dtype=np.float64)
+def _conv1d_same_np(x, w, b, dilation=1):
+    """
+    Pure-NumPy 1D convolution with kernel_size=3 and padding=dilation.
+    x: [C_in, L], w: [C_out, C_in, 3], b: [C_out] -> returns [C_out, L].
+    """
+    C_out, C_in, K = w.shape
+    L = x.shape[1]
+    pad = dilation
+    x_pad = np.pad(x, ((0, 0), (pad, pad)), mode="constant")
+    out = (
+        np.einsum("oi,il->ol", w[:, :, 0], x_pad[:, :L])
+        + np.einsum("oi,il->ol", w[:, :, 1], x_pad[:, pad:pad + L])
+        + np.einsum("oi,il->ol", w[:, :, 2], x_pad[:, 2 * pad:2 * pad + L])
+    )
+    return out + b[:, None]
+
+
+def _gn_1d_np(x, w, b, num_groups=8, eps=1e-5):
+    """Pure-NumPy GroupNorm over [C, L]."""
+    C, L = x.shape
+    G = min(num_groups, C)
+    xg = x.reshape(G, C // G, L)
+    mean = np.mean(xg, axis=(1, 2), keepdims=True)
+    var = np.var(xg, axis=(1, 2), keepdims=True)
+    xg_norm = (xg - mean) / np.sqrt(var + eps)
+    return xg_norm.reshape(C, L) * w[:, None] + b[:, None]
+
+
+def _forward_1d_tip_localizer_numpy(prof_c_l, W):
+    """
+    Pure-NumPy forward pass of Dedicated1DTipLocalizer(in_channels=24, hidden_dim=48, seq_len=91) (Stage 2C).
+    prof_c_l: [24, 91] float32 array -> returns (dz_pred_mm, tip_prob_std_mm, peak_prob).
+    """
+    if "tip1d.stem.0.weight" not in W:
+        return None
+    C_expect = W["tip1d.stem.0.weight"].shape[1]
+    x = np.asarray(prof_c_l[:C_expect], dtype=np.float32)
+    h = _silu_np(_gn_1d_np(_conv1d_same_np(x, W["tip1d.stem.0.weight"], W["tip1d.stem.0.bias"], dilation=1),
+                           W["tip1d.stem.1.weight"], W["tip1d.stem.1.bias"]))
+    for b_idx, dil in ((1, 1), (2, 2), (3, 4)):
+        pfx = f"tip1d.block{b_idx}"
+        r = _silu_np(_gn_1d_np(_conv1d_same_np(h, W[f"{pfx}.0.weight"], W[f"{pfx}.0.bias"], dilation=dil),
+                               W[f"{pfx}.1.weight"], W[f"{pfx}.1.bias"]))
+        r = _gn_1d_np(_conv1d_same_np(r, W[f"{pfx}.3.weight"], W[f"{pfx}.3.bias"], dilation=dil),
+                      W[f"{pfx}.4.weight"], W[f"{pfx}.4.bias"])
+        h = _silu_np(h + r)
+
+    # 4-head 1D self-attention across L=91
+    seq = h.T  # [91, 48]
+    L, D = seq.shape
+    qkv = _lin_np(seq, W["tip1d.attn.in_proj_weight"], W["tip1d.attn.in_proj_bias"])
+    q, k, v = np.split(qkv, 3, axis=-1)
+    n_heads = 4
+    hd = D // n_heads
+    scale = 1.0 / math.sqrt(float(hd))
+    qh = q.reshape(L, n_heads, hd).transpose(1, 0, 2)  # [4, 91, 12]
+    kh = k.reshape(L, n_heads, hd).transpose(1, 0, 2)
+    vh = v.reshape(L, n_heads, hd).transpose(1, 0, 2)
+    scores = np.matmul(qh, kh.transpose(0, 2, 1)) * scale
+    attn = _softmax_last_np(scores)
+    ctx = np.matmul(attn, vh).transpose(1, 0, 2).reshape(L, D)
+    attn_out = _lin_np(ctx, W["tip1d.attn.out_proj.weight"], W["tip1d.attn.out_proj.bias"])
+    seq = _ln_np(seq + attn_out, W["tip1d.attn_norm.weight"], W["tip1d.attn_norm.bias"])
+    h_out = seq.T  # [48, 91]
+
+    sh = _silu_np(_conv1d_same_np(h_out, W["tip1d.step_head.0.weight"], W["tip1d.step_head.0.bias"], dilation=1))
+    w_fin = W["tip1d.step_head.2.weight"][:, :, 0]  # [1, 24]
+    b_fin = W["tip1d.step_head.2.bias"]             # [1]
+    logits = (w_fin @ sh + b_fin[:, None]).squeeze(0)  # [91]
+    probs = _softmax_last_np(logits)
+    z_grid = W.get("tip1d.dz_grid", np.linspace(-25.0, 20.0, 91, dtype=np.float32))
+    dz_soft = float(np.sum(probs * z_grid))
+    z_var = float(np.sum(probs * ((z_grid - dz_soft) ** 2)))
+    z_std = math.sqrt(max(0.25, z_var))
+
+    h_cat = np.concatenate([h_out[:, 50], np.mean(h_out, axis=-1)], axis=-1)
+    rh = _silu_np(_lin_np(h_cat, W["tip1d.reg_head.0.weight"], W["tip1d.reg_head.0.bias"]))
+    dz_res = float(_lin_np(rh, W["tip1d.reg_head.2.weight"], W["tip1d.reg_head.2.bias"])[0]) * 10.0
+    dz_pred = float(np.clip(0.75 * dz_soft + 0.25 * dz_res, -25.0, 20.0))
+    peak_prob = float(np.max(probs))
+    return dz_pred, z_std, peak_prob
+
+
+def _extract_1d_tip_profile_22_fast_np(
+    pts_ras, vx_top, vy_top, z_tip_nbr,
+    vol_roi, p_mask, p_peak, p_obt, vx_map, vy_map,
+    resp_roi, cs_roi, rsym_roi,
+    p10, p95, log_r_sc, c_sc,
+    k0, i0, j0, sp_i, sp_j, sp_k, ras_to_ijk, center_ras, z_base_ras
+):
+    """
+    Vectorized 91-step (-25.0 mm to +20.0 mm in 0.5 mm steps) 24-channel 1D axial profile extractor
+    matching extract_1d_tip_profile_91_24ch channel-for-channel.
+    """
+    K_sub, H, W = p_mask.shape
+    z_top = float(pts_ras[-1, 2])
+    s_offsets = np.linspace(-25.0, 20.0, 91, dtype=np.float64)
+    z_grid = z_top + s_offsets
+    x_grid = np.where(z_grid <= z_top, np.interp(z_grid, pts_ras[:, 2], pts_ras[:, 0]), pts_ras[-1, 0] + vx_top * s_offsets)
+    y_grid = np.where(z_grid <= z_top, np.interp(z_grid, pts_ras[:, 2], pts_ras[:, 1]), pts_ras[-1, 1] + vy_top * s_offsets)
+
+    ijks = (ras_to_ijk @ np.column_stack([x_grid, y_grid, z_grid, np.ones_like(z_grid)]).T).T
+    i_f = ijks[:, 0] - i0
+    j_f = ijks[:, 1] - j0
+    k_f = ijks[:, 2] - k0
+    r_px = max(1, int(round(1.0 / max(0.3, sp_i))))
+
+    prof = np.zeros((24, 91), dtype=np.float32)
+    prof[14, :] = (s_offsets / 25.0).astype(np.float32)
+    prof[16, :] = ((z_grid - float(z_tip_nbr)) / 25.0).astype(np.float32)
+
+    for t_idx in range(91):
+        fi, fj, fk = float(i_f[t_idx]), float(j_f[t_idx]), float(k_f[t_idx])
+        ic, jc = int(round(fi)), int(round(fj))
+        if not (r_px <= ic < W - r_px and r_px <= jc < H - r_px and -0.5 <= fk <= K_sub - 0.5):
+            continue
+        prof[15, t_idx] = 1.0
+        fk_c = float(np.clip(fk, 0.0, float(K_sub - 1)))
+        k_lo = int(math.floor(fk_c))
+        k_hi = min(K_sub - 1, k_lo + 1)
+        a_s = float(fk_c - k_lo)
+        b_s = 1.0 - a_s
+        sl_j = slice(jc - r_px, jc + r_px + 1)
+        sl_i = slice(ic - r_px, ic + r_px + 1)
+
+        pm_p = b_s * p_mask[k_lo, sl_j, sl_i] + a_s * p_mask[k_hi, sl_j, sl_i]
+        pp_p = b_s * p_peak[k_lo, sl_j, sl_i] + a_s * p_peak[k_hi, sl_j, sl_i]
+        po_p = b_s * p_obt[k_lo, sl_j, sl_i] + a_s * p_obt[k_hi, sl_j, sl_i]
+        vx_c = float(b_s * vx_map[k_lo, jc, ic] + a_s * vx_map[k_hi, jc, ic])
+        vy_c = float(b_s * vy_map[k_lo, jc, ic] + a_s * vy_map[k_hi, jc, ic])
+        tan_err = math.hypot(vx_c - vx_top, vy_c - vy_top)
+
+        r_p = b_s * resp_roi[k_lo, sl_j, sl_i] + a_s * resp_roi[k_hi, sl_j, sl_i]
+        sym_p = np.clip(np.log1p(np.maximum(0.0, r_p)) / log_r_sc, 0.0, 1.5)
+        c_p = np.clip((b_s * cs_roi[k_lo, sl_j, sl_i] + a_s * cs_roi[k_hi, sl_j, sl_i]) / c_sc, 0.0, 1.5)
+        v_p = b_s * vol_roi[k_lo, sl_j, sl_i] + a_s * vol_roi[k_hi, sl_j, sl_i]
+        rs_p = b_s * rsym_roi[k_lo, sl_j, sl_i] + a_s * rsym_roi[k_hi, sl_j, sl_i]
+        dr_p = np.clip((rs_p - v_p) / (rs_p + 15.0), -0.5, 1.0)
+        mri_p = np.clip((v_p - p10) / max(1.0, p95 - p10), -0.5, 2.5)
+        hull_c = math.hypot((ic - W * 0.5) * sp_i, (jc - H * 0.5) * sp_j) / 50.0
+
+        pm_max = float(np.max(pm_p))
+        pm_mean = float(np.mean(pm_p))
+        pp_max = float(np.max(pp_p))
+        po_max = float(np.max(po_p))
+        sym_max = float(np.max(sym_p))
+        sym_mean = float(np.mean(sym_p))
+        cs_max = float(np.max(c_p))
+        dr_max = float(np.max(dr_p))
+        t2w_min = float(np.min(mri_p))
+        comb_sup = 0.40 * max(pm_max, po_max) + 0.35 * pp_max + 0.25 * min(1.0, sym_max)
+        sig_max = float(np.max(0.5 * np.sqrt(np.clip(pm_p * (1.0 - pm_p), 0.0, 0.25))))
+
+        prof[0, t_idx] = pm_max
+        prof[1, t_idx] = pm_mean
+        prof[2, t_idx] = pp_max
+        prof[3, t_idx] = po_max
+        prof[4, t_idx] = vx_c
+        prof[5, t_idx] = vy_c
+        prof[6, t_idx] = tan_err
+        prof[7, t_idx] = sym_max
+        prof[8, t_idx] = sym_mean
+        prof[9, t_idx] = cs_max
+        prof[10, t_idx] = dr_max
+        prof[11, t_idx] = t2w_min
+        prof[12, t_idx] = hull_c
+        prof[13, t_idx] = comb_sup
+        prof[22, t_idx] = sig_max
+
+    prof[17] = np.gradient(prof[0]) * 2.0
+    prof[18] = np.gradient(prof[2]) * 2.0
+    prof[19] = np.gradient(prof[7]) * 2.0
+    prof[20] = np.gradient(prof[11]) * 2.0
+    prof[21] = np.gradient(prof[13]) * 2.0
+    prof[23] = np.gradient(prof[22]) * 2.0
+    return prof
+
+
+def _extrapolate_xy_at_z_np(pts_ras, z_query):
+    pts = pts_ras[np.argsort(pts_ras[:, 2])]
+    z_bot, z_top = float(pts[0, 2]), float(pts[-1, 2])
+    if z_bot <= z_query <= z_top:
+        return float(np.interp(z_query, pts[:, 2], pts[:, 0])), float(np.interp(z_query, pts[:, 2], pts[:, 1]))
+    elif z_query > z_top:
+        sub = pts[pts[:, 2] >= max(z_bot, z_top - 25.0)]
+        if len(sub) < 2:
+            sub = pts[-min(len(pts), 4):]
+    else:
+        sub = pts[pts[:, 2] <= min(z_top, z_bot + 25.0)]
+        if len(sub) < 2:
+            sub = pts[:min(len(pts), 4)]
+    dz = float(sub[-1, 2] - sub[0, 2])
+    if dz < 0.5:
+        return float(sub[-1, 0]), float(sub[-1, 1])
+    deg = 1 if len(sub) < 6 else 1
+    cx = np.polyfit(sub[:, 2], sub[:, 0], deg)
+    cy = np.polyfit(sub[:, 2], sub[:, 1], deg)
+    return float(np.polyval(cx, z_query)), float(np.polyval(cy, z_query))
+
+
+def _collinear_traj_dist_np(pts, ref_ras):
+    """
+    Extrapolation-aware collinear fragment checker:
+    Returns (is_duplicate_or_fragment, should_extend_ref, merged_pts).
+    """
     pts = pts[np.argsort(pts[:, 2])]
+    ref = ref_ras[np.argsort(ref_ras[:, 2])]
+    z0 = max(float(pts[0, 2]), float(ref[0, 2]))
+    z1 = min(float(pts[-1, 2]), float(ref[-1, 2]))
+    ov = z1 - z0
+
+    if ov >= 4.0:
+        zs = np.linspace(z0, z1, 12)
+        dx = np.interp(zs, pts[:, 2], pts[:, 0]) - np.interp(zs, ref[:, 2], ref[:, 0])
+        dy = np.interp(zs, pts[:, 2], pts[:, 1]) - np.interp(zs, ref[:, 2], ref[:, 1])
+        d_ov = float(np.mean(np.hypot(dx, dy)))
+        if d_ov <= 2.15:
+            if float(pts[-1, 2]) > float(ref[-1, 2]) + 2.5:
+                upper = pts[pts[:, 2] > float(ref[-1, 2]) + 0.5]
+                if len(upper) > 0:
+                    merged = _regularize_poly3_np(np.vstack([ref, upper]))
+                    return True, True, merged
+            return True, False, ref
+        return False, False, ref
+
+    gap = -ov
+    if gap > 18.0:
+        return False, False, ref
+
+    sl_pts = (pts[-1, :2] - pts[0, :2]) / max(1.0, float(pts[-1, 2] - pts[0, 2]))
+    sl_ref = (ref[-1, :2] - ref[0, :2]) / max(1.0, float(ref[-1, 2] - ref[0, 2]))
+    if float(np.hypot(sl_pts[0] - sl_ref[0], sl_pts[1] - sl_ref[1])) > 0.14:
+        return False, False, ref
+
+    zs_probe = np.linspace(float(pts[0, 2]), float(pts[-1, 2]), 7)
+    dists = []
+    for zq in zs_probe:
+        rx, ry = _extrapolate_xy_at_z_np(ref, float(zq))
+        px = float(np.interp(zq, pts[:, 2], pts[:, 0]))
+        py = float(np.interp(zq, pts[:, 2], pts[:, 1]))
+        dists.append(math.hypot(px - rx, py - ry))
+    if float(np.mean(dists)) <= 2.30:
+        if float(pts[-1, 2]) > float(ref[-1, 2]) + 2.0:
+            comb = np.vstack([ref, pts[pts[:, 2] > float(ref[-1, 2]) + 0.5]])
+            merged = _regularize_poly3_np(comb)
+            return True, True, merged
+        return True, False, ref
+    return False, False, ref
+
+
+def _stitch_collinear_pool_fragments_np(pool):
+    """
+    Collinear Axial Split-Fragment Stitching & Kostoulas 2025 Iterative Multi-Segment Gap-Bridging:
+    Bridges candidate fragments (t_low, t_high) separated by mid-shaft dropouts (gap <= 20 mm,
+    extrapolated midpoint XY distance <= 2.2 mm, 3D slope difference <= 0.14).
+    """
+    M0 = len(pool)
+    if M0 < 2:
+        return pool
+    stitched_entries = []
+    for i in range(M0):
+        p_low = pool[i]
+        r_low = p_low["ras"]
+        z_bot_l, z_top_l = float(r_low[0, 2]), float(r_low[-1, 2])
+        if z_top_l - z_bot_l < 9.0:
+            continue
+        for j in range(M0):
+            if i == j:
+                continue
+            p_high = pool[j]
+            r_high = p_high["ras"]
+            z_bot_h, z_top_h = float(r_high[0, 2]), float(r_high[-1, 2])
+            if z_top_h - z_bot_h < 8.0 or z_top_h <= z_top_l + 6.0:
+                continue
+            gap = z_bot_h - z_top_l
+            if gap < -6.0 or gap > 20.0:
+                continue
+            ds = float(np.hypot(p_low["slope"][0] - p_high["slope"][0], p_low["slope"][1] - p_high["slope"][1]))
+            if ds > 0.14:
+                continue
+            z_mid = 0.5 * (z_top_l + z_bot_h)
+            xl, yl = _extrapolate_xy_at_z_np(r_low, z_mid)
+            xh, yh = _extrapolate_xy_at_z_np(r_high, z_mid)
+            if math.hypot(xl - xh, yl - yh) > 2.20:
+                continue
+
+            # Combine r_low and r_high and fit smooth Poly3 curve across gap
+            z_new = np.linspace(z_bot_l, z_top_h, max(16, int(round((z_top_h - z_bot_l) / 2.0))))
+            comb = np.vstack([r_low[r_low[:, 2] <= z_mid], r_high[r_high[:, 2] > z_mid]])
+            comb = comb[np.argsort(comb[:, 2])]
+            if len(comb) < 5:
+                continue
+            zn = 2.0 * (comb[:, 2] - z_bot_l) / max(1.0, z_top_h - z_bot_l) - 1.0
+            zn_new = 2.0 * (z_new - z_bot_l) / max(1.0, z_top_h - z_bot_l) - 1.0
+            deg = 3 if (z_top_h - z_bot_l) >= 28.0 else 2
+            cx = np.polyfit(zn, comb[:, 0], deg)
+            cy = np.polyfit(zn, comb[:, 1], deg)
+            res = float(np.percentile(np.hypot(comb[:, 0] - np.polyval(cx, zn), comb[:, 1] - np.polyval(cy, zn)), 85))
+            if res > 1.45:
+                continue
+            s_ras = np.column_stack([np.polyval(cx, zn_new), np.polyval(cy, zn_new), z_new])
+            if any(_traj_dist_np(s_ras, p_ex["ras"]) < 1.35 and abs(float(p_ex["ras"][-1, 2]) - z_top_h) < 3.5 for p_ex in pool + stitched_entries):
+                continue
+
+            w_l = z_top_l - z_bot_l
+            w_h = z_top_h - z_bot_h
+            wt = max(1.0, w_l + w_h)
+            diffs = np.diff(s_ras, axis=0)
+            len_mm = float(np.sum(np.linalg.norm(diffs, axis=1)))
+            sl_new = (s_ras[-1, :2] - s_ras[0, :2]) / max(1.0, z_top_h - z_bot_l)
+            conf_new = max(float(p_low["conf_heur"]), (w_l * float(p_low["conf_heur"]) + w_h * float(p_high["conf_heur"])) / wt)
+            st_traj = {
+                "ras": s_ras,
+                "points": s_ras,
+                "base_xy": s_ras[0, :2].copy(),
+                "slope": sl_new,
+                "z_span_tracked": float(z_top_h - z_bot_l),
+                "length_mm": len_mm,
+                "rmse": res,
+                "confidence": float(np.clip(conf_new * 100.0, 50.0, 99.5)),
+                "pass": p_low["traj"].get("pass", 1),
+                "is_stitched": True,
+            }
+            stitched_entries.append({
+                "traj": st_traj,
+                "ras": s_ras,
+                "base_xy": s_ras[0, :2].copy(),
+                "slope": sl_new,
+                "z_span": float(z_top_h - z_bot_l),
+                "rmse": res,
+                "conf_heur": conf_new,
+                "from_mpnn": max(float(p_low["from_mpnn"]), float(p_high["from_mpnn"])),
+                "mpnn_pa": (w_l * float(p_low["mpnn_pa"]) + w_h * float(p_high["mpnn_pa"])) / wt,
+                "mpnn_pl": max(float(p_low["mpnn_pl"]), float(p_high["mpnn_pl"])),
+                "mpnn_pe": (w_l * float(p_low["mpnn_pe"]) + w_h * float(p_high["mpnn_pe"])) / wt,
+            })
+            if len(stitched_entries) >= 8:
+                break
+        if len(stitched_entries) >= 8:
+            break
+    return pool + stitched_entries
+
+
+def _regularize_poly3_np(pts_ras, weights=None):
+    pts = np.asarray(pts_ras, dtype=np.float64)
+    order = np.argsort(pts[:, 2])
+    pts = pts[order]
+    if weights is not None:
+        weights = np.asarray(weights, dtype=np.float64)[order]
     n = len(pts)
     if n < 4:
         return pts
@@ -752,23 +1098,31 @@ def _regularize_poly3_np(pts_ras):
     deg = 3 if (n >= 9 and z_span >= 28.0) else (2 if n >= 5 else 1)
     zn = 2.0 * (z - z[0]) / z_span - 1.0
     try:
-        cx = np.polyfit(zn, pts[:, 0], deg)
-        cy = np.polyfit(zn, pts[:, 1], deg)
+        cx = np.polyfit(zn, pts[:, 0], deg, w=weights)
+        cy = np.polyfit(zn, pts[:, 1], deg, w=weights)
         fx = np.polyval(cx, zn)
         fy = np.polyval(cy, zn)
-        if float(np.max(np.hypot(fx - pts[:, 0], fy - pts[:, 1]))) <= 1.8:
+        if float(np.max(np.hypot(fx - pts[:, 0], fy - pts[:, 1]))) <= 1.85:
             return np.column_stack([fx, fy, z])
     except Exception:
         pass
     return pts
 
 
-def _apply_tip_adjustment_and_poly3_np(pts_ras, dz_tip_mm, vx_top, vy_top):
+def _apply_tip_adjustment_and_poly3_np(
+    pts_ras, dz_tip_mm, vx_top, vy_top,
+    p_mask=None, p_peak=None, resp_roi=None, log_r_sc_f=1.0,
+    k0=0, i0=0, j0=0, ijk_to_ras_mat=None, ras_to_ijk=None
+):
+    """
+    Applies Stage 2C tip adjustment + Upgrade A (Kim et al. 2026 sub-voxel dark-core centroiding
+    & inverse-variance-weighted 3rd-order polynomial shaft regularization).
+    """
     pts = np.asarray(pts_ras, dtype=np.float64)
     pts = pts[np.argsort(pts[:, 2])]
     if len(pts) < 3:
         return pts
-    dz_clamp = float(np.clip(dz_tip_mm, -9.5, 9.5))
+    dz_clamp = float(np.clip(dz_tip_mm, -11.5, 11.5))
     z_bot = float(pts[0, 2])
     z_top_old = float(pts[-1, 2])
     z_top_new = max(z_bot + 7.5, z_top_old + dz_clamp)
@@ -786,13 +1140,49 @@ def _apply_tip_adjustment_and_poly3_np(pts_ras, dz_tip_mm, vx_top, vy_top):
         y_ext = float(pts[-1, 1]) + vy_top * dz_ext
         pts = np.vstack([pts, np.array([[x_ext, y_ext, z_top_new]])])
 
-    if len(pts) >= 4:
-        pts_poly = _regularize_poly3_np(pts)
-        pts_blend = pts.copy()
-        pts_blend[:, 0] = 0.65 * pts[:, 0] + 0.35 * pts_poly[:, 0]
-        pts_blend[:, 1] = 0.65 * pts[:, 1] + 0.35 * pts_poly[:, 1]
-        return pts_blend
-    return pts
+    if len(pts) < 4:
+        return pts
+
+    # Upgrade A: Kim et al. 2026 sub-voxel dark-core centroiding & precision-weighted Poly3
+    weights = None
+    if p_mask is not None and p_peak is not None and resp_roi is not None and ras_to_ijk is not None and ijk_to_ras_mat is not None:
+        K_sub, H, W = p_mask.shape
+        rot_mat = ijk_to_ras_mat[:3, :3]
+        trans_vec = ijk_to_ras_mat[:3, 3]
+        ijks = (ras_to_ijk @ np.column_stack([pts, np.ones(len(pts))]).T).T
+        weights = np.ones(len(pts), dtype=np.float64)
+        pts_sub = pts.copy()
+        yy_g, xx_g = np.mgrid[-1:2, -1:2]
+        for idx_p, row in enumerate(ijks):
+            ic = int(round(row[0] - i0))
+            jc = int(round(row[1] - j0))
+            kc = int(round(row[2] - k0))
+            if 1 <= ic < W - 1 and 1 <= jc < H - 1 and 0 <= kc < K_sub:
+                pm_patch = p_mask[kc, jc - 1:jc + 2, ic - 1:ic + 2]
+                pp_patch = p_peak[kc, jc - 1:jc + 2, ic - 1:ic + 2]
+                sym_patch = np.clip(np.log1p(np.maximum(0.0, resp_roi[kc, jc - 1:jc + 2, ic - 1:ic + 2])) / log_r_sc_f, 0.0, 1.5)
+                # Single-pass Bernoulli uncertainty proxy sigma_bern = 0.5 * sqrt(p * (1 - p))
+                sig_patch = 0.5 * np.sqrt(np.clip(pm_patch * (1.0 - pm_patch), 0.0, 0.25))
+                w_patch = np.maximum(0.0, (0.55 * pp_patch + 0.45 * sym_patch) / (1.0 + 2.0 * sig_patch))
+                w_sum = float(np.sum(w_patch))
+                if w_sum > 0.15:
+                    di = float(np.sum(xx_g * w_patch)) / w_sum
+                    dj = float(np.sum(yy_g * w_patch)) / w_sum
+                    sub_ras = rot_mat @ np.array([ic + di + i0, jc + dj + j0, row[2]]) + trans_vec
+                    if math.hypot(sub_ras[0] - pts[idx_p, 0], sub_ras[1] - pts[idx_p, 1]) <= 1.05:
+                        pts_sub[idx_p, 0] = 0.72 * pts[idx_p, 0] + 0.28 * float(sub_ras[0])
+                        pts_sub[idx_p, 1] = 0.72 * pts[idx_p, 1] + 0.28 * float(sub_ras[1])
+                pm_max = float(np.max(pm_patch))
+                sym_max = float(np.max(sym_patch))
+                sig_c = float(sig_patch[1, 1])
+                weights[idx_p] = max(0.15, (pm_max + 0.5 * sym_max) / (0.04 + sig_c * sig_c))
+        pts = pts_sub
+
+    pts_poly = _regularize_poly3_np(pts, weights=weights)
+    pts_blend = pts.copy()
+    pts_blend[:, 0] = 0.55 * pts[:, 0] + 0.45 * pts_poly[:, 0]
+    pts_blend[:, 1] = 0.55 * pts[:, 1] + 0.45 * pts_poly[:, 1]
+    return pts_blend
 
 
 def run_mpnn_and_graph_transformer(
@@ -802,12 +1192,12 @@ def run_mpnn_and_graph_transformer(
     min_confidence=50.0, script=False,
 ):
     """
-    Run Stage 2 3D Spatio-Temporal NeedleSliceMPNN + Trajectory-Level DenseGraphTransformer:
-    1. Builds the 3D slice detection graph and runs 4-layer Triplet Collinearity MPNN.
-    2. Decodes disjoint 3D needle trajectories from MPNN edge probabilities and merges them
-       with the candidate trajectory pool.
-    3. Runs the Trajectory-Level GATv2 + Set Transformer (`needle_graph_transformer.onnx`)
-       to assign calibrated confidence scores and suppress duplicate/false-positive tracks.
+    Run Stage 2 (Slicer v2.0 Production Pipeline):
+    1. Stage 2A: 3D Spatio-Temporal NeedleSliceMPNN + Collinear Split-Fragment Stitching (Kostoulas 2025).
+    2. Stage 2B: Trajectory-Level DenseGraphTransformer + TipAwareBundleGraphTransformer +
+       Dai et al. 2020 Axial TV Continuity & Uncertainty Scoring + Extrapolation-Aware Collinear Deduplication.
+    3. Stage 2C: Dedicated 91-Step 22-Channel 1D Axial Tip Localizer + Split-Conformal 90% Tip Uncertainty +
+       Kim et al. 2026 Sub-Voxel Dark-Core & Inverse-Variance-Weighted Poly3 Shaft Refinement.
     """
     t_s2a_0 = time.perf_counter()
     W_dict = _get_graphnet_weights()
@@ -831,6 +1221,7 @@ def run_mpnn_and_graph_transformer(
 
     # 1. Run NeedleSliceMPNN on standard-resolution scans (or strided deep scans)
     mpnn_trajs = []
+    p10_v, p95_v = 0.0, 100.0
     try:
         st_xy = 2 if (H > 180 or W > 180) else 1
         st_k = 2 if (K_sub > 68 and sp_k < 2.2) else 1
@@ -850,6 +1241,7 @@ def run_mpnn_and_graph_transformer(
         nz = v_sub_s[v_sub_s > 0]
         p10 = float(np.percentile(nz, 10)) if len(nz) > 100 else 0.0
         p95 = float(np.percentile(nz, 95)) if len(nz) > 100 else 100.0
+        p10_v, p95_v = p10, p95
         r_sub_s = resp_s[::2, ::2, ::2] if Ks > 24 else resp_s
         pr = r_sub_s[r_sub_s > 0]
         r_sc = float(np.percentile(pr, 99)) if len(pr) > 20 else 50.0
@@ -933,11 +1325,7 @@ def run_mpnn_and_graph_transformer(
                 (nodes_ras[:, 2] - z_base_ras) / 80.0,
                 pm_v, pp_v, po_v, vx_v, vy_v,
                 pm_m3, pp_m3, 0.5 * (pm_v + pm_m3),
-                ch0_v,
-                ch1_v,
-                ch2_v,
-                ch3_v,
-                r_mm,
+                ch0_v, ch1_v, ch2_v, ch3_v, r_mm,
             ]).astype(np.float32)
 
             max_dk = max(4, int(round(24.0 / sp_k_e)))
@@ -1129,6 +1517,9 @@ def run_mpnn_and_graph_transformer(
                 "mpnn_pe": mt["mean_pe"],
             })
 
+    # Collinear Axial Split-Fragment Stitching & Kostoulas 2025 Gap-Bridging
+    pool = _stitch_collinear_pool_fragments_np(pool)
+
     t_s2_split = time.perf_counter()
     LAST_STAGE2_TIMINGS["s2a_mpnn_sec"] = t_s2_split - t_s2a_0
     M = len(pool)
@@ -1161,13 +1552,14 @@ def run_mpnn_and_graph_transformer(
         xs = np.interp(zs, ras[:, 2], ras[:, 0])
         ys = np.interp(zs, ras[:, 2], ras[:, 1])
         ijks = (ras_to_ijk @ np.column_stack([xs, ys, zs, np.ones_like(zs)]).T).T
-        pm_l, pp_l, po_l, sym_l, cs_l, rc_l = [], [], [], [], [], []
+        pm_l, pp_l, po_l, sym_l, cs_l, rc_l, sig_l = [], [], [], [], [], [], []
         for row in ijks:
             ic = int(round(row[0] - i0))
             jc = int(round(row[1] - j0))
             kc = int(round(row[2] - k0))
             if 1 <= ic < W - 1 and 1 <= jc < H - 1 and 0 <= kc < K_sub:
-                pm_l.append(float(np.max(p_mask[kc, jc - 1:jc + 2, ic - 1:ic + 2])))
+                pm_v_max = float(np.max(p_mask[kc, jc - 1:jc + 2, ic - 1:ic + 2]))
+                pm_l.append(pm_v_max)
                 pp_l.append(float(np.max(p_peak[kc, jc - 1:jc + 2, ic - 1:ic + 2])))
                 po_l.append(float(np.max(p_obt[kc, jc - 1:jc + 2, ic - 1:ic + 2])))
                 r_max = float(np.max(resp_roi[kc, jc - 1:jc + 2, ic - 1:ic + 2]))
@@ -1177,6 +1569,7 @@ def run_mpnn_and_graph_transformer(
                 rs_p = rsym_roi[kc, jc - 1:jc + 2, ic - 1:ic + 2]
                 v_p = vol_roi_full[kc, jc - 1:jc + 2, ic - 1:ic + 2]
                 rc_l.append(float(np.clip(np.max((rs_p - v_p) / (rs_p + 15.0)), -0.5, 1.0)))
+                sig_l.append(0.5 * math.sqrt(max(0.0, pm_v_max * (1.0 - pm_v_max))))
         mean_pm = float(np.mean(pm_l)) if pm_l else 0.0
         p75_pm = float(np.percentile(pm_l, 75)) if pm_l else 0.0
         mean_pp = float(np.mean(pp_l)) if pp_l else 0.0
@@ -1186,6 +1579,10 @@ def run_mpnn_and_graph_transformer(
         mean_cs = float(np.mean(cs_l)) if cs_l else 0.0
         mean_rc = float(np.mean(rc_l)) if rc_l else 0.0
         frac_active = float(np.mean([(m > 0.22 or pk > 0.18 or s > 0.25) for m, pk, s in zip(pm_l, pp_l, sym_l)])) if pm_l else 0.0
+        # Upgrade B: Dai et al. 2020 Axial TV Continuity & Aleong/Kim Uncertainty ratio
+        axial_tv_pm = float(np.mean(np.abs(np.diff(pm_l)))) if len(pm_l) >= 2 else 0.25
+        mean_sig = float(np.mean(sig_l)) if sig_l else 0.20
+        unc_ratio = mean_sig / max(0.08, mean_pm + 0.05)
 
         top_pts = ras[-min(6, len(ras)):]
         if len(top_pts) >= 2 and abs(top_pts[-1, 2] - top_pts[0, 2]) > 1.0:
@@ -1218,6 +1615,7 @@ def run_mpnn_and_graph_transformer(
             "mean_sym": mean_sym, "p75_sym": p75_sym, "mean_cs": mean_cs, "mean_rc": mean_rc,
             "frac_active": frac_active, "z_prof_tip": z_prof_tip, "tip_sup_cur": tip_sup_cur,
             "vx_top": vx_top, "vy_top": vy_top,
+            "axial_tv_pm": axial_tv_pm, "unc_ratio": unc_ratio,
         })
 
     qual_weights = np.array([max(0.05, pr["mean_pm"] * 0.4 + pr["mean_pp"] * 0.3 + pr["mean_sym"] * 0.3) for pr in prof_meta])
@@ -1251,6 +1649,9 @@ def run_mpnn_and_graph_transformer(
         p["vy_top"] = pr["vy_top"]
         p["mean_sym"] = pr["mean_sym"]
         p["frac_active"] = pr["frac_active"]
+        p["tip_sup_cur"] = pr["tip_sup_cur"]
+        p["axial_tv_pm"] = pr["axial_tv_pm"]
+        p["unc_ratio"] = pr["unc_ratio"]
 
         f18 = [
             p["conf_heur"], p["from_mpnn"], p["mpnn_pa"], p["mpnn_pl"], p["mpnn_pe"],
@@ -1321,6 +1722,13 @@ def run_mpnn_and_graph_transformer(
             blended_conf = 0.65 * float(t.get("confidence", 65.0)) + 0.35 * gt_conf
         else:
             blended_conf = 100.0 * (0.45 * p_rec + 0.55 * p_1to1)
+            # Upgrade B: Dai et al. 2020 Axial TV Continuity & Aleong/Kim Uncertainty Adjustment
+            if p.get("axial_tv_pm", 0.25) <= 0.12 and p.get("unc_ratio", 0.5) <= 0.28 and p.get("frac_active", 0.0) >= 0.70:
+                blended_conf += 1.8
+            elif p.get("axial_tv_pm", 0.0) >= 0.28 and p.get("unc_ratio", 0.0) >= 0.52 and p.get("mean_sym", 1.0) < 0.22:
+                blended_conf -= 5.5
+            if t.get("is_stitched", False) and p.get("frac_active", 0.0) >= 0.65:
+                blended_conf += 2.2
         t["confidence"] = float(np.clip(blended_conf, 1.0, 99.9))
         t["graph_prob"] = float(0.45 * p_rec + 0.55 * p_1to1)
         conf_arr[i] = t["confidence"]
@@ -1336,7 +1744,9 @@ def run_mpnn_and_graph_transformer(
         center_xy = None
         irgm_radius_mm = 999.0
 
+    q90_conf = float(W_dict.get("conformal.q90", np.array([1.965]))[0]) if "conformal.q90" in W_dict else 1.965
     out_trajs = []
+    out_pool_refs = []
     for idx_c in np.argsort(-conf_arr):
         if conf_arr[idx_c] < float(min_confidence):
             continue
@@ -1351,17 +1761,90 @@ def run_mpnn_and_graph_transformer(
         dedup_thresh = 1.60 if (conf_arr[idx_c] >= 65.0 and p_c.get("mpnn_pa", 0.0) >= 0.50) else 1.95
         if any(_traj_dist_np(pts, s["ras"]) < dedup_thresh for s in out_trajs):
             continue
-        if is_clinical_mri and tip_out is not None:
+
+        # Extrapolation-aware collinear split-fragment suppression & cranial extension
+        is_collinear_dup = False
+        for idx_s, s_prev in enumerate(out_trajs):
+            is_dup, should_ext, merged_pts = _collinear_traj_dist_np(pts, s_prev["ras"])
+            if is_dup:
+                is_collinear_dup = True
+                if should_ext and conf_arr[idx_c] >= max(38.0, float(min_confidence) - 4.0):
+                    s_prev["ras"] = merged_pts
+                    s_prev["points"] = merged_pts
+                    s_prev["length_mm"] = float(np.sum(np.linalg.norm(np.diff(merged_pts, axis=0), axis=1)))
+                    s_prev["z_span_tracked"] = float(abs(merged_pts[-1, 2] - merged_pts[0, 2]))
+                break
+        if is_collinear_dup:
+            continue
+
+        out_trajs.append(cand)
+        out_pool_refs.append((idx_c, p_c))
+
+    # Stage 2C: Dedicated 1D Axial Tip Localizer + Split-Conformal Tip Uncertainty + Kim 2026 Weighted Poly3
+    if is_clinical_mri:
+        for cand, (idx_c, p_c) in zip(out_trajs, out_pool_refs):
+            pts = np.asarray(cand["ras"], dtype=np.float64)
+            vx_top = float(p_c.get("vx_top", 0.0))
+            vy_top = float(p_c.get("vy_top", 0.0))
             dz_prof_mm = float(p_c.get("z_prof_tip", pts[-1, 2]) - pts[-1, 2])
             dz_nbr_mm = float(p_c.get("z_tip_nbr", pts[-1, 2]) - pts[-1, 2])
-            dz_comb_mm = 0.36 * (0.65 * float(dz_pred_net[idx_c]) + 0.25 * dz_prof_mm + 0.10 * dz_nbr_mm)
-            pts_ref = _apply_tip_adjustment_and_poly3_np(pts, dz_comb_mm, float(p_c.get("vx_top", 0.0)), float(p_c.get("vy_top", 0.0)))
+            dz_s2b_mm = float(dz_pred_net[idx_c]) if tip_out is not None else 0.0
+
+            dz_1d_mm = None
+            tip_std_1d = 2.2
+            if "tip1d.stem.0.weight" in W_dict:
+                try:
+                    prof22 = _extract_1d_tip_profile_22_fast_np(
+                        pts, vx_top, vy_top, float(p_c.get("z_tip_nbr", pts[-1, 2])),
+                        vol_roi_full, p_mask, p_peak, p_obt, vx_map, vy_map,
+                        resp_roi, cs_roi, rsym_roi,
+                        p10_v, p95_v, log_r_sc_f, c_sc_f,
+                        k0, i0, j0, sp_i, sp_j, sp_k, ras_to_ijk, center_ras, z_base_ras
+                    )
+                    res_1d = _forward_1d_tip_localizer_numpy(prof22, W_dict)
+                    if res_1d is not None:
+                        dz_1d_mm, tip_std_1d, _ = res_1d
+                except Exception:
+                    dz_1d_mm = None
+
+            if dz_1d_mm is not None:
+                dz_comb_mm = 0.65 * dz_1d_mm + 0.20 * (0.36 * dz_s2b_mm) + 0.15 * (0.36 * dz_prof_mm)
+                disagree_mm = abs(dz_1d_mm - dz_prof_mm)
+            else:
+                dz_comb_mm = 0.36 * (0.65 * dz_s2b_mm + 0.25 * dz_prof_mm + 0.10 * dz_nbr_mm)
+                disagree_mm = abs(dz_s2b_mm - dz_prof_mm)
+
+            pts_ref = _apply_tip_adjustment_and_poly3_np(
+                pts, dz_comb_mm, vx_top, vy_top,
+                p_mask=p_mask, p_peak=p_peak, resp_roi=resp_roi, log_r_sc_f=log_r_sc_f,
+                k0=k0, i0=i0, j0=j0, ijk_to_ras_mat=ijk_to_ras_mat, ras_to_ijk=ras_to_ijk
+            )
             cand["ras"] = pts_ref
             cand["points"] = pts_ref
             cand["length_mm"] = float(np.sum(np.linalg.norm(np.diff(pts_ref, axis=0), axis=1)))
             cand["z_span_tracked"] = float(abs(pts_ref[-1, 2] - pts_ref[0, 2]))
-        out_trajs.append(cand)
+
+            # Split-Conformal Tip Uncertainty score sigma_tip (calibrated to median ~1.77 mm, 90% CI radius ~3.5 mm)
+            tip_sup = float(p_c.get("tip_sup_cur", 0.5))
+            sigma_tip = max(
+                0.85,
+                0.80
+                + 0.14 * min(10.0, tip_std_1d)
+                + 0.22 * min(10.0, disagree_mm)
+                + 2.4 * max(0.0, 0.45 - tip_sup)
+                + 1.2 * float(p_c.get("unc_ratio", 0.20)),
+            )
+            cand["tip_uncertainty_mm"] = float(round(sigma_tip, 2))
+            cand["tip_ci90_mm"] = float(round(q90_conf * sigma_tip, 2))
+            cand["needs_tip_review"] = False
+
+        # Flag the k=2 most uncertain tips per implant (Protocol B top-2 uncertainty tip triage)
+        if len(out_trajs) > 0:
+            ci_vals = np.array([float(t.get("tip_ci90_mm", 0.0)) for t in out_trajs])
+            top_unc_idxs = np.argsort(-ci_vals)[:2]
+            for idx_u in top_unc_idxs:
+                if float(out_trajs[idx_u].get("tip_ci90_mm", 0.0)) >= 4.0:
+                    out_trajs[idx_u]["needs_tip_review"] = True
 
     LAST_STAGE2_TIMINGS["s2b_bgt_poly3_sec"] = time.perf_counter() - t_s2_split
     return out_trajs
-
