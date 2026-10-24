@@ -49,6 +49,16 @@ tags: [<relevant-tags>]
 ---
 ```
 
+## Writing Style (Papers, Reports, Vault Prose)
+
+All manuscript and report prose written for this project follows the house style set in the October 2026 V2 rewrite (see `sources/2026-10-23-pmb-v2-peer-review-and-response.md`). It blends two models, applied within reason: **readability always wins over completeness or density.**
+
+1. **Claudia Clopath ("why before how").** Open every section with the physical or computational puzzle in plain words, then the method. Short declarative sentences. One idea per sentence, one finding per paragraph. Define a term in one sentence the first time it appears. No code identifiers, script names, or item numbers in prose.
+2. **Tina Kapur (clinical workflow grounding).** Anchor claims in what the physicist actually does in the operating room and in 3D Slicer: the time, the clicks, the decision. Reason from imaging physics (proton density, susceptibility) rather than from architecture names.
+3. **Numbers.** Each headline number appears once in the abstract and once in the results; elsewhere point to the table or figure. No parenthetical number walls. Give a before-and-after pair rather than a lone value when a method improves something.
+4. **Qualify honestly.** Say what was simulated, modeled, or assumed (synthetic anatomy, oracle corrections, estimated click times) in the same sentence as the result, not in a distant limitations paragraph. Report only the configuration that was actually evaluated; never widen a result from one setting (e.g. k = 2 reviewed tips) into a range (2 to 5) that was not run. A smaller claim stated exactly beats a larger claim stated loosely.
+5. **Every rewrite preserves every verified claim, number, and citation.** Readability edits never silently change the evidence; if the evidence does not support the prose, fix the prose and log it in `wiki/log.md`.
+
 ## Report Delivery (HTML / PDF)
 
 **Whenever you generate or update an HTML report or PDF (or any HTML/PDF artifact meant to be viewed), ALWAYS end your reply with an `rsync` command to pull it for viewing, using host `think`:**

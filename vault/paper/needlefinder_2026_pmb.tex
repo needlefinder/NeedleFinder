@@ -391,16 +391,17 @@ shafts (\(p = 1.3 \times 10^{-8}\)) and tips
 (\(p = 2.6 \times 10^{-7}\)). Post-implant CT scans from 38 paired
 patients confirmed that 52.0\% of the algorithm's apparent ``false
 alarms'' on MRI were real physical catheters missed by the primary human
-team on MRI. In high-dose-rate \(^{192}\text{Ir}\) radiation treatment
-simulations, reviewing just the 2 to 5 most uncertain tips flagged by
-the algorithm's conformal intervals took under a minute of simulated
-review and kept the median tumor dose error (\(|\Delta D_{90}|\)) to
-2.8\% (mean 5.9\%). Without retraining, the gynecologic pipeline
-generalized directly to 3T prostate brachytherapy MRI (96.3\%--100.0\%
-F1), balanced steady-state MRI (92.9\% F1), live 4D needle-insertion
-scans (82.8\% F1), and post-implant CT. End-to-end reconstruction takes
-4.15 s per patient on a workstation CPU (1.26 s on standard-resolution
-scans) and 2.67 s on a GPU.
+team on MRI. In simulated high-dose-rate \(^{192}\text{Ir}\) treatment
+planning on standardized target envelopes, correcting only the two tips
+per patient that the algorithm flagged as most uncertain (about 18
+seconds of modeled review) lowered the median tumor dose error
+(\(|\Delta D_{90}|\)) from 4.2\% to 2.8\% (mean from 8.2\% to 5.9\%).
+Without retraining, the gynecologic pipeline generalized directly to 3T
+prostate brachytherapy MRI (96.3\%--100.0\% F1), balanced steady-state
+MRI (92.9\% F1), live 4D needle-insertion scans (82.8\% F1), and
+post-implant CT. End-to-end reconstruction takes 4.15 s per patient on a
+workstation CPU (1.26 s on standard-resolution scans) and 2.67 s on a
+GPU.
 
 \textbf{Significance.} Combining a simple physical symmetry prior with
 multi-stage graph learning turns a 30-to-45-minute manual tracing
@@ -481,10 +482,12 @@ on MRI.
 In practice, NeedleFinder 2026 runs inside the free \textbf{3D Slicer}
 medical software in \textbf{4 seconds} on a standard workstation
 computer (1.3 seconds on standard-resolution scans). Instead of tracing
-25 tubes from scratch, the physicist clicks one button, checks the 2 to
-5 tube tips that the software flags as uncertain in under a minute of
-simulated review, and proceeds to radiation planning with tumor dose
-accuracy within 2.8\% (median) of a fully manual plan.
+25 tubes from scratch, the physicist clicks one button and then checks
+the two tube tips the software is least sure about. In our computer
+simulations this check takes under half a minute, and the resulting
+radiation plan delivers a tumor dose within 2.8\% (median) of a plan
+built on fully manual tracing. We have modeled this check, not yet timed
+it with clinicians in the operating room.
 
 \begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
 
@@ -1170,7 +1173,7 @@ any unseen test tip's uncertainty score by \(\hat{q}_{1-\alpha}\) yields
 an adaptive 3D prediction radius
 \(\hat{r}_{1-\alpha} = \hat{q}_{1-\alpha}\,\hat{\sigma}_{\text{tip}}\)
 that is guaranteed distribution-free to cover the true tip at the target
-nominal rate (e.g., 90\% or 95\%) while ranking which 2 to 5 tips in an
+nominal rate (e.g., 90\% or 95\%) while ranking which few tips in an
 implant warrant a quick visual check.
 
 Finally, because recent peer-reviewed MRI brachytherapy studies have
@@ -1387,7 +1390,11 @@ termination along the shaft (modeled by the retrospective 1-click oracle
 \(E_{\text{tip}} \to \sqrt{\Delta r_\perp^2 + \min(|\Delta s_\parallel|, 0.85\text{ mm})^2}\)
 whenever \(E_{\text{tip}} > 2.0\text{ mm}\), leaving
 \(E_{\text{shaft}}\) unchanged, at an estimated ergonomic inspection
-time of \(\sim 8\text{ s}\) per flagged tip in 3D Slicer).
+time of \(\sim 8\text{ s}\) per flagged tip in 3D Slicer, plus a fixed
+\(2\text{ s}\) to open the review list). Only the \(k = 2\)
+configuration was carried through the dose engine, where each flagged
+tip is moved along its shaft to the reference tip depth; larger \(k\)
+were evaluated on tip geometry alone.
 
 \textbf{Computing environment.} All training and benchmarks ran on a
 Linux workstation equipped with a 24-core workstation CPU (AMD Ryzen
@@ -1974,10 +1981,11 @@ vs.~\(68.1\%\) \(\gamma_{2\%/2\text{mm}}\), \(p = 0.011\)). - Under
 the predicted catheters)}, dwell optimization compensates for minor
 longitudinal shifts, cutting unreviewed target \(|\Delta D_{90}|\) to
 \textbf{8.2\% mean / 4.2\% median} (vs.~\(37.1\% / 10.2\%\) for PMB 2019
-and \(20.9\% / 4.0\%\) for Human Team 2). When the physicist reviews
-just the \textbf{top 2 uncertainty-flagged tips per patient}, target
-\(|\Delta D_{90}|\) drops to \textbf{5.9\% mean / 2.8\% median}
-(\(78.2\%\) \(\gamma_{2\%/2\text{mm}}\) on the 40 dual-traced scans).
+and \(20.9\% / 4.0\%\) for Human Team 2). When a simulated physicist
+corrects just the \textbf{top 2 uncertainty-flagged tips per patient}
+(each moved to its reference depth), target \(|\Delta D_{90}|\) drops to
+\textbf{5.9\% mean / 2.8\% median} (\(78.2\%\)
+\(\gamma_{2\%/2\text{mm}}\) on the 40 dual-traced scans).
 
 \subsubsection{\texorpdfstring{Can calibrated uncertainty intervals
 guide a 1-minute clinician tip check? (Table
@@ -2181,15 +2189,21 @@ simulated verification workflow}:
   expert teams) are statistically non-inferior to human inter-observer
   agreement, the shafts themselves rarely need manual editing.
 \item
-  \textbf{Check the 2 to 8 tips with the widest conformal uncertainty
-  bars (16 to 64 seconds simulated):} The interface highlights the few
-  catheter tips with large split-conformal uncertainty intervals
-  (\(\hat{\sigma}_{\text{tip}}\)). Sliding the top 5 to 8 flagged
-  endpoints along their already-traced shafts takes under a minute in
-  simulation, drives 95th-percentile tip error below \(10\text{ mm}\)
-  (\(9.90\text{ mm}\), mean \(2.77\text{ mm}\)), and keeps
-  counterfactual TG-43U1 target dose error \(|\Delta D_{90}|\) to
-  \textbf{2.8\% median} (\(5.9\%\) mean).
+  \textbf{Check the few tips with the widest uncertainty bars (18 to 66
+  seconds simulated):} The interface highlights the catheter tips with
+  the largest split-conformal uncertainty intervals
+  (\(\hat{\sigma}_{\text{tip}}\)). Because the shaft is already traced,
+  correcting a flagged tip means sliding its endpoint along the track,
+  which we model at 8 seconds per tip. Correcting only the two most
+  uncertain tips per patient (18 seconds) is the configuration we
+  carried through the TG-43U1 dose simulation: it lowers median target
+  dose error \(|\Delta D_{90}|\) from 4.2\% to \textbf{2.8\%} (mean from
+  8.2\% to 5.9\%). Extending the check to the eight most uncertain tips
+  (66 seconds) was evaluated on tip geometry only; it brings the
+  95th-percentile tip error below \(10\text{ mm}\) (\(9.90\text{ mm}\),
+  mean \(2.77\text{ mm}\)). In both cases the simulated physicist places
+  each flagged tip exactly at its reference position, so these numbers
+  are upper bounds on the benefit of review.
 \item
   \textbf{Verify total catheter count (5 seconds simulated):} Since the
   clinician knows the exact number of needles inserted through the
@@ -2270,9 +2284,10 @@ scans and 38 paired post-implant CT patients, three-cornered-hat
 analysis, one-sided non-inferiority tests, and CT adjudication
 demonstrate that NeedleFinder 2026 is statistically non-inferior to
 human expert agreement, while its split-conformal tip uncertainty
-intervals enable an under-one-minute simulated verification workflow in
-3D Slicer that preserves AAPM TG-43U1 target dosimetry (\(2.8\%\) median
-\(|\Delta D_{90}|\)) and generalizes zero-shot to prostate MRI,
+intervals support a brief simulated verification step in 3D Slicer:
+correcting the two most uncertain tips per patient, modeled at 18
+seconds, lowers simulated AAPM TG-43U1 target dose error to \(2.8\%\)
+median \(|\Delta D_{90}|\) and generalizes zero-shot to prostate MRI,
 secondary MRI sequences, 4D intra-procedural insertion monitoring, and
 pelvic CT.
 
