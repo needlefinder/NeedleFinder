@@ -21,6 +21,45 @@ from scipy.ndimage import maximum_filter
 
 LAST_STAGE2_TIMINGS = {"s2a_mpnn_sec": 0.0, "s2b_bgt_poly3_sec": 0.0}
 
+# Reason-coded decisions of the last Stage 2 run (AUD-520). Every candidate track receives a typed
+# reason, so the physicist can see why a track was kept or removed and restore a rejected one.
+REASON_KEPT = "kept"
+REASON_BELOW_THRESHOLD = "below_threshold"
+REASON_OUTSIDE_IMPLANT = "outside_implant_region"
+REASON_LOW_SYMMETRY = "low_dark_core_symmetry"
+REASON_DUPLICATE = "duplicate_of_kept_track"
+REASON_COLLINEAR_FRAGMENT = "collinear_fragment"
+REASON_COLLINEAR_MERGED = "collinear_fragment_merged"
+REASON_NO_GRAPH_MODEL = "kept_without_graph_model"
+REASON_LABELS = {
+    REASON_KEPT: "kept",
+    REASON_BELOW_THRESHOLD: "confidence below threshold",
+    REASON_OUTSIDE_IMPLANT: "outside the implant region",
+    REASON_LOW_SYMMETRY: "low dark-core symmetry",
+    REASON_DUPLICATE: "duplicate of a kept track",
+    REASON_COLLINEAR_FRAGMENT: "fragment of a kept track",
+    REASON_COLLINEAR_MERGED: "merged into a kept track",
+    REASON_NO_GRAPH_MODEL: "kept (graph model unavailable)",
+}
+LAST_STAGE2_DECISIONS = {"n_candidates": 0, "kept": [], "rejected": []}
+
+
+def _reset_stage2_decisions(n_candidates=0):
+    LAST_STAGE2_DECISIONS["n_candidates"] = int(n_candidates)
+    LAST_STAGE2_DECISIONS["kept"] = []
+    LAST_STAGE2_DECISIONS["rejected"] = []
+
+
+def _record_stage2_decision(traj, reason, confidence, rank):
+    """Attach the typed decision to the trajectory dict and log it for the UI."""
+    traj["decision"] = reason
+    traj["decision_label"] = REASON_LABELS.get(reason, reason)
+    traj["confidence_rank"] = int(rank)
+    entry = {"traj": traj, "reason": reason, "label": REASON_LABELS.get(reason, reason),
+             "confidence": float(confidence), "rank": int(rank),
+             "length_mm": float(traj.get("length_mm", 0.0))}
+    (LAST_STAGE2_DECISIONS["kept"] if reason in (REASON_KEPT, REASON_NO_GRAPH_MODEL) else LAST_STAGE2_DECISIONS["rejected"]).append(entry)
+
 _ORT_SESSION = None
 _ORT_MODEL_PATH = None
 
@@ -1205,6 +1244,9 @@ def run_mpnn_and_graph_transformer(
     if W_dict is None or nn_preds is None or not candidate_trajs:
         LAST_STAGE2_TIMINGS["s2a_mpnn_sec"] = 0.0
         LAST_STAGE2_TIMINGS["s2b_bgt_poly3_sec"] = 0.0
+        _reset_stage2_decisions(len(candidate_trajs))
+        for r_i, t_c in enumerate(sorted(candidate_trajs, key=lambda t: -float(t.get("confidence", 0.0)))):
+            _record_stage2_decision(t_c, REASON_NO_GRAPH_MODEL, float(t_c.get("confidence", 0.0)), r_i + 1)
         return candidate_trajs
 
     p_mask = nn_preds["p_mask"]
@@ -1525,7 +1567,15 @@ def run_mpnn_and_graph_transformer(
     M = len(pool)
     if M == 0 or gt_sess is None:
         LAST_STAGE2_TIMINGS["s2b_bgt_poly3_sec"] = 0.0
-        return [p["traj"] for p in pool if p["traj"].get("confidence", 0.0) >= float(min_confidence)]
+        _reset_stage2_decisions(M)
+        kept_fb = []
+        for r_i, p_c in enumerate(sorted(pool, key=lambda p: -float(p["traj"].get("confidence", 0.0)))):
+            c_fb = float(p_c["traj"].get("confidence", 0.0))
+            if c_fb >= float(min_confidence):
+                _record_stage2_decision(p_c["traj"], REASON_NO_GRAPH_MODEL, c_fb, r_i + 1); kept_fb.append(p_c["traj"])
+            else:
+                _record_stage2_decision(p_c["traj"], REASON_BELOW_THRESHOLD, c_fb, r_i + 1)
+        return kept_fb
 
     # 3. Build Trajectory-Level Bundle Graph & Run DenseGraphTransformer + TipAwareBundleGraphTransformer
     bases = np.array([p["base_xy"] for p in pool])
@@ -1699,7 +1749,15 @@ def run_mpnn_and_graph_transformer(
         logits_base = gt_sess.run(None, {"x": x_arr, "adj_feat": adj_feat, "adj_mask": adj_mask})[0]
         probs_base = 1.0 / (1.0 + np.exp(-np.clip(logits_base, -20.0, 20.0)))
     except Exception:
-        return [p["traj"] for p in pool if p["traj"].get("confidence", 0.0) >= float(min_confidence)]
+        _reset_stage2_decisions(M)
+        kept_fb = []
+        for r_i, p_c in enumerate(sorted(pool, key=lambda p: -float(p["traj"].get("confidence", 0.0)))):
+            c_fb = float(p_c["traj"].get("confidence", 0.0))
+            if c_fb >= float(min_confidence):
+                _record_stage2_decision(p_c["traj"], REASON_NO_GRAPH_MODEL, c_fb, r_i + 1); kept_fb.append(p_c["traj"])
+            else:
+                _record_stage2_decision(p_c["traj"], REASON_BELOW_THRESHOLD, c_fb, r_i + 1)
+        return kept_fb
 
     tip_out = _forward_tip_bgt_numpy(x_arr_26, adj_feat_8, adj_mask, W_dict)
     if tip_out is not None:
@@ -1747,36 +1805,46 @@ def run_mpnn_and_graph_transformer(
     q90_conf = float(W_dict.get("conformal.q90", np.array([1.965]))[0]) if "conformal.q90" in W_dict else 1.965
     out_trajs = []
     out_pool_refs = []
-    for idx_c in np.argsort(-conf_arr):
-        if conf_arr[idx_c] < float(min_confidence):
-            continue
+    _reset_stage2_decisions(M)
+    for rank_c, idx_c in enumerate(np.argsort(-conf_arr), start=1):
         p_c = pool[idx_c]
         cand = p_c["traj"]
+        conf_c = float(conf_arr[idx_c])
+        if conf_c < float(min_confidence):
+            _record_stage2_decision(cand, REASON_BELOW_THRESHOLD, conf_c, rank_c)
+            continue
         pts = np.asarray(cand["ras"], dtype=np.float64)
         if center_xy is not None:
-            if float(np.linalg.norm(pts[:, :2].mean(axis=0) - center_xy)) > irgm_radius_mm and conf_arr[idx_c] < float(min_confidence) + 20.0:
+            if float(np.linalg.norm(pts[:, :2].mean(axis=0) - center_xy)) > irgm_radius_mm and conf_c < float(min_confidence) + 20.0:
+                _record_stage2_decision(cand, REASON_OUTSIDE_IMPLANT, conf_c, rank_c)
                 continue
-        if is_clinical_mri and p_c.get("mean_sym", 0.5) < 0.14 and p_c.get("frac_active", 0.5) < 0.40 and conf_arr[idx_c] < float(min_confidence) + 15.0:
+        if is_clinical_mri and p_c.get("mean_sym", 0.5) < 0.14 and p_c.get("frac_active", 0.5) < 0.40 and conf_c < float(min_confidence) + 15.0:
+            _record_stage2_decision(cand, REASON_LOW_SYMMETRY, conf_c, rank_c)
             continue
-        dedup_thresh = 1.60 if (conf_arr[idx_c] >= 65.0 and p_c.get("mpnn_pa", 0.0) >= 0.50) else 1.95
+        dedup_thresh = 1.60 if (conf_c >= 65.0 and p_c.get("mpnn_pa", 0.0) >= 0.50) else 1.95
         if any(_traj_dist_np(pts, s["ras"]) < dedup_thresh for s in out_trajs):
+            _record_stage2_decision(cand, REASON_DUPLICATE, conf_c, rank_c)
             continue
 
         # Extrapolation-aware collinear split-fragment suppression & cranial extension
         is_collinear_dup = False
+        merged_into_kept = False
         for idx_s, s_prev in enumerate(out_trajs):
             is_dup, should_ext, merged_pts = _collinear_traj_dist_np(pts, s_prev["ras"])
             if is_dup:
                 is_collinear_dup = True
-                if should_ext and conf_arr[idx_c] >= max(38.0, float(min_confidence) - 4.0):
+                if should_ext and conf_c >= max(38.0, float(min_confidence) - 4.0):
                     s_prev["ras"] = merged_pts
                     s_prev["points"] = merged_pts
                     s_prev["length_mm"] = float(np.sum(np.linalg.norm(np.diff(merged_pts, axis=0), axis=1)))
                     s_prev["z_span_tracked"] = float(abs(merged_pts[-1, 2] - merged_pts[0, 2]))
+                    merged_into_kept = True
                 break
         if is_collinear_dup:
+            _record_stage2_decision(cand, REASON_COLLINEAR_MERGED if merged_into_kept else REASON_COLLINEAR_FRAGMENT, conf_c, rank_c)
             continue
 
+        _record_stage2_decision(cand, REASON_KEPT, conf_c, rank_c)
         out_trajs.append(cand)
         out_pool_refs.append((idx_c, p_c))
 

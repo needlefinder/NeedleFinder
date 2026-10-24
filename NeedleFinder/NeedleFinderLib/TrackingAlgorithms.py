@@ -40,6 +40,9 @@ from .RustCore import (
     rust_trim_trajectory_inside_out,
 )
 from .NeuralNeedleNet import (
+    LAST_STAGE2_DECISIONS,
+    REASON_LABELS,
+    REASON_BELOW_THRESHOLD,
     create_or_update_slicer_labelmap,
     extract_nn_labelmap_tubes,
     run_mpnn_and_graph_transformer,
@@ -3065,6 +3068,38 @@ class TrackingAlgorithmsMixin:
     out_resp[k0:k1, j0 + m:j1 - m, i0 + m:i1 - m] = resp_crop
     return out_resp, out_cs, out_rsym
 
+  def restoreRejectedCandidate(self, index, script=False):
+    """Add a candidate that the decoder rejected (reason-coded) back to the scene as a needle (AUD-520)."""
+    decisions = getattr(self, "lastDetectionDecisions", None)
+    if not decisions or index < 0 or index >= len(decisions.get("rejected", [])):
+      return None
+    entry = decisions["rejected"][index]
+    t = entry["traj"]
+    ras_arr = np.asarray(t.get("ras", t.get("points")), dtype=np.float64)
+    if ras_arr is None or len(ras_arr) < 2:
+      return None
+    n_ctrl = min(15, len(ras_arr))
+    sample_idx = np.linspace(len(ras_arr) - 1, 0, n_ctrl, dtype=int)
+    ctrl_pts = ras_arr[sample_idx].tolist()
+    conf_val = float(entry.get("confidence", t.get("confidence", 0.0)))
+    len_val = float(t.get("length_mm", 0.0))
+    comment = f"restored by user ({entry.get('label', entry.get('reason', ''))}) | Conf: {conf_val:.1f}% | L: {len_val:.1f} mm"
+    widget = slicer.modules.NeedleFinderWidget
+    widget.initTableView()
+    idx_new = len(self.lastNeedleNames)
+    model_node = self.addNeedleToScene(ctrl_pts, idx_new, "Detection", script=script, comment=comment, confidence=conf_val)
+    if model_node is not None and hasattr(model_node, "SetAttribute"):
+      model_node.SetAttribute("ReasonCode", "restored_by_user")
+      model_node.SetAttribute("RejectedReason", str(entry.get("reason", "")))
+      model_node.SetAttribute("ConfidenceRank", str(entry.get("rank", 0)))
+    decisions["rejected"].pop(index)
+    decisions.setdefault("kept", []).append(entry)
+    if hasattr(widget, "populateRejectedCandidatesTable"):
+      widget.populateRejectedCandidatesTable(decisions["rejected"])
+    widget.deleteNeedleButton.setEnabled(1)
+    widget.resetDetectionButton.setEnabled(1)
+    return model_node
+
   def autoDetectAllNeedles(
       self,
       volumeNode=None,
@@ -4425,8 +4460,20 @@ class TrackingAlgorithmsMixin:
               min_confidence=float(minConfidence),
               script=script,
           )
+          self.lastDetectionDecisions = {
+              "n_candidates": int(LAST_STAGE2_DECISIONS.get("n_candidates", 0)),
+              "kept": list(LAST_STAGE2_DECISIONS.get("kept", [])),
+              "rejected": list(LAST_STAGE2_DECISIONS.get("rejected", [])),
+          }
         except Exception:
+          rejected_fb = [t for t in filtered if t.get("confidence", 0.0) < float(minConfidence)]
           filtered = [t for t in filtered if t.get("confidence", 0.0) >= float(minConfidence)]
+          self.lastDetectionDecisions = {
+              "n_candidates": len(filtered) + len(rejected_fb), "kept": [],
+              "rejected": [{"traj": t, "reason": REASON_BELOW_THRESHOLD, "label": REASON_LABELS[REASON_BELOW_THRESHOLD],
+                            "confidence": float(t.get("confidence", 0.0)), "rank": r_i + 1, "length_mm": float(t.get("length_mm", 0.0))}
+                           for r_i, t in enumerate(sorted(rejected_fb, key=lambda t: -float(t.get("confidence", 0.0))))],
+          }
 
       if renderNeedles and widget is not None:
         update_progress(88, f"Stage 6/6: Rendering {len(filtered)} detected needles in 3D scene...")
@@ -4446,16 +4493,25 @@ class TrackingAlgorithmsMixin:
           len_val = float(t.get("length_mm", 0.0))
           tip_ci90 = float(t.get("tip_ci90_mm", 0.0))
           needs_tip_review = bool(t.get("needs_tip_review", False))
+          rank_val = int(t.get("confidence_rank", idx + 1))
           if tip_ci90 > 0.0:
             rev_tag = " [REVIEW TIP]" if needs_tip_review else ""
-            comment = f"Conf: {conf_val:.1f}% | L: {len_val:.1f} mm | Tip ±{tip_ci90:.1f} mm{rev_tag}"
+            comment = f"#{rank_val} | Conf: {conf_val:.1f}% | L: {len_val:.1f} mm | Tip ±{tip_ci90:.1f} mm{rev_tag}"
           else:
-            comment = f"Conf: {conf_val:.1f}% | L: {len_val:.1f} mm"
+            comment = f"#{rank_val} | Conf: {conf_val:.1f}% | L: {len_val:.1f} mm"
           model_node = self.addNeedleToScene(ctrl_pts, idx, "Detection", script=script, comment=comment, confidence=conf_val)
-          if model_node is not None and hasattr(model_node, "SetAttribute") and tip_ci90 > 0.0:
-            model_node.SetAttribute("TipUncertainty90mm", f"{tip_ci90:.2f}")
-            model_node.SetAttribute("TipSigmaMm", f"{float(t.get('tip_uncertainty_mm', 0.0)):.2f}")
-            model_node.SetAttribute("NeedsTipReview", "1" if needs_tip_review else "0")
+          if model_node is not None and hasattr(model_node, "SetAttribute"):
+            model_node.SetAttribute("ReasonCode", str(t.get("decision", "kept")))
+            model_node.SetAttribute("ConfidenceRank", str(rank_val))
+            if tip_ci90 > 0.0:
+              model_node.SetAttribute("TipUncertainty90mm", f"{tip_ci90:.2f}")
+              model_node.SetAttribute("TipSigmaMm", f"{float(t.get('tip_uncertainty_mm', 0.0)):.2f}")
+              model_node.SetAttribute("NeedsTipReview", "1" if needs_tip_review else "0")
+        if hasattr(widget, "populateRejectedCandidatesTable"):
+          try:
+            widget.populateRejectedCandidatesTable(getattr(self, "lastDetectionDecisions", {}).get("rejected", []))
+          except Exception:
+            pass
         if filtered:
           widget.deleteNeedleButton.setEnabled(1)
           widget.resetDetectionButton.setEnabled(1)
