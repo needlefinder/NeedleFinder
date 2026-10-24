@@ -1,0 +1,29 @@
+{
+  "description": "Paired two-sided Wilcoxon signed-rank tests under Protocol B (optimize dwell times on predicted catheters, deliver on reference anatomy) for NeedleFinder 2026 + Top-2 uncertainty tip review vs. unreviewed NeedleFinder 2026 (4b), 54 GYN patients. Computed 2026-10-24 from per_patient_results_54_cases in 2026-10-23-exp1-tg43-dosimetry.json; complements the Protocol A tests already in that file.",
+  "tests": {
+    "NF2026_Top2Review_vs_NF2026_4b_54cases_protB_abs_delta_d90_pct": {
+      "n": 54,
+      "n_nonzero_diff": 45,
+      "mean_a": 5.915,
+      "mean_b": 8.206,
+      "median_a": 2.83,
+      "median_b": 4.237,
+      "wilcoxon_stat": 143.0,
+      "p_value": 2.366298402558533e-05,
+      "n_improved": 37,
+      "n_worse": 8
+    },
+    "NF2026_Top2Review_vs_NF2026_4b_54cases_protB_gamma_2pct_2mm_global_pass_pct": {
+      "n": 54,
+      "n_nonzero_diff": 44,
+      "mean_a": 74.264,
+      "mean_b": 66.012,
+      "median_a": 82.186,
+      "median_b": 71.886,
+      "wilcoxon_stat": 75.0,
+      "p_value": 9.511690875087053e-07,
+      "n_improved": 39,
+      "n_worse": 5
+    }
+  }
+}

@@ -1303,6 +1303,8 @@ def main():
         "NF2026_4b_vs_PMB2019_54cases_protA_gamma22": _wilcox(nf4b_54, per_patient_by_method["PMB_2019_3D_UNet_Walk"], "protocol_A_fixed_plan_sensitivity", "gamma_2pct_2mm_global_pass_pct"),
         "NF2026_Top2Review_vs_NF2026_4b_54cases_protA_abs_dD90": _wilcox(per_patient_by_method["NeedleFinder_2026_Top2_Uncertainty_Review"], nf4b_54, "protocol_A_fixed_plan_sensitivity", "abs_delta_d90_pct"),
         "NF2026_Top2Review_vs_NF2026_4b_54cases_protA_gamma22": _wilcox(per_patient_by_method["NeedleFinder_2026_Top2_Uncertainty_Review"], nf4b_54, "protocol_A_fixed_plan_sensitivity", "gamma_2pct_2mm_global_pass_pct"),
+        "NF2026_Top2Review_vs_NF2026_4b_54cases_protB_abs_dD90": _wilcox(per_patient_by_method["NeedleFinder_2026_Top2_Uncertainty_Review"], nf4b_54, "protocol_B_optimize_on_pred_deliver_on_ref", "abs_delta_d90_pct"),
+        "NF2026_Top2Review_vs_NF2026_4b_54cases_protB_gamma22": _wilcox(per_patient_by_method["NeedleFinder_2026_Top2_Uncertainty_Review"], nf4b_54, "protocol_B_optimize_on_pred_deliver_on_ref", "gamma_2pct_2mm_global_pass_pct"),
         "NF2026_4b_vs_HumanRater2_40cases_protA_abs_dD90": _wilcox(nf4b_40, human_evals_40, "protocol_A_fixed_plan_sensitivity", "abs_delta_d90_pct"),
         "NF2026_4b_vs_HumanRater2_40cases_protA_gamma22": _wilcox(nf4b_40, human_evals_40, "protocol_A_fixed_plan_sensitivity", "gamma_2pct_2mm_global_pass_pct"),
     }
