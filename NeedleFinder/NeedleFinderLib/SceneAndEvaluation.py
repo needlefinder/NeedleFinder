@@ -167,6 +167,12 @@ class SceneAndEvaluationMixin:
           """, qt.QMessageBox.Ok, qt.QMessageBox.Cancel)
     if ret == qt.QMessageBox.Ok or script:
       self.deleteNeedleDetectionModelsFromScene()
+      self.lastDetectionDecisions = None
+      if hasattr(widget, "populateRejectedCandidatesTable"):
+        try:
+          widget.populateRejectedCandidatesTable([])
+        except Exception:
+          pass
       self.previousValues = [[0, 0, 0]]
       self.round = 1
       if widget.newInsertionButton:

@@ -510,6 +510,28 @@ class NeedleFinderWidget(ScriptedLoadableModuleWidget):
 
     segmentationFrame.addRow(self.__reportFrame)
 
+    # Rejected candidates with reason codes (AUD-520): why a track was not kept, and a way to restore it.
+    self.rejectedCandidatesFrame = ctk.ctkCollapsibleButton()
+    self.rejectedCandidatesFrame.text = "Rejected Candidates (why a track was not kept)"
+    self.rejectedCandidatesFrame.collapsed = 1
+    rejectedLayout = qt.QVBoxLayout(self.rejectedCandidatesFrame)
+    self.rejectedCandidatesInfoLabel = qt.QLabel("Run Auto-Detect to list the candidate tracks that were not kept.")
+    self.rejectedCandidatesInfoLabel.setWordWrap(True)
+    rejectedLayout.addWidget(self.rejectedCandidatesInfoLabel)
+    self.rejectedCandidatesTable = qt.QTableWidget()
+    self.rejectedCandidatesTable.setColumnCount(5)
+    self.rejectedCandidatesTable.setHorizontalHeaderLabels(["Rank", "Conf (%)", "Reason", "Length (mm)", ""])
+    self.rejectedCandidatesTable.verticalHeader().setVisible(False)
+    self.rejectedCandidatesTable.setSelectionBehavior(qt.QAbstractItemView.SelectRows)
+    self.rejectedCandidatesTable.setEditTriggers(qt.QAbstractItemView.NoEditTriggers)
+    self.rejectedCandidatesTable.setMaximumHeight(220)
+    self.rejectedCandidatesTable.toolTip = (
+        "Candidate tracks removed by the decoder, ranked by confidence, with the rule that removed them. "
+        "'Restore' adds a candidate back to the scene as a needle (marked 'restored by user')."
+    )
+    rejectedLayout.addWidget(self.rejectedCandidatesTable)
+    segmentationFrame.addRow(self.rejectedCandidatesFrame)
+
     # ------------------------------------------------------------------
     # 2. Manual Ground Truth & Validation
     # ------------------------------------------------------------------
@@ -1123,6 +1145,48 @@ class NeedleFinderWidget(ScriptedLoadableModuleWidget):
       self.fiducialButton.checked = 0
     min_conf = float(self.minConfidenceSpinBox.value)
     self.logic.autoDetectAllNeedles(minConfidence=min_conf)
+
+  def populateRejectedCandidatesTable(self, rejected):
+    """Fill the reason-coded table of candidates the decoder did not keep (AUD-520)."""
+    table = getattr(self, "rejectedCandidatesTable", None)
+    if table is None:
+      return
+    rejected = list(rejected or [])
+    table.setRowCount(0)
+    table.setRowCount(len(rejected))
+    for r_i, entry in enumerate(rejected):
+      rank = entry.get("rank", r_i + 1)
+      conf = float(entry.get("confidence", 0.0))
+      label = str(entry.get("label", entry.get("reason", "")))
+      length = float(entry.get("length_mm", 0.0))
+      for c_i, txt in enumerate([str(rank), f"{conf:.1f}", label, f"{length:.1f}"]):
+        item = qt.QTableWidgetItem(txt)
+        if c_i in (0, 1, 3):
+          item.setTextAlignment(qt.Qt.AlignRight | qt.Qt.AlignVCenter)
+        table.setItem(r_i, c_i, item)
+      btn = qt.QPushButton("Restore")
+      btn.toolTip = "Add this candidate to the scene as a needle (it will be marked as restored by user)."
+      btn.clicked.connect(lambda _=False, idx=r_i: self.onRestoreRejectedCandidate(idx))
+      table.setCellWidget(r_i, 4, btn)
+    table.resizeColumnsToContents()
+    n_low = sum(1 for e in rejected if e.get("reason") == "below_threshold")
+    n_other = len(rejected) - n_low
+    if rejected:
+      self.rejectedCandidatesInfoLabel.setText(
+          f"{len(rejected)} candidate tracks were not kept: {n_low} below the confidence threshold, "
+          f"{n_other} removed by the implant-region, symmetry, or duplicate rules. "
+          "Kept needles show their rank (#) and confidence in the Segmentation Report."
+      )
+      self.rejectedCandidatesFrame.collapsed = 0
+    else:
+      self.rejectedCandidatesInfoLabel.setText("No candidate track was rejected in the last detection.")
+
+  def onRestoreRejectedCandidate(self, index):
+    """Restore a rejected candidate as a needle and refresh the table."""
+    try:
+      self.logic.restoreRejectedCandidate(int(index))
+    except Exception as exc:
+      print(f"[NeedleFinder] Could not restore rejected candidate {index}: {exc}")
 
   def onColorByConfidenceToggled(self, checked):
     """Live-toggle needle 3D model and table swatch colors between confidence colormap and per-needle index colors."""
@@ -2565,5 +2629,15 @@ class NeedleFinderTest(ScriptedLoadableModuleTest):
     self.assertTrue(widget.colorByConfidenceCheckBox.isChecked())
     widget.colorByConfidenceCheckBox.setChecked(False)
     slicer.app.processEvents()
+    # Reason-coded decisions (AUD-520): kept needles carry a rank and reason; rejected candidates are listed
+    self.assertIn("#", comment_item.text())
+    self.assertIsNotNone(getattr(widget, "rejectedCandidatesTable", None))
+    auto_nodes = [n for n in slicer.util.getNodes("vtkMRMLModelNode*").values() if str(n.GetName()).startswith("auto-seg_")]
+    self.assertTrue(any(n.GetAttribute("ReasonCode") == "kept" for n in auto_nodes))
+    if widget.rejectedCandidatesTable.rowCount > 0:
+      n_before = widget.model.rowCount()
+      widget.onRestoreRejectedCandidate(0)
+      slicer.app.processEvents()
+      self.assertGreater(widget.model.rowCount(), n_before)
 
     self.delayDisplay("UI and slice-view interaction test passed!", 50)
