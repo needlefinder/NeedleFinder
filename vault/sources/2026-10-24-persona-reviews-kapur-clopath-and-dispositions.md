@@ -65,6 +65,19 @@ Two independent LLM persona reviews (Claude Fable 5.1 subagents, fresh context, 
 
 44 sentences in 29 entries were found and all applied; the substantive one was the omitted post-contrast T1 VIBE cross-sequence result (12 scans, 2 patients, 217 catheters: 56.1% F1, 58.5% recall, 53.8% precision, 8.08 mm median tip; Stage 0 alone 61.5%, Zaffino 2019 re-implementation 59.4%), now in Results, abstract, cohorts, conclusion, Limitations and Table 6 Part C. See `wiki/log.md` 2026-10-24 for the full list.
 
+# Open items: resolution pass (2026-10-24, later the same day)
+
+| # | Item | Resolution |
+|---|---|---|
+| 1 | Manual tracing time source | Library pages give 46 ± 10 min (shaaer2022) and 51 ± 10 min (shaaer2020) for manual MRI-only reconstruction. Prose now says "45 to 50 minutes"; Introduction cites both. **Resolved.** |
+| 2 | Why Zaffino 2019 re-implementation (83.1% F1) beats three 2020–2026 re-implementations | `2026-10-24-peer-reviewed-baselines-and-fusion.json`: recall 88.8% (2019) vs 89.2–93.6% (newer); predictions 1,210 vs 1,667–2,358; precision 78.0% vs 42.2–56.9%; newer OOF voxel Dice 0.39–0.43. The gap is fragment precision, not detection. Caveats added: 2019 pipeline is our own method developed on this cohort; newer methods lack their authors' tuning. **Resolved** (sentence added to Results lesson 2). |
+| 3 | Slicer ONNX module timing | `benchmark_54cases_timing_clean.py` runs the production `NeuralNeedleNet` module with an `onnxruntime` CPUExecutionProvider session and the Rust Stage 0, with Slicer modules mocked. The 4.15 s is therefore the production code path run headless; only the GUI overhead is untimed. Prose now says so. Slicer is not installed on `think`, so a GUI timing still needs a Slicer workstation. **Resolved as wording; GUI timing still open.** |
+| 4 | Baseline code provenance | Baseline scripts import only numpy/scipy/torch plus in-house modules; all six are in-house PyTorch re-implementations from the papers; the 2019 pipeline is our own method. Methods sentence updated. **Resolved.** |
+| 5 | Tandem reconstruction | No tandem/applicator handling exists in `NeedleFinderLib` (only obturator tracks). Whether a sentence stating that the tandem is not reconstructed belongs in the paper depends on whether tandems are used in this cohort. **Needs Guillaume.** |
+| 6 | 465 vs 476 pairs, 35 vs 36 | `prepare_clean_dataset.py` lines 556–574: training-time match pairs each Team 2 trace (clipped to the automatic axial crop) with a Team 1 *long* shaft only, Hungarian at 3.5 mm mean shaft XY; evaluation pairs all unclipped traces of both teams (476). Clause added in Methods. **Resolved.** |
+| 7 | "Closer than single-rater MRI" (78.6%) | `run_exp4_4d_insertion_and_ct.py` line 1361: NF error ≤ max(Team 1 error, Team 2 error), i.e. closer than the less accurate team. Prose now says so. **Resolved.** |
+| 8 | Title | Still the reviewer's longer form; **needs Guillaume's preference.** |
+
 # Open items for the authors
 
 1. Manual tracing time: the uncited "30 to 45 minutes" (abstract, summary, discussion) was changed in the final sweep to "about 45 minutes", matching the cited 46-minute mean [@shaaer2022]. Revert with a source or local timing if the shorter figure is preferred.

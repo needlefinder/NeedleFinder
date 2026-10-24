@@ -349,13 +349,13 @@ brachytherapy, a clinical team inserts 15 to 30 thin plastic catheters
 into a pelvic tumor and acquires a 3T T2-weighted MRI scan while the
 patient is under anesthesia. Before radiation can be planned, a
 physicist must trace the 3D path of every catheter on the scan. Doing
-this by hand takes about 45 minutes. Existing automatic methods based on
-voxel segmentation struggle on T2-weighted MRI because plastic catheters
-appear only as tiny dark dots that look much like blood vessels, and
-brief signal dropouts break single catheters into disconnected pieces.
-Here we present NeedleFinder 2026, an algorithm that reconstructs the
-catheter bundle automatically, to sub-millimeter shaft accuracy, in a
-few seconds.
+this by hand takes about 45 to 50 minutes. Existing automatic methods
+based on voxel segmentation struggle on T2-weighted MRI because plastic
+catheters appear only as tiny dark dots that look much like blood
+vessels, and brief signal dropouts break single catheters into
+disconnected pieces. Here we present NeedleFinder 2026, an algorithm
+that reconstructs the catheter bundle automatically, to sub-millimeter
+shaft accuracy, in a few seconds.
 
 \textbf{Approach.} NeedleFinder 2026 combines imaging physics with three
 stages of machine learning. First, an analytical 3D filter (Stage 0)
@@ -412,9 +412,10 @@ CPU (1.26 s on the 20 standard-resolution scans, 5.85 s on the 34
 high-resolution scans) and 2.67 s on a GPU.
 
 \textbf{Significance.} Combining a simple physical symmetry prior with
-multi-stage graph learning turns a manual tracing bottleneck of about 45
-minutes into a 4-second automatic reconstruction (benchmark timing)
-followed by a brief, modeled uncertainty-guided check in 3D Slicer.
+multi-stage graph learning turns a manual tracing bottleneck of 45 to 50
+minutes into a 4-second automatic reconstruction (production code path,
+timed headless) followed by a brief, modeled uncertainty-guided check in
+3D Slicer.
 \end{abstract}
 
 \section*{Plain-Language Summary}\label{plain-language-summary}
@@ -434,7 +435,7 @@ couple of millimeters can under-treat the tumor or over-irradiate a
 healthy organ. Currently, a physicist must sit at a computer and trace
 every single tube by hand across dozens of MRI slices while the patient
 waits with the implant in place, often still sedated---a painstaking job
-that takes about 45 minutes.
+that takes about 45 to 50 minutes in published MRI-only workflows.
 
 Automating this step on MRI has been difficult for a simple physical
 reason: plastic tubes contain no mobile water, so they do not glow on an
@@ -489,17 +490,18 @@ our software on MRI turned out to be real tubes that the primary human
 team had not traced on MRI.
 
 In practice, NeedleFinder 2026 runs inside the free \textbf{3D Slicer}
-medical software; in our benchmark harness the reconstruction takes
-\textbf{4 seconds} on a 24-core workstation computer without a graphics
-card (1.3 to 5.9 seconds depending on scan resolution), and we have not
-yet timed it inside Slicer itself. Instead of tracing 25 tubes from
-scratch, the physicist clicks one button and then checks the two tube
-tips the software is least sure about. In our computer simulations this
-check takes under half a minute, and the resulting radiation plan
-delivers a tumor dose within 2.8\% (median) of a plan built on fully
-manual tracing. This is a simulation in which both corrected tips are
-placed exactly where the expert put them; we have not yet timed the
-check with clinicians in the operating room.
+medical software; the reconstruction takes \textbf{4 seconds} on a
+24-core workstation computer without a graphics card (1.3 to 5.9 seconds
+depending on scan resolution) when the same production code is run
+outside the Slicer window; we have not yet timed the full user
+interface. Instead of tracing 25 tubes from scratch, the physicist
+clicks one button and then checks the two tube tips the software is
+least sure about. In our computer simulations this check takes under
+half a minute, and the resulting radiation plan delivers a tumor dose
+within 2.8\% (median) of a plan built on fully manual tracing. This is a
+simulation in which both corrected tips are placed exactly where the
+expert put them; we have not yet timed the check with clinicians in the
+operating room.
 
 \begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
 
@@ -564,9 +566,9 @@ and why does its accuracy matter so much?
   \textbf{Manual tracing takes tens of minutes while the patient waits
   with the implant in place.} Because each scan contains 28 to 160 axial
   slices (1.2 to 6.0 mm thick) and 15 to 30 catheters that bend, cross,
-  or touch one another, tracing every catheter slice by slice takes an
-  average of 46 minutes in reported MRI-only gynecologic workflows
-  {[}28{]}---nearly half of the 100-minute operating-room procedure
+  or touch one another, tracing every catheter slice by slice takes 46
+  to 51 minutes on average in reported MRI-only gynecologic workflows
+  {[}11,28{]}---nearly half of the 100-minute operating-room procedure
   {[}29{]}.
 \end{enumerate}
 
@@ -1062,8 +1064,12 @@ single-rater labels.} We introduce two training innovations for Stage 1:
   (weight \(1.15\)). Catheters traced only by Team 1 receive weight
   \(1.00\), and additional catheters traced only by Team 2 (\(n = 35\)
   after excluding \(465\) primary-matched and \(13\)
-  obturator-overlapping traces) receive soft positive weight \(0.55\)
-  instead of being treated as background false alarms.
+  obturator-overlapping traces; this training-time match pairs each Team
+  2 trace, clipped to the automatic axial crop, with a Team 1 long shaft
+  only, so its counts differ slightly from the evaluation-time pairing
+  of all unclipped traces of both teams in the cohort description above,
+  476 pairs) receive soft positive weight \(0.55\) instead of being
+  treated as background false alarms.
 \item
   \textbf{Inner 5-fold ensembling and 4-view test-time augmentation.}
   Within each outer training fold, we train 5 inner-fold Stage 1 models
@@ -1274,41 +1280,43 @@ To ensure a thorough, apples-to-apples comparison on the exact same
 54-patient nested folds and automatic crop bounds, we re-implemented
 \textbf{five peer-reviewed MRI/curvilinear methods} and \textbf{one
 recent structure-aware tracking preprint} from their published
-descriptions and trained each under our nested protocol (the numbers
-below are therefore for our re-implementations, not the original
-authors' code): - \textbf{Zaffino \emph{et al.} 2019 (\emph{Physics in
-Medicine \& Biology}, 3D U-Net + DBSCAN) {[}5{]}:} Isotropic
-\(1\text{ mm}^3\) resampling, 3D U-Net voxel segmentation,
-principal-axis clustering with DBSCAN, and spline fitting. -
-\textbf{Shit \emph{et al.} 2021 (\emph{CVPR}, ResUNet + clDice +
-Skeleton) {[}41,65{]}:} A native-resolution 3D residual U-Net trained
-with focal cross-entropy, soft Dice, and topology-preserving
-centerline-Dice (clDice) loss, followed by 3D skeletonization and
-polynomial fitting. - \textbf{Dai \emph{et al.} 2020 (\emph{Medical
-Physics}, 3D Attention U-Net + Axial TV + cubic fitting) {[}44{]}:} A
-deeply supervised 3D attention-gated U-Net trained on T2W MRI with
-multi-scale Dice/cross-entropy and axial total-variation continuity
-regularization (\(\mathcal{L}_{\text{TV-}z}\)), followed by slice-wise
-centroid linking and cubic polynomial smoothing. - \textbf{Kostoulas
-\emph{et al.} 2025 (\emph{Proc. SPIE Medical Imaging}, 3D ResUNet +
-Iterative Gap-Bridging) {[}60{]}:} A native-resolution 3D residual U-Net
-paired with multi-peak blob splitting, iterative caudo-cranial collinear
-gap-bridging across segmentation dropouts (\(\le 18\text{ mm}\)),
-false-part pruning, and polynomial fitting. - \textbf{Aleong \emph{et
-al.} 2024 / Kim \emph{et al.} 2026 (\emph{Medical Physics} /
-\emph{Brachytherapy}, 5-Model Uncertainty Ensemble + Weighted cubic
-fitting) {[}56,63{]}:} Within each outer fold, a 5-model inner 3D U-Net
-ensemble estimates both mean catheter probability \(\bar{p}\) and
-voxel-wise epistemic uncertainty \(\sigma_p\); candidate tracks are
-extracted on the uncertainty-penalized map, filtered by ensemble
-disagreement (\(\bar{\sigma}_p/\bar{p}\)), and smoothed via
-inverse-variance-weighted cubic polynomial regression. - \textbf{Xiao
-\emph{et al.} 2026 (Structure-Aware Sync-Track, preprint; see also
-peer-reviewed JBHI counterpart {[}68{]}) {[}67{]}:} Implant-region
-gating, direction-constrained 3D Hough transform initialization,
-synchronous inward slice tracking, and cubic polynomial smoothing,
-evaluated both on out-of-fold MRI segmentation masks and on ground-truth
-masks (as an oracle upper bound).
+descriptions and trained each under our nested protocol (all six were
+written in PyTorch from the published descriptions without any original
+authors' code; the 2019 pipeline is our own earlier method in vectorized
+form; the numbers below are therefore for our re-implementations): -
+\textbf{Zaffino \emph{et al.} 2019 (\emph{Physics in Medicine \&
+Biology}, 3D U-Net + DBSCAN) {[}5{]}:} Isotropic \(1\text{ mm}^3\)
+resampling, 3D U-Net voxel segmentation, principal-axis clustering with
+DBSCAN, and spline fitting. - \textbf{Shit \emph{et al.} 2021
+(\emph{CVPR}, ResUNet + clDice + Skeleton) {[}41,65{]}:} A
+native-resolution 3D residual U-Net trained with focal cross-entropy,
+soft Dice, and topology-preserving centerline-Dice (clDice) loss,
+followed by 3D skeletonization and polynomial fitting. - \textbf{Dai
+\emph{et al.} 2020 (\emph{Medical Physics}, 3D Attention U-Net + Axial
+TV + cubic fitting) {[}44{]}:} A deeply supervised 3D attention-gated
+U-Net trained on T2W MRI with multi-scale Dice/cross-entropy and axial
+total-variation continuity regularization
+(\(\mathcal{L}_{\text{TV-}z}\)), followed by slice-wise centroid linking
+and cubic polynomial smoothing. - \textbf{Kostoulas \emph{et al.} 2025
+(\emph{Proc. SPIE Medical Imaging}, 3D ResUNet + Iterative Gap-Bridging)
+{[}60{]}:} A native-resolution 3D residual U-Net paired with multi-peak
+blob splitting, iterative caudo-cranial collinear gap-bridging across
+segmentation dropouts (\(\le 18\text{ mm}\)), false-part pruning, and
+polynomial fitting. - \textbf{Aleong \emph{et al.} 2024 / Kim \emph{et
+al.} 2026 (\emph{Medical Physics} / \emph{Brachytherapy}, 5-Model
+Uncertainty Ensemble + Weighted cubic fitting) {[}56,63{]}:} Within each
+outer fold, a 5-model inner 3D U-Net ensemble estimates both mean
+catheter probability \(\bar{p}\) and voxel-wise epistemic uncertainty
+\(\sigma_p\); candidate tracks are extracted on the
+uncertainty-penalized map, filtered by ensemble disagreement
+(\(\bar{\sigma}_p/\bar{p}\)), and smoothed via inverse-variance-weighted
+cubic polynomial regression. - \textbf{Xiao \emph{et al.} 2026
+(Structure-Aware Sync-Track, preprint; see also peer-reviewed JBHI
+counterpart {[}68{]}) {[}67{]}:} Implant-region gating,
+direction-constrained 3D Hough transform initialization, synchronous
+inward slice tracking, and cubic polynomial smoothing, evaluated both on
+out-of-fold MRI segmentation masks and on ground-truth masks (as an
+oracle upper bound).
 
 \subsection{Geometric, Observer, Dosimetric, and Generalization
 Metrics}\label{geometric-observer-dosimetric-and-generalization-metrics}
@@ -1518,7 +1526,16 @@ whole-bundle context, the three recent native-resolution post-processing
 pipelines and mask-based tracking remain below \(70\%\) whole-cohort F1
 because dark pelvic veins inside the implant region look locally
 tubular, while the isotropic 2019 U-Net + DBSCAN pipeline reaches
-\(83.1\%\) (Table \ref{tbl:main}).
+\(83.1\%\) (Table \ref{tbl:main}). The gap is one of precision, not
+recall: the three newer re-implementations find as many catheters as the
+2019 pipeline or more (89.2\% to 93.6\% vs.~88.8\% recall) but emit 1.4
+to 1.9 times as many tracks (1,667 to 2,358 vs.~1,210 predictions) from
+out-of-fold voxel masks of only 0.39 to 0.43 Dice, so their precision
+falls to 42\% to 57\% against 78\%. Two caveats apply: the 2019 pipeline
+is our own earlier method, whose isotropic resampling and DBSCAN
+minimum-cluster rule were developed on this cohort, and the newer
+methods were re-implemented from their papers without their authors'
+tuning.
 
 \textbf{3. NeedleFinder 2026 achieves the highest F1 score and lowest
 tip error of any method run on real out-of-fold MRI, in every cohort;
@@ -1823,12 +1840,12 @@ where Human Team 1 and Human Team 2 disagreed on the MRI tip position by
 \(4.20\text{ mm}\)}, comparable to \textbf{Human Team 1
 (\(4.31\text{ mm}\); difference not tested)} and smaller than
 \textbf{Human Team 2 (\(8.00\text{ mm}\))}, and lying closer to the CT
-tip position than single-rater MRI on \textbf{78.6\% (\(55/70\))} of
-disputed catheters. Across all 100 MRI tracks predicted by NeedleFinder
-2026 on these 38 patients that did not match Team 1, \textbf{52.0\%
-(\(52/100\)) corresponded to a physical catheter on the paired CT scan}
-(whether each was deliberately left untraced on MRI cannot be determined
-retrospectively).
+tip position than the less accurate of the two human teams on
+\textbf{78.6\% (\(55/70\))} of disputed catheters. Across all 100 MRI
+tracks predicted by NeedleFinder 2026 on these 38 patients that did not
+match Team 1, \textbf{52.0\% (\(52/100\)) corresponded to a physical
+catheter on the paired CT scan} (whether each was deliberately left
+untraced on MRI cannot be determined retrospectively).
 
 \FloatBarrier
 
@@ -2269,24 +2286,26 @@ Slicer}\label{how-needlefinder-2026-changes-the-clinical-workflow-in-3d-slicer}
 
 Packaged as a one-click module in \textbf{3D Slicer} {[}82{]},
 NeedleFinder 2026 runs in a few seconds on a 24-core workstation CPU or
-a GPU in our benchmark harness (Figure \ref{fig:spec_runtime}c). Instead
-of spending about 45 minutes manually clicking 15 to 30 catheters slice
-by slice while the patient waits with the implant in place, the medical
-physicist follows a structured verification workflow that we have
-modeled, not timed, at about half a minute for the two-tip check:
+a GPU when its production Rust and ONNX Runtime code path is run
+headless, outside the Slicer interface (Figure \ref{fig:spec_runtime}c).
+Instead of spending 45 to 50 minutes manually clicking 15 to 30
+catheters slice by slice while the patient waits with the implant in
+place, the medical physicist follows a structured verification workflow
+that we have modeled, not timed, at about half a minute for the two-tip
+check:
 
 \begin{enumerate}
 \def\labelenumi{\arabic{enumi}.}
 \tightlist
 \item
-  \textbf{Click \emph{Detect Needles} (4 seconds in our benchmark
-  harness; not yet timed inside Slicer):} The software crops the
-  template plane automatically and reconstructs the 3D catheter bundle.
-  Because our non-inferiority analysis shows that the reconstructed
-  shafts (Table \ref{tbl:interobserver}) are statistically non-inferior
-  to human inter-observer agreement with Team 1 as reference, this
-  modeled workflow assumes no manual shaft editing; we did not measure
-  how often shafts are edited.
+  \textbf{Click \emph{Detect Needles} (4 seconds for the production code
+  path run headless; interface overhead not yet timed):} The software
+  crops the template plane automatically and reconstructs the 3D
+  catheter bundle. Because our non-inferiority analysis shows that the
+  reconstructed shafts (Table \ref{tbl:interobserver}) are statistically
+  non-inferior to human inter-observer agreement with Team 1 as
+  reference, this modeled workflow assumes no manual shaft editing; we
+  did not measure how often shafts are edited.
 \item
   \textbf{Check the few tips with the widest uncertainty bars (18 to 66
   seconds simulated):} The module is designed to list the catheter tips
