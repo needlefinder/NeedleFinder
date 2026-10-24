@@ -5,6 +5,12 @@
 
 ---
 
+## [2026-10-24] update | Reason-coded decisions wired into the 3D Slicer extension (AUD-520)
+- `NeedleFinderLib/NeuralNeedleNet.py`: `run_mpnn_and_graph_transformer` records a typed reason for every candidate in `LAST_STAGE2_DECISIONS` (kept, below_threshold, outside_implant_region, low_dark_core_symmetry, duplicate_of_kept_track, collinear_fragment, collinear_fragment_merged, kept_without_graph_model), with confidence rank; fallback paths included. Plain-language labels in `REASON_LABELS`.
+- `TrackingAlgorithms.autoDetectAllNeedles`: stores `self.lastDetectionDecisions`, writes `ReasonCode` / `ConfidenceRank` model attributes, prefixes the report comment with `#rank`; new `restoreRejectedCandidate(index)` re-adds a rejected track as a needle (`ReasonCode=restored_by_user`, `RejectedReason` kept).
+- `NeedleFinder.py`: new collapsible "Rejected Candidates (why a track was not kept)" panel with a table (rank, confidence, reason, length, Restore button) populated after detection; reset clears it; module self-test extended (rank in comment, ReasonCode attribute, restore adds a row).
+- Verified outside Slicer (stubbed modules): decision bookkeeping and no-graph-model fallback. GUI self-test not run here (no Slicer binary on `think`); run the NeedleFinder self-test in Slicer before the next release. Commit on `private/master`.
+
 ## [2026-10-24] deploy | 3D Slicer Extension Production Upgrade (`NeedleFinder 2026 Slicer v2.0` — SSL + Multi-Rater + 24-ch 1D Tip Localizer + Split-Conformal Tip Uncertainty + Literature Fusion)
 - **Production Model Weights Exported (`NeedleFinder/NeedleFinder/NeedleFinderLib/`):**
   - `needle_unet3d.onnx` (`13.22 MB`): Single-pass dynamic 3D `NeedleUNet3D` pretrained via self-supervised learning on 51 external pelvic T2W MRI volumes (`48` MSD `Task05_Prostate` + `3` non-benchmark BWH pelvic volumes) and fine-tuned across all 54 clinical cases with dual-rater (`CY + HT + LB/AMe`) consensus centerlines and rich 3D MRI augmentations.
