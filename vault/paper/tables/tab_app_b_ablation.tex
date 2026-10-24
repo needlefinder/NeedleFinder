@@ -1,0 +1,39 @@
+\begin{table}[H]
+\centering
+\begin{threeparttable}
+\caption{\textbf{Controlled architectural ablation and stage-by-stage progression on all 54 BWH patients (1\,063 catheters, strictly nested $5\times 5$ out-of-fold).}
+Traces the sequential addition of each mechanism from Stage~0 analytical dark-core symmetry through Stage~2C 1D tip profiling and literature fusion, alongside the oracle ground-truth mask upper bound.}
+\label{tbl:app_ablation}
+\footnotesize
+\setlength{\tabcolsep}{3.0pt}
+\begin{tabular}{@{}L
+ R R R
+ R R R
+ R R R@{}}
+\toprule
+ & \multicolumn{3}{c}{Detection, 1-to-1 (\%)} & \multicolumn{3}{c}{\Eshaft{} (mm)} & \multicolumn{2}{c}{\Etip{} (mm)} & {Time (s)}\\
+\cmidrule(lr){2-4}\cmidrule(lr){5-7}\cmidrule(lr){8-9}\cmidrule(l){10-10}
+Method / Stage Configuration & {Rec.} & {Prec.} & {F1} & {Mean} & {Median} & {P95} & {Mean} & {Median} & {CPU}\\
+\midrule
+\multicolumn{10}{@{}l}{\textit{Sequential stage-by-stage progression (whole cohort, 1\,063 catheters)}}\\
+\addlinespace[1pt]
+\quad Stage 0: Dark-core prior (\texttt{k\_lim\_auto}) & 82.8 & 69.1 & 75.3 & 0.60 & 0.47 & 1.41 & 9.91 & 3.08 & \best{0.27}\\
+\quad Stage 1B: SSL + Multi-Rater U-Net + tubes & \best{94.2} & 61.5 & 74.4 & \best{0.57} & \best{0.46} & 1.31 & 9.29 & 2.95 & 2.84\\
+\quad Stage 2A: Triplet MPNN only & \second{93.9} & 73.5 & 82.5 & \second{0.58} & 0.47 & 1.31 & 8.95 & 2.83 & 4.09\\
+\oursrow \quad + Stage 2B: Bundle transformer + calibration & 90.9 & 83.6 & 87.1 & \best{0.57} & \best{0.46} & \best{1.30} & 7.39 & 2.70 & 4.12\\
+\oursrow \quad + Stage 2B: Multi-rater consensus supervision & 91.7 & 81.7 & 86.4 & \second{0.58} & \best{0.46} & \second{1.32} & 7.38 & 2.57 & 4.12\\
+\oursrow \quad + Stage 2A/B: Collinear split-fragment stitch & 91.4 & 86.9 & 89.1 & 0.59 & 0.47 & 1.36 & 6.92 & 2.56 & 4.13\\
+\oursrow \quad + Stage 2C: 1D Tip Localizer ($\tau=35\,\%$) & 93.6 & 83.4 & 88.2 & 0.59 & 0.47 & 1.37 & 6.71 & 2.32 & 4.15\\
+\oursrow \quad + Stage 2C: 1D Tip Localizer ($\tau=50\,\%$, \texttt{4b}) & 91.4 & 86.9 & 89.1 & 0.59 & 0.47 & 1.37 & \best{6.23} & \second{2.27} & 4.15\\
+\oursrow \quad + Stage 2C: 1D Tip Localizer ($\tau=55\,\%$) & 91.3 & \best{87.6} & \best{89.4} & 0.59 & 0.47 & 1.37 & \second{6.33} & \second{2.27} & 4.15\\
+\oursrow \quad + Lit.\ Fusion (Dai TV + Kostoulas + Kim, \texttt{4d})\tnote{a} & 91.4 & \second{87.4} & \best{89.4} & \second{0.58} & 0.47 & 1.36 & \best{6.23} & \best{2.26} & 4.18\\
+\addlinespace[2pt]
+\quad \textit{Xiao 2026 on GT masks (oracle upper bound)}\tnote{b} & {97.7\rep} & {83.5\rep} & {90.0\rep} & {0.20\rep} & {0.11\rep} & {0.83\rep} & {8.94\rep} & {1.68\rep} & {0.12\rep}\\
+\bottomrule
+\end{tabular}
+\begin{tablenotes}[flushleft]\footnotesize
+\item[a] Combines Kim \emph{et al.}\ (2026) inverse-variance sub-voxel Poly3 fitting, Dai \emph{et al.}\ (2020) axial TV continuity + Aleong \emph{et al.}\ (2024) 5-model epistemic uncertainty features, and Kostoulas \emph{et al.}\ (2025) iterative multi-segment gap-bridging.
+\item[b] Oracle upper-bound check following Xiao \emph{et al.}\ (2026) Table~2 Part~B (tracker run directly on ground-truth binary masks). Source: \texttt{2026-10-23-unified-clean-nested-benchmark.json} and \texttt{2026-10-24-peer-reviewed-baselines-and-fusion.json}.
+\end{tablenotes}
+\end{threeparttable}
+\end{table}

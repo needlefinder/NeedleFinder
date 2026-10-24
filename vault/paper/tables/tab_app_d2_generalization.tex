@@ -1,0 +1,33 @@
+\begin{table}[H]
+\centering
+\begin{threeparttable}
+\caption{\textbf{Zero-shot transfer across organs, secondary MRI pulse sequences (including T1 VIBE failure boundary), 4D serial insertion, and paired post-implant Pelvic CT (Part~C supporting Table~\ref{tbl:clinical_summary}).}}
+\label{tbl:app_generalization}
+\footnotesize
+\setlength{\tabcolsep}{2.2pt}
+\begin{tabular}{@{}L
+ R R
+ R R R
+ R R R@{}}
+\toprule
+Part C: Cross-organ, seq., 4D \& CT\tnote{a} & {$n_{\mathrm{vol}}$} & {$n_{\mathrm{cath}}$} & {Rec.\,\%} & {Prec.\,\%} & {F1\,\%} & {Sh.\,mm} & {Tip\,mm} & {Key finding}\\
+\midrule
+\oursrow Prostate 3T: Stage 0 (\texttt{k\_lim\_auto}=40) & 1 & 14 & \best{100.0} & 87.5 & 93.3 & 0.34 & 2.09 & 14/14, 2 FPs\\
+\oursrow Prostate 3T: Zero-Exp.\ No-SSL (\texttt{auto}=40, $\tau{=}50$) & 1 & 14 & \second{92.9} & \best{100.0} & \second{96.3} & 0.33 & \best{0.99} & 13/14, 0 FPs\\
+\oursrow Prostate 3T: Zero-Exp.\ No-SSL (\texttt{ACSV}=47, $\tau{=}50$) & 1 & 14 & \best{100.0} & \best{100.0} & \best{100.0} & 0.34 & 1.57 & 14/14, 0 FPs\\
+\oursrow Prostate 3T: Stage 1 Full Nested (\texttt{auto}=40) & 1 & 14 & \best{100.0} & \best{100.0} & \best{100.0} & \second{0.30} & \second{1.08} & 14/14, 0 FPs\\
+Prostate 3T: Stage 0 zeroed ($X_{1:3}=0$, \texttt{auto}=40) & 1 & 14 & 0.0 & {--} & 0.0 & {--} & {--} & $985\times$ drop\\
+Prostate 3T: 1-ch ResUNet + clDice (\texttt{auto}=40) & 1 & 14 & \best{100.0} & 56.0 & 71.8 & \best{0.24} & 2.48 & 11 vascular FPs\\
+\oursrow 3D wbSSFP / True-FISP ($\Delta z{\le}2.5$\,mm) & 2 & 47 & \best{97.9} & 88.5 & \best{92.9} & 0.72 & 3.40 & vs.\ 10.62 PMB19\\
+\oursrow Thick-slice 2D AX T2 ($\Delta z{\le}6.0$\,mm) & 49 & 882 & 88.4 & 67.9 & 76.9 & 1.07 & 4.89 & vs.\ 57.6\,\% 1-ch\\
+\oursrow Post-contrast AX T1 VIBE ($\Delta z{\le}4.0$\,mm) & 12 & 217 & 58.5 & 53.8 & 56.1 & 1.87 & 8.08 & vs.\ 61.5\,\% Stage 0\\
+4D Serial MRI: Indep.\ 3D (Cases 68--71) & 23 & 108 & 88.0 & 76.0 & 81.6 & 0.45 & 2.71 & 4-pt pooled\\
+\oursrow 4D Serial MRI: Causal Kalman (Cases 68--71) & 23 & 108 & 77.8 & \best{88.4} & \second{82.8} & 0.75 & 3.57 & $+12.4\,\%$ prec.\\
+\oursrow Paired Pelvic CT (38 paired / 40 vols, $\le 5$\,mm) & 38 & 801 & 79.2 & {--} & {--} & 2.01 & 2.78 & 52.0\,\% extra conf.\\
+\bottomrule
+\end{tabular}
+\begin{tablenotes}[flushleft]\footnotesize
+\item[a] `Sh.\,mm' and `Tip\,mm' report median in-plane shaft and 3D tip errors (mm). `Zero-Exp. No-SSL` denotes the 5-fold GYN ensemble trained with zero prostate exposure (excluding Case~100 from SSL pre-training; \texttt{auto}=40 uses automatic \texttt{k\_lim\_auto} slice 40, whereas \texttt{ACSV}=47 uses the clinical template crop slice 47). On `Thick-slice 2D AX T2', $882$ is the number of reference catheters exhibiting a physical dark-core signal in the thick-slice slab (out of $1\,019$ geometrically intersecting). In 4D monitoring (4 patients, Cases 68--71, 23 serial scans, $1.31$\,s mean monitoring runtime, each evaluated strictly with its held-out outer-fold model), per-case final-scan F1s (Independent 3D $\to$ Causal 4D Kalman) are Case~68: $77.2\,\%\to 83.0\,\%$, Case~69: $84.7\,\%\to 82.7\,\%$ (precision $83.7\,\%\to 93.9\,\%$), Case~70: $85.7\,\%\to 93.3\,\%$, and Case~71: $76.2\,\%\to 66.7\,\%$ (precision $72.7\,\%\to 100.0\,\%$); mean tip error improves from $11.23\to 9.75$\,mm. Persisted catheters within $\le 10$\,mm of newly inserted needles exhibit $1.44$\,mm median ($1.61$\,mm mean) lateral shift vs.\ $1.10$\,mm at $10\text{--}20$\,mm and $1.00$\,mm ($1.19$\,mm mean) at $>20$\,mm (Mann--Whitney $p=9.97\times 10^{-4}$ for $\le 12$\,mm vs.\ $>12$\,mm); depth deflection reaches $3.29$\,mm median ($4.56$\,mm mean, $10.49$\,mm P90) at $>90$\,mm depth ($\rho=0.555, p=5.55\times 10^{-9}$). In Pelvic CT, 38 of 40 scanned CT volumes pair with the 54-case MRI benchmark ($801$ MRI-paired reference catheters evaluated for cross-modality correspondence across non-rigid inter-scan deformation: $68.9\,\%$ matched at $\le 3.5$\,mm, $79.2\,\%$ at $\le 5.0$\,mm; $52/100$ [$52.0\,\%$] extra MRI detections vs.\ \texttt{CY} confirmed on CT).
+\end{tablenotes}
+\end{threeparttable}
+\end{table}

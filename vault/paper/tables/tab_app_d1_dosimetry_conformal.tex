@@ -1,0 +1,52 @@
+\begin{table}[H]
+\centering
+\begin{threeparttable}
+\caption{\textbf{Dosimetric translation and simulated clinician tip triage (Parts~A \& B; complete breakdown supporting Table~\ref{tbl:clinical_summary}).}
+Part~A evaluates AAPM TG-43U1 HDR $^{192}\mathrm{Ir}$ dosimetric sensitivity ($7.0$\,Gy prescription per fraction, $5.0$\,mm dwell step spacing) under Protocol~A (reference dwell times transferred to predicted catheters) and Protocol~B (dwell times re-optimized on predicted catheters, dose evaluated on reference geometry). Part~B evaluates simulated uncertainty-guided 1-click tip relocation ($\hat{\sigma}_{\mathrm{tip}}$) and unreviewed ($k=0$) nested 5-fold split-conformal 3D tip prediction intervals across the $n=972$ matched out-of-fold catheters.}
+\label{tbl:dosimetry_generalization}
+\footnotesize
+\setlength{\tabcolsep}{0.95pt}
+\begin{tabular}{@{}L
+ R R
+ R R R
+ R R R@{}}
+\toprule
+ & \multicolumn{2}{c}{Dwell-wt.\ \Etip{}} & \multicolumn{3}{c}{Protocol A: Fixed-plan transfer} & \multicolumn{3}{c}{Protocol B: Re-optimized plan}\\
+\cmidrule(lr){2-3}\cmidrule(lr){4-6}\cmidrule(l){7-9}
+Part A: TG-43U1 $^{192}\mathrm{Ir}$ dosimetry\tnote{a} & {Mean} & {Med.} & {$|\Delta D_{90}|$ (\%)} & {$\gamma_{2/2}$ (\%)} & {$\gamma_{3/3}$ (\%)} & {$|\Delta D_{90}|$ (\%)} & {Cran.\ $D_{2\mathrm{cc}}$} & {$\gamma_{2/2}$ (\%)}\\
+\midrule
+PMB 2019 3D U-Net + DBSCAN ($n{=}54$) & 10.51 & 8.36 & 27.6 / 27.2 & 64.0 & 73.3 & 37.1 / 10.2 & 95.3\,\% & 43.8\\
+Stage 0: 3D radial symmetry ($n{=}54$) & 9.04 & 7.51 & 23.0 / 21.3 & 68.2 & 76.5 & 17.8 / 8.9 & 54.0\,\% & 48.6\\
+\oursrow \NF{} w/o Synth (\texttt{4a}, $n{=}54$) & 6.65 & 5.49 & 18.5 / 13.2 & 73.4 & 81.5 & 12.8 / 5.8 & 35.2\,\% & 59.5\\
+\oursrow \NF{} proposed (\texttt{4b}, $n{=}54$)\tnote{b} & \second{5.72} & \second{4.66} & \second{15.2 / 11.5} & \second{76.6} & \second{84.3} & \second{8.2 / 4.2} & \second{29.5\,\%} & \second{66.0}\\
+\oursrow \NF{} + Top-2 Tip Review ($n{=}54$) & \best{4.56} & \best{3.93} & \best{11.7 / 10.2} & \best{80.2} & \best{87.3} & \best{5.9 / 2.8} & \best{22.5\,\%} & \best{74.3}\\
+\addlinespace[1.5pt]
+Human Rater 2 (\texttt{LB}/\texttt{AMe}, $n{=}40$) & 6.27 & 5.54 & 21.6 / 16.3 & 68.1 & 77.4 & 20.9 / 4.0 & 57.7\,\% & 59.3\\
+\oursrow \NF{} proposed (\texttt{4b}, $n{=}40$)\tnote{b} & \second{5.18} & \second{3.93} & \second{13.5 / 11.1} & \second{79.0} & \second{86.4} & \second{7.0 / 3.2} & \second{21.1\,\%} & \second{71.6}\\
+\oursrow \NF{} + Top-2 Tip Review ($n{=}40$) & \best{4.12} & \best{3.33} & \best{10.5 / 10.1} & \best{81.9} & \best{88.7} & \best{5.1 / 2.6} & \best{17.3\,\%} & \best{78.2}\\
+\midrule
+Part B1: Simulated $\hat{\sigma}_{\mathrm{tip}}$ tip triage ($n=972$)\tnote{c} & {Reloc.} & {Mean} & {Med.} & {P90} & {P95} & {$\le 2$\,mm} & {$\le 3$\,mm} & {$>10$\,mm}\\
+\midrule
+\oursrow Unreviewed \NF{} ($k{=}0$ tips/pt) & 0 & 6.23 & 2.27 & 16.20 & 27.27 & 45.6\,\% & 58.7\,\% & 16.7\,\%\\
+\oursrow Simulated tip review ($k{=}1$/pt, ${\sim}8$\,s) & 35 & 5.54 & 2.06 & 14.60 & 23.54 & 48.6\,\% & 61.9\,\% & 14.4\,\%\\
+\oursrow Simulated tip review ($k{=}2$/pt, ${\sim}16$\,s) & 69 & 5.07 & 1.95 & 12.58 & 21.48 & 51.3\,\% & 64.8\,\% & 12.8\,\%\\
+\oursrow Simulated tip review ($k{=}3$/pt, ${\sim}24$\,s) & 105 & 4.57 & 1.81 & 10.91 & 19.16 & 54.0\,\% & 67.2\,\% & 11.1\,\%\\
+\oursrow Simulated tip review ($k{=}5$/pt, ${\sim}40$\,s) & 169 & 3.72 & 1.67 & 7.79 & 14.26 & 59.5\,\% & 72.6\,\% & 8.0\,\%\\
+\oursrow Simulated tip review ($k{=}8$/pt, ${\sim}64$\,s) & 251 & \second{2.77} & \second{1.51} & \second{5.98} & \second{9.90} & \second{65.5\,\%} & \second{78.5\,\%} & \second{5.0\,\%}\\
+\oursrow Simulated tip review ($k{=}10$/pt, ${\sim}80$\,s) & 301 & \best{2.52} & \best{1.44} & \best{4.97} & \best{8.30} & \best{69.2\,\%} & \best{81.8\,\%} & \best{4.3\,\%}\\
+\midrule
+Part B2: Split-conformal ($k{=}0$, $n{=}972$)\tnote{c} & {Nom.} & {Emp.} & {Fixed} & {Mean $r$} & {Med.\ $r$} & {Fixed $r$} & {Low-$\hat{\sigma}$ $r$} & {Width red.}\\
+\midrule
+\oursrow Conformal $80\,\%$ 3D tip interval ($k{=}0$) & 80.0\,\% & 79.3\,\% & 80.2\,\% & 7.31 & 6.46 & 7.73 & 4.46 & $-16.4\,\%$\\
+\oursrow Conformal $85\,\%$ 3D tip interval ($k{=}0$) & 85.0\,\% & 84.4\,\% & 85.5\,\% & 9.80 & 8.71 & 11.43 & 5.96 & $-23.8\,\%$\\
+\oursrow Conformal $90\,\%$ 3D tip interval ($k{=}0$) & 90.0\,\% & \best{90.2\,\%} & 89.9\,\% & 13.71 & 12.11 & 17.68 & 8.41 & $-31.5\,\%$\\
+\oursrow Conformal $95\,\%$ 3D tip interval ($k{=}0$) & 95.0\,\% & \best{95.4\,\%} & 95.2\,\% & 21.05 & 18.42 & 28.39 & 12.89 & \best{$-35.1\,\%$}\\
+\bottomrule
+\end{tabular}
+\begin{tablenotes}[flushleft]\footnotesize
+\item[a] TG-43U1 evaluation uses $5.0$\,mm dwell step spacing ($3.5$\,mm distal tip offset, $\le 45$\,mm active length) on a $1.5$\,mm isotropic 3D dose grid with implant-conformal $\text{HR-CTV}_{\text{implant}}$ ($8.0$\,mm radial envelope, $D_{90}=7.0$\,Gy) and $2\,\text{cc}$ OAR proxy shells. $|\Delta D_{90}|$ cells report mean / median percentage target dose shift; `Cran.\ $D_{2\mathrm{cc}}$' reports mean relative error $|\Delta D_{2\mathrm{cc}}|$ (\%) in the cranial (sigmoid/fundal) OAR proxy shell; $\gamma_{2/2}$ and $\gamma_{3/3}$ are global 3D gamma pass rates ($2\,\%/2$\,mm and $3\,\%/3$\,mm). Dwell-weighted tip error $E_{\mathrm{tip}}^{\mathrm{dwell\text{-}w}}$ correlates with $|\Delta D_{90}|$ at Spearman $\rho=0.8629$ ($p=4.9\times 10^{-17}$) and with $\gamma_{2\%/2\mathrm{mm}}$ at $\rho=-0.8474$ ($p=6.5\times 10^{-16}$).
+\item[b] Paired Wilcoxon vs.\ PMB 2019 ($p=4.9\times 10^{-6}$ on $|\Delta D_{90}|$, $p=8.2\times 10^{-7}$ on $\gamma_{2\%/2\mathrm{mm}}$), vs.\ Stage 0 ($p=7.9\times 10^{-8}$ on $|\Delta D_{90}|$, $p=1.4\times 10^{-7}$ on $\gamma_{2\%/2\mathrm{mm}}$), and vs.\ Human Rater 2 on $n=40$ ($p=0.0278$ on $|\Delta D_{90}|$, $p=0.0109$ on $\gamma_{2\%/2\mathrm{mm}}$).
+\item[c] Part~B1 simulates a retrospective 1-click distal tip relocation oracle ($E_{\mathrm{tip}} \to \sqrt{\Delta r_\perp^2 + \min(|\Delta s_\parallel|, 0.85\,\text{mm})^2}$ when $E_{\mathrm{tip}}>2.0$\,mm, $E_{\mathrm{shaft}}$ unchanged; `Reloc.` = total tips relocated across 54 patients) ranked by out-of-fold $\hat{\sigma}_{\mathrm{tip}}$. Part~B2 reports unreviewed ($k=0$) 5-fold split-conformal 3D tip prediction interval half-widths (radii $r$ in mm) across the $n=972$ matched OOF catheters (`Fixed`: unscaled residual quantile; `Low-`$\hat{\sigma}$ $r$: median half-width on the lower-uncertainty half of catheters; `Width red.`: adaptive vs.\ fixed median half-width reduction). Simulated oracle count-guided recovery ($0.65$ clicks/patient) recovers $+17$ missed catheters ($972\to 989/1\,063$, $93.0\,\%$ recall).
+\end{tablenotes}
+\end{threeparttable}
+\end{table}

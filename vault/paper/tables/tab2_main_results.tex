@@ -2,11 +2,11 @@
 \centering
 \begin{threeparttable}
 \caption{\textbf{Catheter reconstruction accuracy on 54 BWH patients (1\,063 catheters), strictly nested $5\times 5$ patient-level out-of-fold.}
-Part~A compares \NF{} against five peer-reviewed journal/conference methods and one recent preprint reproduced on the identical nested splits across the whole cohort, the 759 long interstitial shafts, and the severe catheter-adhesion subgroup; Part~B ablates \NF{} stages, literature-inspired fusion, and ground-truth-mask tracking on identical folds.
+Compares \NF{} against five peer-reviewed journal/conference methods and one recent preprint reproduced on the identical nested splits across the whole cohort, the 759 long interstitial shafts, and the severe catheter-adhesion subgroup (see Appendix~B, Table~\ref{tbl:app_ablation}, for the complete 11-row stage-by-stage ablation ladder).
 Bold: best; underline: second best within each block. Shaded: \NF{} variants (pre-specified $\tau=50\,\%$).}
 \label{tbl:main}
-\scriptsize
-\setlength{\tabcolsep}{3.0pt}
+\footnotesize
+\setlength{\tabcolsep}{2.8pt}
 \begin{tabular}{@{}L
  R R R
  R R R
@@ -16,9 +16,7 @@ Bold: best; underline: second best within each block. Shaded: \NF{} variants (pr
 \cmidrule(lr){2-4}\cmidrule(lr){5-7}\cmidrule(lr){8-9}\cmidrule(l){10-10}
 Method & {Rec.} & {Prec.} & {F1} & {Mean} & {Median} & {P95} & {Mean} & {Median} & {CPU}\\
 \midrule
-\multicolumn{10}{@{}l}{\textit{Part A — End-to-end comparison against reproduced literature methods}}\\
-\addlinespace[1pt]
-\multicolumn{10}{@{}l}{\quad\textit{Whole cohort (54 patients, 1\,063 catheters)}}\\
+\multicolumn{10}{@{}l}{\textit{Whole cohort (54 patients, 1\,063 catheters)}}\\
 \quad PMB 2019 3D U-Net (Zaffino \emph{et al.})\tnote{a} & 88.8 & 78.0 & 83.1 & \best{0.52} & \best{0.42} & \best{1.11} & 10.75 & 3.39 & 14.80\\
 \quad ResUNet + clDice + Skel.\ (Shit \emph{et al.}\ 2021)\tnote{b} & 92.4 & 24.5 & 38.7 & \second{0.55} & \second{0.43} & 1.36 & 10.08 & 3.10 & 3.85\\
 \quad Dai \emph{et al.}\ 2020 (3D Att.\ U-Net + Axial TV)\tnote{c} & \best{93.6} & 42.2 & 58.2 & 0.57 & \second{0.43} & 1.45 & 10.61 & 3.77 & 4.05\\
@@ -30,7 +28,7 @@ Method & {Rec.} & {Prec.} & {F1} & {Mean} & {Median} & {P95} & {Mean} & {Median}
 \oursrow \quad \NF{} + Inner-OOF Cross-Fit (\texttt{4c})\tnote{h} & 92.3 & 86.1 & \second{89.1} & 0.59 & 0.47 & 1.37 & \second{6.25} & \best{2.24} & \second{4.15}\\
 \oursrow \quad \NF{} + Lit.\ Fusion (\texttt{4d})\tnote{i} & 91.4 & \best{87.4} & \best{89.4} & 0.58 & 0.47 & 1.36 & \best{6.23} & \second{2.26} & 4.18\\
 \addlinespace[2pt]
-\multicolumn{10}{@{}l}{\quad\textit{Long interstitial shafts (54 patients, 759 catheters, obturator-adjusted precision)}\tnote{j}}\\
+\multicolumn{10}{@{}l}{\textit{Long interstitial shafts (54 patients, 759 catheters, obturator-adjusted precision)}\tnote{j}}\\
 \quad PMB 2019 3D U-Net (Zaffino \emph{et al.}) & 86.7 & 87.6 & 87.2 & \best{0.52} & \best{0.40} & \best{1.23} & 14.93 & 4.04 & {--}\\
 \quad ResUNet + clDice + Skel.\ (Shit \emph{et al.}\ 2021) & 91.3 & 51.5 & 65.8 & 0.57 & 0.43 & 1.40 & 14.67 & 3.53 & {--}\\
 \quad Dai \emph{et al.}\ 2020 (3D Att.\ U-Net + Axial TV) & 84.6 & 83.0 & 83.8 & 0.58 & \second{0.41} & 1.74 & 12.53 & 4.38 & {--}\\
@@ -42,7 +40,7 @@ Method & {Rec.} & {Prec.} & {F1} & {Mean} & {Median} & {P95} & {Mean} & {Median}
 \oursrow \quad \NF{} + Inner-OOF Cross-Fit (\texttt{4c}) & \second{92.5} & \second{88.6} & \best{90.5} & \second{0.56} & 0.45 & 1.27 & \best{7.17} & 2.44 & {--}\\
 \oursrow \quad \NF{} + Lit.\ Fusion (\texttt{4d}) & 91.3 & \best{88.7} & 90.0 & \second{0.56} & 0.44 & 1.25 & \second{7.40} & \second{2.43} & {--}\\
 \addlinespace[2pt]
-\multicolumn{10}{@{}l}{\quad\textit{Severe catheter-adhesion subgroup (23 patients, 571 catheters)}\tnote{k}}\\
+\multicolumn{10}{@{}l}{\textit{Severe catheter-adhesion subgroup (23 patients, 571 catheters)}\tnote{k}}\\
 \quad PMB 2019 3D U-Net (Zaffino \emph{et al.}) & 94.6 & 79.3 & 86.3 & 0.54 & 0.43 & \second{1.22} & 11.88 & 3.70 & {--}\\
 \quad ResUNet + clDice + Skel.\ (Shit \emph{et al.}\ 2021) & \second{96.0} & 32.3 & 48.4 & \best{0.52} & \second{0.42} & \best{1.18} & 11.58 & 3.37 & {--}\\
 \quad Dai \emph{et al.}\ 2020 (3D Att.\ U-Net + Axial TV) & \best{96.2} & 52.0 & 67.5 & \second{0.53} & \second{0.42} & 1.23 & 11.88 & 4.20 & {--}\\
@@ -53,24 +51,9 @@ Method & {Rec.} & {Prec.} & {F1} & {Mean} & {Median} & {P95} & {Mean} & {Median}
 \oursrow \quad \NF{} + Synth + 1DTip (\texttt{4b}) & 93.2 & \best{89.6} & \second{91.3} & 0.58 & 0.46 & 1.41 & \second{7.08} & 2.51 & {--}\\
 \oursrow \quad \NF{} + Inner-OOF Cross-Fit (\texttt{4c}) & 94.6 & \second{89.1} & \best{91.8} & 0.57 & 0.46 & 1.34 & 7.30 & \second{2.47} & {--}\\
 \oursrow \quad \NF{} + Lit.\ Fusion (\texttt{4d}) & 93.2 & \best{89.6} & \second{91.3} & 0.57 & 0.46 & 1.40 & \second{7.08} & \best{2.44} & {--}\\
-\midrule
-\multicolumn{10}{@{}l}{\textit{Part B — Controlled ablation \& stage-by-stage progression (whole cohort, 1\,063 catheters)}}\\
-\addlinespace[1pt]
-\quad Stage 0: Dark-core prior (\texttt{k\_lim\_auto}) & 82.8 & 69.1 & 75.3 & 0.60 & 0.47 & 1.41 & 9.91 & 3.08 & \best{0.27}\\
-\quad Stage 1B: SSL + Multi-Rater U-Net + tubes & \best{94.2} & 61.5 & 74.4 & \best{0.57} & \best{0.46} & 1.31 & 9.29 & 2.95 & 2.84\\
-\quad Stage 2A: Triplet MPNN only & \second{93.9} & 73.5 & 82.5 & \second{0.58} & 0.47 & 1.31 & 8.95 & 2.83 & 4.09\\
-\oursrow \quad + Stage 2B: Bundle transformer + calibration & 90.9 & 83.6 & 87.1 & \best{0.57} & \best{0.46} & \best{1.30} & 7.39 & 2.70 & 4.12\\
-\oursrow \quad + Stage 2B: Multi-rater consensus supervision & 91.7 & 81.7 & 86.4 & \second{0.58} & \best{0.46} & \second{1.32} & 7.38 & 2.57 & 4.12\\
-\oursrow \quad + Stage 2A/B: Collinear split-fragment stitch & 91.4 & 86.9 & 89.1 & 0.59 & 0.47 & 1.36 & 6.92 & 2.56 & 4.13\\
-\oursrow \quad + Stage 2C: 1D Tip Localizer ($\tau=35\,\%$) & 93.6 & 83.4 & 88.2 & 0.59 & 0.47 & 1.37 & 6.71 & 2.32 & 4.15\\
-\oursrow \quad + Stage 2C: 1D Tip Localizer ($\tau=50\,\%$, \texttt{4b}) & 91.4 & 86.9 & 89.1 & 0.59 & 0.47 & 1.37 & \best{6.23} & \second{2.27} & 4.15\\
-\oursrow \quad + Stage 2C: 1D Tip Localizer ($\tau=55\,\%$) & 91.3 & \best{87.6} & \best{89.4} & 0.59 & 0.47 & 1.37 & \second{6.33} & \second{2.27} & 4.15\\
-\oursrow \quad + Lit.\ Fusion (Dai TV + Kostoulas + Kim, \texttt{4d})\tnote{i} & 91.4 & \second{87.4} & \best{89.4} & \second{0.58} & 0.47 & 1.36 & \best{6.23} & \best{2.26} & 4.18\\
-\addlinespace[2pt]
-\quad \textit{Xiao 2026 on GT masks}\tnote{l} & {97.7\rep} & {83.5\rep} & {90.0\rep} & {0.20\rep} & {0.11\rep} & {0.83\rep} & {8.94\rep} & {1.68\rep} & {0.12\rep}\\
 \bottomrule
 \end{tabular}
-\begin{tablenotes}[flushleft]\scriptsize
+\begin{tablenotes}[flushleft]\footnotesize
 \item Rec./Prec./F1: strict one-to-one Hungarian matching ($\le 3.5$\,mm shaft threshold); \Eshaft: in-plane centerline distance on matched slices; \Etip: 3D distal-tip distance (P95 on whole cohort: $27.27$\,mm for \NF{} \texttt{4b} and $27.42$\,mm for \texttt{4d} vs.\ $43.23$\,mm for Aleong/Kim, $45.76$\,mm for clDice, $46.68$\,mm for Dai 2020, $50.23$\,mm for Kostoulas 2025, $52.70$\,mm for PMB 2019, and $62.69$\,mm for Xiao 2026).
 \item[a] Peer-reviewed MRI baseline (Zaffino \emph{et al.}\ 2019, \emph{Phys.\ Med.\ Biol.}): $1\times1\times1$\,mm$^3$ isotropic 3D U-Net, DBSCAN clustering, and polynomial fitting.
 \item[b] Peer-reviewed tubular topology baseline (Shit \emph{et al.}\ 2021, \emph{CVPR}): native-resolution 3D ResUNet trained with Dice + focal + soft-skeleton clDice loss, followed by ridge extraction and chaining.
@@ -83,7 +66,6 @@ Method & {Rec.} & {Prec.} & {F1} & {Mean} & {Median} & {P95} & {Mean} & {Median}
 \item[i] \NF{} (\texttt{4b}) augmented with three complementary mechanisms reused from the peer-reviewed MRI literature (\texttt{4d}): (A) Kim \emph{et al.}\ (2026) inverse-variance and sub-voxel dark-core weighted Poly3 shaft fitting ($E_{\text{shaft}}$ reduced from $0.589$ to $0.584$\,mm, $p = 1.8\times 10^{-8}$), (B) Dai \emph{et al.}\ (2020) directional axial TV continuity + Aleong \emph{et al.}\ (2024) 5-model epistemic uncertainty gating and 24-channel 1D tip profiling (eliminating 6 false tracks with 0 lost catheters, F1 $89.1\,\% \to 89.4\,\%$, $p = 0.028$; axial median tip error $1.99 \to 1.94$\,mm), and (C) Kostoulas \emph{et al.}\ (2025) iterative multi-segment gap-bridging (reaching $92.0\,\%$ recall, $90.5\,\%$ long $F1_{\text{adj}}$, $91.8\,\%$ adhesion F1, $0.579$\,mm mean / $0.463$\,mm median shaft error, and $6.21$\,mm mean tip error when combined with inner-OOF cross-fitting).
 \item[j] Evaluated on the 759 full-depth \texttt{CY} interstitial shafts; predictions matching the 304 auxiliary \texttt{HT} short obturator tracks are not penalized as false positives ($94.7\,\%$ recall at $\tau=35\,\%$).
 \item[k] The 23/54 patients with $\ge 4$ long or $\ge 6$ total catheters passing within $\le 3.0$\,mm of a neighbour (571 catheters evaluated, 191 adhering; paired 23-patient Wilcoxon for \texttt{4b}/\texttt{4d}: F1 $p = 0.0012$ vs.\ PMB 2019 and $p \le 4.8\times 10^{-7}$ vs.\ the other five methods; \Etip{} $p \le 4.5\times 10^{-6}$ vs.\ all six methods).
-\item[l] Oracle upper-bound check following Xiao \emph{et al.}\ (2026b) Table~2 Part~B (tracker run directly on ground-truth binary masks). Source: \texttt{2026-10-23-unified-clean-nested-benchmark.json} and \texttt{2026-10-24-peer-reviewed-baselines-and-fusion.json}.
 \end{tablenotes}
 \end{threeparttable}
 \end{table}

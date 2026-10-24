@@ -75,7 +75,7 @@
 \newcommand{\nfcaps}[1]{{\nfcapsfont #1}}
 
 % ---------- Paragraphs, spacing, widows ------------------------------
-\linespread{1.06}
+\linespread{1.08}
 \setlength{\parindent}{1.25em}
 \setlength{\parskip}{0pt}
 \setlength{\emergencystretch}{2.5em}
@@ -140,7 +140,7 @@
   \def\and{ }%
   \null\vspace*{-1.5\baselineskip}%
   {\raggedright
-   {\nfcaps{\footnotesize Research paper}\hfill\nfcaps{\footnotesize Physics in Medicine \& Biology \textperiodcentered{} Manuscript}\par}%
+   {\nfcaps{\footnotesize Original Research Article}\hfill\nfcaps{\footnotesize Medical Image Analysis (Elsevier) \textperiodcentered{} Manuscript}\par}%
    \vspace{0.35\baselineskip}%
    {\color{nfrule}\rule{\linewidth}{0.4pt}\par}%
    \vspace{2.2\baselineskip}%
@@ -162,7 +162,7 @@
    \vspace{0.9\baselineskip}%
    \noindent{\color{nfrule}\rule{\linewidth}{0.4pt}}\par\vspace{0.4\baselineskip}}
 
-% ---------- Tables: booktabs with hairlines ---------------------------
+% ---------- Tables & Figures: break out to full 160 mm block ----------
 \usepackage{booktabs,tabularx,threeparttable,multirow,makecell,array,etoolbox}
 \usepackage{changepage}
 \setlength{\heavyrulewidth}{0.7pt}
@@ -198,7 +198,7 @@
 % measure is 120 mm (~68 characters) while figures and tables, which reset
 % to \columnwidth, break out 20 mm into each margin.
 \newlength{\nfbreak}\setlength{\nfbreak}{20mm}
-\AtBeginDocument{\begin{adjustwidth}{\nfbreak}{\nfbreak}}
+\AtBeginDocument{\begin{adjustwidth}{\nfbreak}{\nfbreak}\global\setlength{\columnwidth}{\textwidth}}
 \AtEndDocument{\end{adjustwidth}}
 
 % ---------- Captions: small type, small-caps label hung in the margin --
@@ -208,8 +208,8 @@
 \captionsetup{format=plain, font={small}, labelfont={}, textfont={},
   labelformat=nfsc, labelsep=quad, justification=justified,
   singlelinecheck=false, skip=7pt}
-% figure captions keep to the text measure, label hung to the left
-\captionsetup[figure]{format=nfhang, margin={\nfbreak,\nfbreak}, skip=9pt}
+% figure captions span almost the full 160 mm figure width, label hung to the left
+\captionsetup[figure]{format=nfhang, margin={4mm,4mm}, skip=9pt}
 % table captions sit above the table and run the table's width
 \captionsetup[table]{position=top, skip=5pt}
 \setlength{\abovecaptionskip}{7pt}

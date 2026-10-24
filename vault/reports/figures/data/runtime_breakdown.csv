@@ -1,0 +1,6 @@
+stage,cpu_sec,gpu_sec
+Stage 0: Rust 3D Radial Symmetry,0.267,0.267
+Stage 1: Anisotropic 3D ResUNet + IRGM,2.575,1.330
+Stage 2A: Seed Tracking + 4-Layer Triplet MPNN,1.248,1.046
+Stage 2B/C: Bundle GraphTF + 1D Tip + Poly3,0.061,0.032
+Total,4.151,2.675

@@ -4,8 +4,8 @@
 \caption{\textbf{Human inter-observer agreement versus \NF{} across all 40/40 dual-annotated clinical 3T MRI scenes.}
 Expert teams \texttt{CY+HT} ($n=723$ total trajectories: $505$ \texttt{CY} long + $218$ \texttt{HT} short/obturator) and \texttt{LB}/\texttt{AMe} ($n=513$, of which $460$ are long) digitized the same 40 volumes independently; \NF{} rows are strictly nested $5\times 5$ out-of-fold predictions on the same 40 scenes.}
 \label{tbl:interobserver}
-\scriptsize
-\setlength{\tabcolsep}{0.8pt}
+\footnotesize
+\setlength{\tabcolsep}{0.85pt}
 \begin{tabular}{@{}L
  R R R R
  R R R R
@@ -17,23 +17,23 @@ Comparison pair (eval.\ vs.\ reference) & {$n_{\text{match}}$} & {Rec.} & {Prec.
 \midrule
 \multicolumn{11}{@{}l}{\textit{Human inter-observer agreement}}\\
 \addlinespace[1pt]
-\quad \texttt{LB}/\texttt{AMe} vs.\ \texttt{CY} long ($460$ vs.\ $505$)\tnote{a} & 424 & 84.0 & \best{92.2} & \best{87.9} & 0.70 & 0.58 & 0.49 & 1.90 & 6.28 & 3.24\\
-\quad \texttt{LB}/\texttt{AMe} vs.\ \texttt{CY+HT} all ($513$ vs.\ $723$) & 476 & 65.8 & 92.8 & 77.0 & 0.73 & 0.61 & 0.50 & 2.09 & 6.30 & 3.21\\
+\quad \texttt{LB}/\texttt{AMe} vs.\ \texttt{CY} long ($460/505$)\tnote{a} & 424 & 84.0 & \best{92.2} & \best{87.9} & 0.70 & 0.58 & 0.49 & 1.90 & 6.28 & 3.24\\
+\quad \texttt{LB}/\texttt{AMe} vs.\ \texttt{CY+HT} all ($513/723$) & 476 & 65.8 & 92.8 & 77.0 & 0.73 & 0.61 & 0.50 & 2.09 & 6.30 & 3.21\\
 \midrule
 \multicolumn{11}{@{}l}{\textit{Automated out-of-fold predictions vs.\ observer teams across all 40 scenes}}\\
 \addlinespace[1pt]
-\oursrow \quad \NF{} ($\tau=50\,\%$) vs.\ \texttt{CY+HT} ($768$ vs.\ $723$) & 653 & 90.3 & 85.0 & \second{87.6} & \best{0.58} & \best{0.39} & \best{0.47} & \second{1.33} & \best{5.26} & \best{2.10}\\
-\oursrow \quad \NF{} ($\tau=35\,\%$) vs.\ \texttt{CY+HT} ($825$ vs.\ $723$) & 669 & \best{92.5} & 81.1 & 86.4 & \second{0.59} & \second{0.40} & \best{0.47} & \best{1.32} & 5.54 & 2.20\\
-\oursrow \quad \NF{} ($\tau=50\,\%$) vs.\ union \texttt{CY+HT+LB} ($768$ vs.\ $759$)\tnote{b} & 669 & 88.1 & \second{87.1} & \second{87.6} & \second{0.59} & \second{0.40} & \best{0.47} & 1.36 & \second{5.44} & \second{2.17}\\
-\oursrow \quad \NF{} ($\tau=50\,\%$) vs.\ \texttt{LB}/\texttt{AMe} ($768$ vs.\ $513$)\tnote{c} & 465 & \second{90.6} & 60.5 & 72.6 & 0.77 & 0.62 & 0.51 & 2.11 & 7.87 & 3.97\\
+\oursrow \quad \NF{} ($\tau{=}50\,\%$) vs.\ \texttt{CY+HT} ($768/723$) & 653 & 90.3 & 85.0 & \second{87.6} & \best{0.58} & \best{0.39} & \best{0.47} & \second{1.33} & \best{5.26} & \best{2.10}\\
+\oursrow \quad \NF{} ($\tau{=}35\,\%$) vs.\ \texttt{CY+HT} ($825/723$) & 669 & \best{92.5} & 81.1 & 86.4 & \second{0.59} & \second{0.40} & \best{0.47} & \best{1.32} & 5.54 & 2.20\\
+\oursrow \quad \NF{} ($\tau{=}50\,\%$) vs.\ \texttt{CY+HT+LB} ($768/759$)\tnote{b} & 669 & 88.1 & \second{87.1} & \second{87.6} & \second{0.59} & \second{0.40} & \best{0.47} & 1.36 & \second{5.44} & \second{2.17}\\
+\oursrow \quad \NF{} ($\tau{=}50\,\%$) vs.\ \texttt{LB}/\texttt{AMe} ($768/513$)\tnote{c} & 465 & \second{90.6} & 60.5 & 72.6 & 0.77 & 0.62 & 0.51 & 2.11 & 7.87 & 3.97\\
 \midrule
 \multicolumn{11}{@{}l}{\textit{Grubbs' three-cornered-hat intrinsic error SD ($n=432$) \& Pelvic CT adjudication ($n=70$)}\tnote{d}}\\
 \addlinespace[1pt]
 Source (3-way matched) & {$n$} & {3W Sh.} & {3W Tip} & {Role} & {$\sigma_{\text{RMS}}$} & {$\sigma_{\text{MAD}}$} & {$\sigma_{z,\text{MAD}}$} & {$\sigma_{z,\text{W}}$} & {CT} & {Win}\\
 \midrule
-\quad Human Rater 1 (\texttt{CY} primary) & 432 & {Ref.} & {Ref.} & {Ref.\ R1} & \best{0.39} & \best{0.35} & \best{0.00}\tnote{d} & \best{3.77} & \second{4.31} & {--}\\
-\oursrow \quad \NF{} ($\tau=50\,\%$, OOF) & 432 & \best{0.43} & \best{2.33} & {Eval.} & \second{0.56} & \second{0.39} & \second{2.98} & \second{4.94} & \best{4.20} & \best{78.6\,\%}\\
-\quad Human Rater 2 (\texttt{LB}/\texttt{AMe} secondary) & 432 & 0.49 & 3.18 & {Comp.\ R2} & 0.86 & 0.48 & 3.55 & 5.09 & 8.00 & {--}\\
+\quad Human Rater 1 (\texttt{CY} primary) & 432 & {Ref.} & {Ref.} & {Ref.} & \best{0.39} & \best{0.35} & \best{0.00}\tnote{d} & \best{3.77} & \second{4.31} & {--}\\
+\oursrow \quad \NF{} ($\tau{=}50\,\%$, OOF) & 432 & \best{0.43} & \best{2.33} & {Eval.} & \second{0.56} & \second{0.39} & \second{2.98} & \second{4.94} & \best{4.20} & \best{78.6\,\%}\\
+\quad Human Rater 2 (\texttt{LB}/\texttt{AMe}) & 432 & 0.49 & 3.18 & {R2} & 0.86 & 0.48 & 3.55 & 5.09 & 8.00 & {--}\\
 \midrule
 \multicolumn{11}{@{}l}{\textit{One-sided non-inferiority tests vs.\ human inter-observer discrepancy ($N=40$, $n=432$)}\tnote{e}}\\
 \addlinespace[1pt]

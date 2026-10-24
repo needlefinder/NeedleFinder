@@ -1,0 +1,39 @@
+\begin{table}[tbp]
+\centering
+\begin{threeparttable}
+\caption{\textbf{Summary of clinical translation: AAPM TG-43U1 $^{192}\mathrm{Ir}$ dosimetry, split-conformal tip triage, zero-needle specificity, and zero-shot cross-domain generalization.}
+Consolidates the headline metrics across our four clinical validation studies (complete per-protocol, per-$k$, and per-sequence breakdowns are provided in Appendices~C and~D, Tables~\ref{tbl:specificity}--\ref{tbl:app_generalization}).}
+\label{tbl:clinical_summary}
+\footnotesize
+\setlength{\tabcolsep}{1.2pt}
+\begin{tabular}{@{}L L R R R R L@{}}
+\toprule
+Dimension & Configuration / Cohort & {$N$} & {Primary metric} & {Secondary} & {\Eshaft{}/\Etip{}} & {Takeaway}\\
+\midrule
+\multicolumn{7}{@{}l}{\textit{1. AAPM TG-43U1 HDR $^{192}\mathrm{Ir}$ dosimetry (7.0\,Gy prescription, 5.0\,mm dwell steps; Appendix~D, Table~\ref{tbl:dosimetry_generalization})}}\\
+\quad Prot.\ A (fixed) & PMB 2019 3D U-Net & 54 & $|\Delta D_{90}|$: 27.6/27.2\,\% & $\gamma_{2/2}$: 64.0\,\% & 0.42/3.39 & Tip dose shift\\
+\oursrow \quad Prot.\ A (fixed) & \NF{} (\texttt{4b}, $k{=}0$) & 54 & $|\Delta D_{90}|$: 15.2/11.5\,\% & $\gamma_{2/2}$: 76.6\,\% & 0.47/2.27 & $p{=}4.9{\times}10^{-6}$\\
+\quad Prot.\ B (re-opt) & Human Team 2 (\texttt{LB}/\texttt{AMe}) & 40 & $|\Delta D_{90}|$: 20.9/4.0\,\% & $\gamma_{2/2}$: 59.3\,\% & 0.49/3.24 & Human floor\\
+\oursrow \quad Prot.\ B (re-opt) & \NF{} (\texttt{4b}, $k{=}0$) & 54 & $|\Delta D_{90}|$: 8.2/4.2\,\% & $\gamma_{2/2}$: 66.0\,\% & 0.47/2.27 & 3.2\,\% ($N{=}40$)\\
+\oursrow \quad Prot.\ B + $k{=}2$* & \NF{} + $k{=}2$ (18\,s*) & 54 & \best{$|\Delta D_{90}|$: 5.9/2.8\,\%} & \best{$\gamma_{2/2}$: 74.3\,\%} & 0.47/1.95 & $p{=}2.4{\times}10^{-5}$\\
+\midrule
+\multicolumn{7}{@{}l}{\textit{2. Split-conformal 3D tip intervals \& uncertainty-guided clinician review ($n=972$ matched catheters; Appendix~D, Table~\ref{tbl:dosimetry_generalization})}}\\
+\oursrow \quad 90\,\% sphere & Unreviewed ($k{=}0$, $\hat{r}_{90}$) & 54 & \best{90.2\,\% emp.\ cov.} & 12.11\,mm $r$ & 2.27/27.3 & $-31.5\,\%$ width\\
+\oursrow \quad Review ($k{=}5$*) & Top-5 $\hat{\sigma}_{\mathrm{tip}}$/pt (42\,s*) & 54 & $>10$\,mm: 8.0\,\% & $\le 3$\,mm: 72.6\,\% & 1.67/14.3 & Halves $>10$\,mm\\
+\oursrow \quad Review ($k{=}8$*) & Top-8 $\hat{\sigma}_{\mathrm{tip}}$/pt (66\,s*) & 54 & $>10$\,mm: 5.0\,\% & $\le 3$\,mm: 78.5\,\% & \best{1.51/9.90} & P95 $<10$\,mm\\
+\midrule
+\multicolumn{7}{@{}l}{\textit{3. Out-of-distribution specificity \& zero-shot cross-domain generalization (Appendices~C \& D, Tables~\ref{tbl:specificity} \& \ref{tbl:app_generalization})}}\\
+\oursrow \quad 0-needle MRI & MSD \texttt{Task05\_Prostate} & 48 & \best{0.33/0.125 FP/vol} & 79.2/87.5\,\% 0-FP & {--} & vs.\ 4.10--6.38\\
+\oursrow \quad 3T Prostate & \texttt{Case 100} (0-exp.\ auto) & 1 & \best{96.3\,\% F1 (13/14)} & 100.0\,\% Prec. & 0.33/0.99 & 100\,\% manual\\
+\oursrow \quad 3D wbSSFP & Steady-state MRI & 2 & \best{92.9\,\% F1 (46/47)} & 97.9\,\% Rec. & 0.72/3.40 & vs.\ 10.62\,mm\\
+\oursrow \quad 2D AX TSE T2 & $\Delta z{=}2.4\text{--}6.0$\,mm ($n{=}882$) & 49 & 76.9\,\% F1 & 88.4\,\% Rec. & 1.07/4.89 & vs.\ 57.6\,\%\\
+\oursrow \quad 3D T1 VIBE & Bright-vessel shift & 12 & 56.1\,\% F1 & 58.5\,\% Rec. & 1.87/8.08 & Stage 0: 61.5\,\%\\
+\oursrow \quad 4D insertion & Causal Kalman (\texttt{68--71}) & 23 & 82.8\,\% F1 & \best{88.4\,\% Prec.} & 0.75/3.57 & $+12.4\,\%$ ($1.31$\,s)\\
+\oursrow \quad Paired CT & Dual-polarity ($\le 5$\,mm) & 40 & 79.2\,\% Rec. & 52.0\,\% conf. & 2.01/2.78 & 78.6\,\% on 70\\
+\bottomrule
+\end{tabular}
+\begin{tablenotes}[flushleft]\footnotesize
+\item In Block~1, $|\Delta D_{90}|$ reports mean/median percentage target dose error and \Eshaft{}/\Etip{} reports median in-plane shaft / median 3D tip error in mm; in Block~2, \Eshaft{}/\Etip{} reports median / 95th-percentile 3D tip error ($E_{\mathrm{tip}}$) in mm; in Block~3, it reports median shaft / median 3D tip error in mm. Asterisks (*) denote modeled 1-click oracle tip review ($8$\,s/tip + $2$\,s queue overhead).
+\end{tablenotes}
+\end{threeparttable}
+\end{table}

@@ -13,7 +13,7 @@ LATEX_OPTS=(
   --number-sections
   --citeproc
   --bibliography=references.bib
-  --csl=style/institute-of-physics-numeric.csl
+  --csl=style/elsevier-harvard.csl
   -H style/preamble.tex
   -V documentclass=article
   -V fontsize=11pt
@@ -54,8 +54,21 @@ pandoc manuscript.md \
   "${LATEX_OPTS[@]}" \
   -o needlefinder_2026_pmb.pdf
 
-echo "[4/4] Building self-contained HTML companion report (needlefinder_2026_pmb.html)..."
+echo "[4/4] Building self-contained HTML companion report (needlefinder_2026_media.html / needlefinder_2026_pmb.html)..."
 /usr/bin/python3 build_html.py
 
+cp -f needlefinder_2026_pmb.tex needlefinder_2026_media.tex
+cp -f needlefinder_2026_pmb.pdf needlefinder_2026_media.pdf
+cp -f needlefinder_2026_pmb.tex needlefinder_2026_pmb_v2.tex
+cp -f needlefinder_2026_pmb.pdf needlefinder_2026_pmb_v2.pdf
+
+if command -v gs >/dev/null 2>&1; then
+  gs -sDEVICE=pdfwrite -dNOPAUSE -dBATCH -dSAFER -dQUIET \
+     -dFirstPage=51 -dLastPage=58 \
+     -sOutputFile=needlefinder_2026_media_appendix.pdf \
+     needlefinder_2026_media.pdf || true
+fi
+
 echo "Build complete:"
-ls -lh "$SCRIPT_DIR/needlefinder_2026_pmb.tex" "$SCRIPT_DIR/needlefinder_2026_pmb.pdf" "$SCRIPT_DIR/needlefinder_2026_pmb.html"
+ls -lh "$SCRIPT_DIR/needlefinder_2026_media.tex" "$SCRIPT_DIR/needlefinder_2026_media.pdf" "$SCRIPT_DIR/needlefinder_2026_media_appendix.pdf" "$SCRIPT_DIR/needlefinder_2026_media.html" \
+       "$SCRIPT_DIR/needlefinder_2026_pmb.tex" "$SCRIPT_DIR/needlefinder_2026_pmb.pdf" "$SCRIPT_DIR/needlefinder_2026_pmb.html"
