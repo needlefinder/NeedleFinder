@@ -19,3 +19,7 @@ NeedleFinder 2026 + SynthBrachy3T + Tip-Aware (tau=50%),50,91.44,86.94,89.13,0.5
 NeedleFinder 2026 + SynthBrachy3T + Tip-Aware (tau=55%),55,91.25,87.55,89.36,0.587,0.469,2.269
 NeedleFinder 2026 + SynthBrachy3T + Tip-Aware (tau=60%),60,89.84,88.59,89.21,0.589,0.469,2.264
 NeedleFinder 2026 + SynthBrachy3T + Inner-OOF Cross-Fit (tau=50%),50,92.29,86.13,89.10,0.586,0.468,2.242
+Baseline 4: Dai 2020 Deeply-Supervised 3D Attention U-Net + Axial TV + Poly3,,93.60,42.20,58.17,0.573,0.433,3.767
+Baseline 5: Kostoulas 2025 3D ResUNet + Iterative Gap-Bridging & False-Part Pruning,,89.46,52.98,66.55,0.569,0.433,3.468
+Baseline 6: Aleong 2024 / Kim 2026 5-Model Uncertainty Ensemble + Weighted Poly3,,89.18,56.87,69.45,0.580,0.437,4.316
+NeedleFinder 2026 + SynthBrachy3T + Tip-Aware + Literature Fusion (tau=50%),50,91.44,87.41,89.38,0.584,0.469,2.258

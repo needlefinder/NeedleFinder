@@ -531,15 +531,18 @@ def make_fig3_raincloud_distributions(bench, inter):
     The human inter-observer reference is drawn from its summary statistics (IQR band
     and P95 line); no synthetic samples are generated.
     """
-    fig, axes = plt.subplots(1, 2, figsize=(W2, 64 * MM), constrained_layout=True)
+    fig, axes = plt.subplots(1, 2, figsize=(W2, 82 * MM), constrained_layout=True)
     raw_all = bench["per_patient_and_needle_error_distributions"]["all_1063"]
 
     methods_cfg = [
-        ("NeedleFinder 2026 + SynthBrachy3T + Tip-Aware (tau=50%)", "NeedleFinder 2026 + Synth", C["nf"]),
-        ("Unified NeedleFinder 2026 + IRGM + SyncTrack + Poly3 (tau=50%)", "NeedleFinder 2026 + IRGM", C["st2"]),
-        ("Baseline 3: Xiao 2026 IRGM + 3D Hough + Sync Inward Tracking + Poly3", "Xiao 2026 Sync-Track", C["b_xiao"]),
-        ("Baseline 2: Native-Resolution 3D ResUNet + clDice + Skeleton (Mask-Only)", "ResUNet + clDice + Skel.", C["b_nnunet"]),
+        ("NeedleFinder 2026 + SynthBrachy3T + Tip-Aware + Literature Fusion (tau=50%)", "NeedleFinder 2026 + Lit. Fusion", C["nf"]),
+        ("NeedleFinder 2026 + SynthBrachy3T + Tip-Aware (tau=50%)", "NeedleFinder 2026 + Synth", C["st2"]),
+        ("Baseline 6: Aleong 2024 / Kim 2026 5-Model Uncertainty Ensemble + Weighted Poly3", "Aleong 2024 / Kim 2026 Unc.", "#3B6EA5"),
+        ("Baseline 5: Kostoulas 2025 3D ResUNet + Iterative Gap-Bridging & False-Part Pruning", "Kostoulas 2025 Gap-Bridge", "#6A51A3"),
+        ("Baseline 4: Dai 2020 Deeply-Supervised 3D Attention U-Net + Axial TV + Poly3", "Dai 2020 Att. U-Net + TV", "#8C6D31"),
         ("Baseline 1: PMB 2019 Isotropic 1mm³ 3D U-Net + DBSCAN/Skeleton", "PMB 2019 3D U-Net", C["b_pmb19"]),
+        ("Baseline 2: Native-Resolution 3D ResUNet + clDice + Skeleton (Mask-Only)", "ResUNet + clDice + Skel.", C["b_nnunet"]),
+        ("Baseline 3: Xiao 2026 IRGM + 3D Hough + Sync Inward Tracking + Poly3", "Xiao 2026 (preprint)", C["b_xiao"]),
     ]
     # Human reference statistics from the Table 3 clean export (40/40 dual-traced scenes)
     t3_long = inter["table3_rows"]["2_human_inter_observer_long_subset"]["metrics"]
@@ -594,12 +597,12 @@ def make_fig4_pareto_and_fewshot(bench):
     ax1.plot(rs_nf, ps_nf, color=C["nf"], lw=1.5, zorder=4)
     ax1.scatter(rs_nf, ps_nf, s=22, facecolor="white", edgecolor=C["nf"], linewidth=1.1, zorder=5)
 
-    # Highlight tau=50% default operating point as star
+    # Highlight tau=50% default operating point and Literature Fusion operating point
     idx50 = taus.index(50)
-    ax1.scatter([rs_nf[idx50]], [ps_nf[idx50]], marker="*", s=85, facecolor=C["nf"], edgecolor="#000000", linewidth=0.75, zorder=7)
+    lit50 = c_all.get("NeedleFinder 2026 + SynthBrachy3T + Tip-Aware + Literature Fusion (tau=50%)", c_all["NeedleFinder 2026 + SynthBrachy3T + Tip-Aware (tau=50%)"])
+    ax1.scatter([lit50["hungarian_1to1_recall_pct"]], [lit50["precision_1to1_pct"]], marker="*", s=85, facecolor=C["nf"], edgecolor="#000000", linewidth=0.75, zorder=7)
 
     # Also plot NeedleFinder 2026 + IRGM + Poly3 (tau=50%, no SynthBrachy3T)
-    # IRGM + Poly3 operating point: reproducible recomputation from the current cached bundles
     up = c_all["Unified NeedleFinder 2026 + IRGM + SyncTrack + Poly3 (tau=50%)"]
     ax1.scatter([up["hungarian_1to1_recall_pct"]], [up["precision_1to1_pct"]], marker="o", s=34,
                 facecolor=C["nf"], edgecolor="#000000", linewidth=0.7, alpha=0.75, zorder=6)
@@ -615,16 +618,16 @@ def make_fig4_pareto_and_fewshot(bench):
             ax1.annotate(txt, xy=(rx, py), xytext=(dx, dy), textcoords="offset points",
                          fontsize=5.8, color=C["nf"])
 
-    ax1.annotate(f"NF 2026 + Synth + 1DTip ({c_all['NeedleFinder 2026 + SynthBrachy3T + Tip-Aware (tau=50%)']['f1_1to1_pct']:.1f}% F1)",
-                 xy=(rs_nf[idx50], ps_nf[idx50]),
-                 xytext=(-22, -4), textcoords="offset points", ha="right",
-                 fontsize=5.8, fontweight="bold", color=C["nf"],
+    ax1.annotate(f"NF 2026 + Lit. Fusion ({lit50['f1_1to1_pct']:.1f}% F1)",
+                 xy=(lit50["hungarian_1to1_recall_pct"], lit50["precision_1to1_pct"]),
+                 xytext=(-4, -18), textcoords="offset points", ha="right",
+                 fontsize=5.6, fontweight="bold", color=C["nf"],
                  arrowprops=dict(arrowstyle="->", color=C["nf"], lw=0.6))
 
     # Ablation & Baseline points
     other_pts = [
         ("Stage 0/1A: Pure Physics 3D CV + HybridNeedleNet", "Physics + HybridNet", C["st0"], "s", (-10, -10)),
-        ("Stage 1B: Multi-Head NeedleUNet3D + Tangent Tube Tracking", "NeedleUNet3D + tubes", C["st1"], "^", (-54, 4)),
+        ("Stage 1B: Multi-Head NeedleUNet3D + Tangent Tube Tracking", "NeedleUNet3D + tubes", C["st1"], "^", (-2, 8)),
         ("Stage 2A: Pure NeedleSliceMPNN (4-Layer Triplet GraphNet)", "Triplet MPNN only", C["st2"], "D", (-64, -6)),
         ("Baseline 1: PMB 2019 Isotropic 1mm³ 3D U-Net + DBSCAN/Skeleton", "PMB 2019 3D U-Net", C["b_pmb19"], "o", (-54, -7)),
     ]
@@ -634,13 +637,22 @@ def make_fig4_pareto_and_fewshot(bench):
         fc = "white" if mk == "v" else col
         ax1.scatter([rx], [py], marker=mk, s=28, facecolor=fc, edgecolor=col, linewidth=1.0, zorder=5)
         ax1.annotate(lbl, xy=(rx, py), xytext=(dx, dy), textcoords="offset points",
+                     ha="right" if "NeedleUNet3D" in lbl else "left",
                      fontsize=6.0, color=col, fontweight="bold" if "PMB" in lbl else "normal",
                      arrowprops=dict(arrowstyle="-", color="#999999", lw=0.4) if abs(dx) > 25 else None)
 
-    # Overflow annotation for low-precision mask-only baselines (clDice 24.5% Prec, Xiao 2026 39.2% Prec)
-    _bx = c_all["Baseline 3: Xiao 2026 IRGM + 3D Hough + Sync Inward Tracking + Poly3"]; _bc = c_all["Baseline 2: Native-Resolution 3D ResUNet + clDice + Skeleton (Mask-Only)"]
-    ax1.text(74.8, 60.0, f"▾ Mask-only trackers (<55% Prec.):\n   Xiao 2026: {_bx['hungarian_1to1_recall_pct']:.1f}% R, {_bx['precision_1to1_pct']:.1f}% P\n   clDice+Skel: {_bc['hungarian_1to1_recall_pct']:.1f}% R, {_bc['precision_1to1_pct']:.1f}% P",
-             fontsize=5.5, color="#4D4D4D", bbox=dict(boxstyle="round,pad=0.25", fc="#F7F7F7", ec="#CCCCCC", lw=0.5))
+    # Overflow annotation for mask-only baselines (<57% Prec)
+    _ba = c_all["Baseline 6: Aleong 2024 / Kim 2026 5-Model Uncertainty Ensemble + Weighted Poly3"]
+    _bk = c_all["Baseline 5: Kostoulas 2025 3D ResUNet + Iterative Gap-Bridging & False-Part Pruning"]
+    _bd = c_all["Baseline 4: Dai 2020 Deeply-Supervised 3D Attention U-Net + Axial TV + Poly3"]
+    _bx = c_all["Baseline 3: Xiao 2026 IRGM + 3D Hough + Sync Inward Tracking + Poly3"]
+    _bc = c_all["Baseline 2: Native-Resolution 3D ResUNet + clDice + Skeleton (Mask-Only)"]
+    ax1.text(74.5, 57.8,
+             f"▾ Native-grid mask trackers (<57% Prec.):\n"
+             f"  Aleong/Kim 26: {_ba['hungarian_1to1_recall_pct']:.1f}% R, {_ba['precision_1to1_pct']:.1f}% P ({_ba['f1_1to1_pct']:.1f}% F1)\n"
+             f"  Kostoulas 25 / Dai 20: {_bk['f1_1to1_pct']:.1f}% / {_bd['f1_1to1_pct']:.1f}% F1\n"
+             f"  Xiao 26 / clDice 21: {_bx['f1_1to1_pct']:.1f}% / {_bc['f1_1to1_pct']:.1f}% F1",
+             fontsize=4.9, color="#4D4D4D", bbox=dict(boxstyle="round,pad=0.20", fc="#F7F7F7", ec="#CCCCCC", lw=0.5))
 
     ax1.set_xlim(74, 96.5)
     ax1.set_ylim(57, 91.5)
