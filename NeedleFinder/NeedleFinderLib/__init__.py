@@ -96,7 +96,12 @@ from .RustCore import (
     rust_search_cone_current_dev,
 )
 from .SceneAndEvaluation import SceneAndEvaluationMixin
-from .TrackingAlgorithms import TrackingAlgorithmsMixin
+from .TrackingAlgorithms import (
+    TrackingAlgorithmsMixin,
+    make_ct_polarity_volume,
+    make_local_inverted_volume,
+    refine_tip_with_secondary_t2_tse,
+)
 
 __all__ = [
     "AssistedSegmentationMixin",
@@ -154,7 +159,9 @@ __all__ = [
     "lineno",
     "loggingInfos",
     "logprint",
+    "make_ct_polarity_volume",
     "make_fast_scalar_getter",
+    "make_local_inverted_volume",
     "msgbox",
     "norm",
     "normalized",
@@ -164,6 +171,7 @@ __all__ = [
     "profiling",
     "profprint",
     "ras_to_ijk",
+    "refine_tip_with_secondary_t2_tse",
     "rust_compute_3d_sym_response",
     "set_all_fiducial_text_scale",
     "set_fiducial_coords",

@@ -88,6 +88,135 @@ def _ensure_scalar_getter(img_or_getter):
   return make_fast_scalar_getter(img_or_getter)
 
 
+def make_ct_polarity_volume(vol_hu: np.ndarray, mode: str = "dual") -> np.ndarray:
+  """Convert a Hounsfield Unit CT volume into a synthetic T2W-like volume where tubular needles
+  appear as dark circular cores (0..175) inside a soft-tissue background (~175):
+  - 'bright': detects hyperdense metallic stylets / markers (> +55 HU relative to local tissue)
+  - 'dark'  : detects hypodense air-filled hollow plastic lumens (< -75 HU inside tissue)
+  - 'dual'  : fuses both bright stylet and dark air-lumen responses for mixed implants
+  """
+  from scipy.ndimage import uniform_filter
+
+  vol_f = vol_hu.astype(np.float32)
+  loc_mean = uniform_filter(vol_f, size=(1, 11, 11))
+  in_body = (loc_mean > -260.0) & (vol_f > -990.0)
+
+  bright_dev = np.clip(vol_f - np.maximum(35.0, loc_mean + 20.0), 0.0, 420.0) / 420.0
+  dark_dev = np.where(loc_mean > -220.0, np.clip((-75.0) - vol_f, 0.0, 650.0) / 650.0, 0.0)
+
+  if mode == "bright":
+    tube_ness = bright_dev
+  elif mode == "dark":
+    tube_ness = dark_dev
+  else:
+    tube_ness = np.maximum(bright_dev, 0.90 * dark_dev)
+
+  pseudo_t2 = np.where(in_body, 175.0 * (1.0 - 0.88 * tube_ness), 0.0)
+  return np.ascontiguousarray(pseudo_t2, dtype=np.float64)
+
+
+def make_local_inverted_volume(vol_arr: np.ndarray) -> np.ndarray:
+  """Invert bright tubular structures relative to local soft-tissue baseline inside the body mask
+  without turning external background air into bright tissue.
+  """
+  from scipy.ndimage import uniform_filter
+
+  vol_f = vol_arr.astype(np.float32)
+  pos_v = vol_f[vol_f > 5.0]
+  body_min = float(np.percentile(pos_v, 15)) * 0.45 if len(pos_v) > 100 else 5.0
+  loc_mean = uniform_filter(vol_f, size=(1, 11, 11))
+  in_body = (loc_mean > body_min) & (vol_f > body_min * 0.5)
+  inv = np.where(in_body, np.clip(2.0 * loc_mean - vol_f, 0.0, None), 0.0)
+  return np.ascontiguousarray(inv, dtype=np.float64)
+
+
+def refine_tip_with_secondary_t2_tse(pred_trajs, sec_vol, sec_sp_ras=None, sec_ijk2ras=None):
+  """Multi-Sequence Late Tip Fusion (`3D T2 SPACE + Co-Registered 2D AX/SAG TSE T2`):
+  For each predicted trajectory from primary 3D SPACE, samples the co-registered secondary
+  T2 TSE dark-core susceptibility ring contrast along the 3D trajectory axis near the cranial
+  tip `z in [z_top - 12 mm, z_top + 8 mm]`. When the catheter shaft has strong dark-core
+  contrast (`shaft_snr >= 1.8`) in the secondary T2 TSE scan and exhibits a sharp cranial
+  susceptibility drop-off within `[-4.0, +4.0] mm` of `z_top`, fuses the secondary T2 TSE
+  drop-off coordinate (`alpha = 0.30`) to refine 3D tip localization.
+  """
+  if sec_vol is None or sec_ijk2ras is None:
+    return list(pred_trajs), 0
+  sec_ras2ijk = np.linalg.inv(np.asarray(sec_ijk2ras, dtype=np.float64))
+  K_s, H_s, W_s = sec_vol.shape
+  refined = []
+  n_fused = 0
+  yy_p, xx_p = np.mgrid[-5:6, -5:6]
+  rr_p = np.hypot(xx_p, yy_p)
+  core_m = rr_p <= 1.8
+  ring_m = (rr_p >= 2.8) & (rr_p <= 5.2)
+
+  for t in pred_trajs:
+    tc = dict(t)
+    ras = np.asarray(tc["ras"] if "ras" in tc else tc["points"], dtype=np.float64).copy()
+    ras = ras[np.argsort(ras[:, 2])]
+    z_bot, z_top = float(ras[0, 2]), float(ras[-1, 2])
+    if z_top - z_bot < 10.0:
+      refined.append(tc)
+      continue
+
+    z_anchor = max(z_bot, z_top - 20.0)
+    sub = ras[ras[:, 2] >= z_anchor]
+    if len(sub) >= 2 and (sub[-1, 2] - sub[0, 2]) >= 3.0:
+      vx = float((sub[-1, 0] - sub[0, 0]) / (sub[-1, 2] - sub[0, 2]))
+      vy = float((sub[-1, 1] - sub[0, 1]) / (sub[-1, 2] - sub[0, 2]))
+    else:
+      vx = float((ras[-1, 0] - ras[0, 0]) / max(1.0, z_top - z_bot))
+      vy = float((ras[-1, 1] - ras[0, 1]) / max(1.0, z_top - z_bot))
+
+    dz_grid = np.linspace(-12.0, 8.0, 41)
+    z_probe = z_top + dz_grid
+    x_probe = np.where(z_probe <= z_top, np.interp(z_probe, ras[:, 2], ras[:, 0]), ras[-1, 0] + vx * (z_probe - z_top))
+    y_probe = np.where(z_probe <= z_top, np.interp(z_probe, ras[:, 2], ras[:, 1]), ras[-1, 1] + vy * (z_probe - z_top))
+    ijks = (sec_ras2ijk @ np.column_stack([x_probe, y_probe, z_probe, np.ones_like(z_probe)]).T).T
+
+    snr_prof = np.zeros(len(dz_grid), dtype=np.float32)
+    valid_mask = np.zeros(len(dz_grid), dtype=bool)
+    for idx_p, row in enumerate(ijks):
+      ic, jc, kc = int(round(row[0])), int(round(row[1])), int(round(row[2]))
+      if 5 <= ic < W_s - 5 and 5 <= jc < H_s - 5 and 0 <= kc < K_s:
+        patch = sec_vol[kc, jc - 5:jc + 6, ic - 5:ic + 6].astype(np.float32)
+        core = float(np.min(patch[core_m]))
+        ring_vals = patch[ring_m]
+        med_r = float(np.median(ring_vals))
+        mad_r = float(np.median(np.abs(ring_vals - med_r))) * 1.4826 + 1e-3
+        snr_prof[idx_p] = max(0.0, (med_r - core) / mad_r)
+        valid_mask[idx_p] = True
+
+    shaft_mask = (dz_grid <= -3.0) & valid_mask
+    if np.sum(shaft_mask) >= 4 and valid_mask[-5:].all():
+      shaft_snr = float(np.mean(snr_prof[shaft_mask]))
+      distal_snr = float(np.mean(snr_prof[dz_grid >= 4.0]))
+      if shaft_snr >= 1.8 and distal_snr < 0.55 * shaft_snr:
+        thresh_snr = 0.48 * shaft_snr + 0.52 * distal_snr
+        sup_indices = np.where((snr_prof >= thresh_snr) & valid_mask)[0]
+        if len(sup_indices) > 0:
+          dz_tse = float(dz_grid[int(sup_indices[-1])])
+          if abs(dz_tse) <= 4.0:
+            dz_apply = 0.30 * dz_tse
+            z_new = z_top + dz_apply
+            if z_new > z_top:
+              pt_new = np.array([[ras[-1, 0] + vx * dz_apply, ras[-1, 1] + vy * dz_apply, z_new]], dtype=np.float64)
+              ras = np.vstack([ras, pt_new])
+            elif z_new < z_top and z_new > z_bot + 10.0:
+              x_n = float(np.interp(z_new, ras[:, 2], ras[:, 0]))
+              y_n = float(np.interp(z_new, ras[:, 2], ras[:, 1]))
+              ras = ras[ras[:, 2] < z_new]
+              ras = np.vstack([ras, np.array([[x_n, y_n, z_new]], dtype=np.float64)])
+            tc["ras"] = ras
+            tc["points"] = ras
+            tc["length_mm"] = float(np.sum(np.linalg.norm(np.diff(ras, axis=0), axis=1)))
+            tc["z_span_tracked"] = float(abs(ras[-1, 2] - ras[0, 2]))
+            n_fused += 1
+    refined.append(tc)
+
+  return refined, n_fused
+
+
 def _get_ijk_to_ras_16():
   """Return the 16-element row-major IJK-to-RAS matrix of the active volume node."""
   try:
@@ -2986,7 +3115,7 @@ class TrackingAlgorithmsMixin:
     K, J, I = vol_arr.shape
     if K <= 45:
       return 0
-    c_roi = vol_arr[:, int(0.30 * J):int(0.70 * J), int(0.30 * I):int(0.30 * I)]
+    c_roi = vol_arr[:, int(0.30 * J):int(0.70 * J), int(0.30 * I):int(0.70 * I)]
     p50 = gaussian_filter1d(np.percentile(c_roi, 50, axis=(1, 2)).astype(np.float64), sigma=max(1.0, 2.5 / max(0.5, float(sp_k))))
     k_lo, k_hi = int(0.25 * K), max(int(0.25 * K) + 2, int(0.62 * K))
     k_peak = k_lo + int(np.argmax(p50[k_lo:k_hi]))
@@ -3100,6 +3229,22 @@ class TrackingAlgorithmsMixin:
     widget.resetDetectionButton.setEnabled(1)
     return model_node
 
+  def refineTipsWithSecondaryVolume(self, pred_trajs, secondaryVolumeNode):
+    """Refine cranial 3D tip positions using a co-registered secondary T2 TSE volume node."""
+    if secondaryVolumeNode is None or secondaryVolumeNode.GetImageData() is None:
+      return list(pred_trajs), 0
+    sec_vol, _ = get_volume_f64_buffer(secondaryVolumeNode.GetImageData())
+    if sec_vol is None or sec_vol.ndim != 3:
+      return list(pred_trajs), 0
+    sec_sp = [float(x) for x in secondaryVolumeNode.GetSpacing()]
+    vtk_m = vtk.vtkMatrix4x4()
+    secondaryVolumeNode.GetIJKToRASMatrix(vtk_m)
+    sec_ijk2ras = np.array(
+        [[vtk_m.GetElement(r, c) for c in range(4)] for r in range(4)],
+        dtype=np.float64,
+    )
+    return refine_tip_with_secondary_t2_tse(pred_trajs, sec_vol, sec_sp, sec_ijk2ras)
+
   def autoDetectAllNeedles(
       self,
       volumeNode=None,
@@ -3107,6 +3252,7 @@ class TrackingAlgorithmsMixin:
       minConfidence: float = 35.0,
       script: bool = False,
       renderNeedles: bool = True,
+      secondaryVolumeNode=None,
   ):
     """Automatically detect and segment all needles in the 3D volume without manual seed clicks.
 
@@ -3150,21 +3296,43 @@ class TrackingAlgorithmsMixin:
       return []
 
     invert = bool(widget and hasattr(widget, "invertedContrast") and widget.invertedContrast.isChecked())
-    if invert:
-      v_max = float(np.max(vol_arr))
-      vol_raw = np.ascontiguousarray(v_max - vol_arr, dtype=np.float64)
+    k_step_p5 = max(1, vol_arr.shape[0] // 32)
+    is_ct_hu = float(np.percentile(vol_arr[::k_step_p5, ::4, ::4], 5)) < -400.0
+    if is_ct_hu:
+      vol_raw = make_ct_polarity_volume(vol_arr, mode="dual")
+    elif invert:
+      vol_raw = make_local_inverted_volume(vol_arr)
     else:
       vol_raw = vol_arr
 
     sp_i, sp_j, sp_k = [float(x) for x in volumeNode.GetSpacing()]
-    K, J, I = vol_raw.shape
-
     vtk_mat = vtk.vtkMatrix4x4()
     volumeNode.GetIJKToRASMatrix(vtk_mat)
     ijk_to_ras_mat = np.array(
         [[vtk_mat.GetElement(r, c) for c in range(4)] for r in range(4)],
         dtype=np.float64,
     )
+
+    # Zero-risk Sagittal/Coronal axis canonicalization: only triggers when the Superior-Inferior (RAS Z)
+    # axis is not array axis 0 (IJK axis 2 = K). On all axial volumes, z_ijk_axis == 2 (0.00% change).
+    col_norms = np.maximum(1e-6, np.linalg.norm(ijk_to_ras_mat[:3, :3], axis=0))
+    z_ijk_axis = int(np.argmax(np.abs(ijk_to_ras_mat[2, :3]) / col_norms))
+    if z_ijk_axis != 2:
+      if z_ijk_axis == 1:
+        vol_raw = np.ascontiguousarray(np.swapaxes(vol_raw, 0, 1), dtype=np.float64)
+        sp_j, sp_k = sp_k, sp_j
+        ijk_to_ras_mat = ijk_to_ras_mat[:, [0, 2, 1, 3]].copy()
+      else:
+        vol_raw = np.ascontiguousarray(np.swapaxes(vol_raw, 0, 2), dtype=np.float64)
+        sp_i, sp_k = sp_k, sp_i
+        ijk_to_ras_mat = ijk_to_ras_mat[:, [2, 1, 0, 3]].copy()
+      if float(ijk_to_ras_mat[2, 2]) < 0.0:
+        K_perm = vol_raw.shape[0]
+        vol_raw = np.ascontiguousarray(vol_raw[::-1], dtype=np.float64)
+        ijk_to_ras_mat[:3, 3] = ijk_to_ras_mat[:3, 3] + ijk_to_ras_mat[:3, 2] * float(K_perm - 1)
+        ijk_to_ras_mat[:3, 2] = -ijk_to_ras_mat[:3, 2]
+
+    K, J, I = vol_raw.shape
     rot_mat = ijk_to_ras_mat[:3, :3]
     trans_vec = ijk_to_ras_mat[:3, 3]
     ras_to_ijk = np.linalg.inv(ijk_to_ras_mat)
@@ -4355,6 +4523,10 @@ class TrackingAlgorithmsMixin:
       all_bases = np.array([t["base_xy"] for t in combined]) if combined else np.zeros((0, 2))
       all_slopes = np.array([t["slope"] for t in combined]) if combined else np.zeros((0, 2))
       all_scores = np.array([t["raw_score"] for t in combined]) if combined else np.zeros(0)
+      nn_global_active = False
+      if nn_preds is not None:
+        pm_g = nn_preds["p_mask"]
+        nn_global_active = float(np.percentile(pm_g[::max(1, pm_g.shape[0] // 16), ::2, ::2], 99.9)) >= 0.35
 
       filtered = []
       for idx_t, t in enumerate(combined):
@@ -4433,7 +4605,7 @@ class TrackingAlgorithmsMixin:
             mean_pm_v = float(np.mean(pm_vals))
             p75_pm_v = float(np.percentile(pm_vals, 75))
             mean_pp_v = float(np.mean(pp_vals))
-            if mean_pm_v < 0.14 and p75_pm_v < 0.22 and mean_pp_v < 0.12 and conf < 78.0:
+            if nn_global_active and mean_pm_v < 0.14 and p75_pm_v < 0.22 and mean_pp_v < 0.12 and conf < 78.0:
               continue
             if mean_pm_v >= 0.58 and mean_pp_v >= 0.44 and conf >= 38.0:
               conf = max(conf, min(99.5, 58.0 + 38.0 * mean_pm_v))
@@ -4474,6 +4646,12 @@ class TrackingAlgorithmsMixin:
                             "confidence": float(t.get("confidence", 0.0)), "rank": r_i + 1, "length_mm": float(t.get("length_mm", 0.0))}
                            for r_i, t in enumerate(sorted(rejected_fb, key=lambda t: -float(t.get("confidence", 0.0))))],
           }
+
+      if secondaryVolumeNode is not None and filtered:
+        try:
+          filtered, _ = self.refineTipsWithSecondaryVolume(filtered, secondaryVolumeNode)
+        except Exception:
+          pass
 
       if renderNeedles and widget is not None:
         update_progress(88, f"Stage 6/6: Rendering {len(filtered)} detected needles in 3D scene...")

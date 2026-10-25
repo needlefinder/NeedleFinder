@@ -1,0 +1,11 @@
+-r requirements-test.lock
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch==2.1.0+cpu
+filelock==3.8.0
+fsspec==2024.3.1
+Jinja2==3.1.2
+MarkupSafe==2.1.1
+mpmath==1.3.0
+networkx==3.3
+sympy==1.12
+typing_extensions==4.11.0

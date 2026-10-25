@@ -1,0 +1,15 @@
+[run]
+branch = True
+source =
+    NeedleFinder/NeedleFinderLib
+    reproducibility
+    tools
+omit =
+    */DeflectionModelData.py
+    */HybridNeedleNetWeights.py
+[report]
+show_missing = True
+skip_empty = True
+precision = 2
+[json]
+output = coverage.json

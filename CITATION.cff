@@ -1,0 +1,9 @@
+cff-version: 1.2.0
+message: "Cite the version-specific archived release used in your work. This checkout is a release candidate; no paper-release DOI has been minted."
+title: "NeedleFinder"
+type: software
+authors:
+  - family-names: Pernelle
+    given-names: Guillaume
+repository-code: "https://github.com/needlefinder/NeedleFinder"
+license: BSD-3-Clause

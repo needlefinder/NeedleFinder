@@ -1,0 +1,38 @@
+name: Check paper release candidate
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing annotated paper candidate tag to validate
+        required: true
+        type: string
+permissions:
+  contents: read
+jobs:
+  validate-tag:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag }}
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.10.6'
+      - name: Require an annotated tag
+        env:
+          RELEASE_TAG: ${{ inputs.tag }}
+        run: test "$(git cat-file -t "refs/tags/$RELEASE_TAG")" = tag
+      - run: python -m pip install -r reproducibility/requirements-parity.lock
+      - run: python tools/release.py verify
+      - run: python tools/validate.py fast
+      - run: python tools/validate.py parity
+      - run: python tools/validate.py coverage
+      - run: python tools/release.py manifest --output dist/candidate-manifest.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: candidate-manifest
+          path: dist/candidate-manifest.json
+      # Clinical/Slicer/full-paper evidence must be provided separately before
+      # tools/release.py check can permit final publication. This workflow does
+      # not label an automated smoke-test run as a paper-validated release.

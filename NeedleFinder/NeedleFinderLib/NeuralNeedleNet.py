@@ -217,34 +217,59 @@ def run_nn_3d_segmentation(vol, sp_i, sp_j, sp_k, i0, i1, j0, j1, k0, K, resp_su
 
     X = np.stack([ch0, ch1, ch2, ch3, ch4, ch5], axis=0)
 
-    pad_k = (2 - (K_sub % 2)) % 2
-    pad_h = (8 - (H % 8)) % 8
-    pad_w = (8 - (W % 8)) % 8
-    if pad_k > 0 or pad_h > 0 or pad_w > 0:
-        X = np.pad(X, ((0, 0), (0, pad_k), (0, pad_h), (0, pad_w)), mode="edge")
+    def _infer_unet_tensor(X_in, K_target):
+        pad_k = (2 - (K_target % 2)) % 2
+        pad_h = (8 - (H % 8)) % 8
+        pad_w = (8 - (W % 8)) % 8
+        if pad_k > 0 or pad_h > 0 or pad_w > 0:
+            X_p = np.pad(X_in, ((0, 0), (0, pad_k), (0, pad_h), (0, pad_w)), mode="edge")
+        else:
+            X_p = X_in
+        K_pad = X_p.shape[1]
+        if K_pad <= 72:
+            out_raw = sess.run(None, {"input": X_p[None, ...]})[0][0]
+        else:
+            out_raw = np.zeros((5, K_pad, X_p.shape[2], X_p.shape[3]), dtype=np.float32)
+            w_acc = np.zeros((1, K_pad, 1, 1), dtype=np.float32)
+            chunk = 64
+            stride = 52
+            for k_s in range(0, K_pad, stride):
+                k_e = min(K_pad, k_s + chunk)
+                if k_e - k_s < 8:
+                    k_s = max(0, k_e - chunk)
+                sub_x = X_p[:, k_s:k_e]
+                sub_o = sess.run(None, {"input": sub_x[None, ...]})[0][0]
+                out_raw[:, k_s:k_e] += sub_o
+                w_acc[:, k_s:k_e] += 1.0
+                if k_e == K_pad:
+                    break
+            out_raw /= np.maximum(1.0, w_acc)
+        return out_raw[:, :K_target, :H, :W]
 
-    K_pad = X.shape[1]
-    if K_pad <= 72:
-        out = sess.run(None, {"input": X[None, ...]})[0][0]
-    else:
-        out = np.zeros((5, K_pad, X.shape[2], X.shape[3]), dtype=np.float32)
-        w_acc = np.zeros((1, K_pad, 1, 1), dtype=np.float32)
-        chunk = 64
-        stride = 52
-        for k_s in range(0, K_pad, stride):
-            k_e = min(K_pad, k_s + chunk)
-            if k_e - k_s < 8:
-                k_s = max(0, k_e - chunk)
-            sub_x = X[:, k_s:k_e]
-            sub_o = sess.run(None, {"input": sub_x[None, ...]})[0][0]
-            out[:, k_s:k_e] += sub_o
-            w_acc[:, k_s:k_e] += 1.0
-            if k_e == K_pad:
-                break
-        out /= np.maximum(1.0, w_acc)
-
-    out = out[:, :K_sub, :H, :W]
+    out = _infer_unet_tensor(X, K_sub)
     p_mask_w = 1.0 / (1.0 + np.exp(-np.clip(out[0], -20.0, 20.0)))
+
+    # Zero-shot thick-slice canonical Z-upsampling guard: only triggers on out-of-distribution
+    # thick-slice scans (sp_k_eff > 2.2 mm with weak native U-Net response p99.9 < 0.35).
+    if sp_k_eff > 2.2 and float(np.percentile(p_mask_w, 99.9)) < 0.35:
+        K_up = K_sub * 2
+        sp_k_up = sp_k_eff * 0.5
+        ch0_up = _upsample_2x_k(ch0, K_up)
+        ch1_up = _upsample_2x_k(ch1, K_up)
+        ch2_up = _upsample_2x_k(ch2, K_up)
+        ch3_up = _upsample_2x_k(ch3, K_up)
+        z_top_up = min(1.0, (K_up * sp_k_up) / 120.0)
+        ks_norm_up = np.linspace(0.0, z_top_up, K_up, dtype=np.float32)[:, None, None]
+        ch4_up = np.broadcast_to(ks_norm_up, (K_up, H, W)).copy()
+        ch5_up = np.broadcast_to(r_mm[None, :, :], (K_up, H, W)).copy()
+        X_up = np.stack([ch0_up, ch1_up, ch2_up, ch3_up, ch4_up, ch5_up], axis=0)
+        out_up_full = _infer_unet_tensor(X_up, K_up)
+        out_up = 0.5 * (out_up_full[:, 0::2, :, :] + out_up_full[:, 1::2, :, :])
+        p_mask_up = 1.0 / (1.0 + np.exp(-np.clip(out_up[0], -20.0, 20.0)))
+        use_up = p_mask_up > p_mask_w
+        out = np.where(use_up[None, ...], out_up, out)
+        p_mask_w = np.maximum(p_mask_w, p_mask_up)
+
     p_peak_w = 1.0 / (1.0 + np.exp(-np.clip(out[1], -20.0, 20.0)))
     vx_w = np.tanh(out[2]) * 0.75
     vy_w = np.tanh(out[3]) * 0.75
@@ -779,19 +804,19 @@ def _forward_tip_bgt_numpy(x_26, adj_feat_8, adj_mask, W):
 
 
 def _conv1d_same_np(x, w, b, dilation=1):
-    """
-    Pure-NumPy 1D convolution with kernel_size=3 and padding=dilation.
-    x: [C_in, L], w: [C_out, C_in, 3], b: [C_out] -> returns [C_out, L].
-    """
-    C_out, C_in, K = w.shape
-    L = x.shape[1]
-    pad = dilation
-    x_pad = np.pad(x, ((0, 0), (pad, pad)), mode="constant")
-    out = (
-        np.einsum("oi,il->ol", w[:, :, 0], x_pad[:, :L])
-        + np.einsum("oi,il->ol", w[:, :, 1], x_pad[:, pad:pad + L])
-        + np.einsum("oi,il->ol", w[:, :, 2], x_pad[:, 2 * pad:2 * pad + L])
-    )
+    """Same-padded 1D cross-correlation for odd kernels, matching torch Conv1d."""
+    c_out, c_in, kernel = w.shape
+    if kernel < 1 or kernel % 2 == 0 or dilation < 1:
+        raise ValueError("Expected an odd kernel and positive dilation")
+    if x.ndim != 2 or x.shape[0] != c_in:
+        raise ValueError("Input channels do not match convolution weights")
+    length = x.shape[1]
+    pad = (kernel // 2) * dilation
+    padded = np.pad(x, ((0, 0), (pad, pad)), mode="constant")
+    out = np.zeros((c_out, length), dtype=np.result_type(x, w, b))
+    for k in range(kernel):
+        offset = k * dilation
+        out += np.einsum("oi,il->ol", w[:, :, k], padded[:, offset:offset + length])
     return out + b[:, None]
 
 
@@ -1768,7 +1793,8 @@ def run_mpnn_and_graph_transformer(
         probs = probs_base
         dz_pred_net = np.zeros(M, dtype=np.float32)
 
-    is_clinical_mri = (max((pr["mean_pm"] for pr in prof_meta), default=0.0) >= 0.15)
+    max_mean_pm = max((pr["mean_pm"] for pr in prof_meta), default=0.0)
+    is_clinical_mri = (max_mean_pm >= 0.35)
     conf_arr = np.zeros(M, dtype=np.float64)
     for i, p in enumerate(pool):
         t = p["traj"]
@@ -1776,8 +1802,14 @@ def run_mpnn_and_graph_transformer(
         p_1to1 = float(probs[i, 1])
         p_long = float(probs[i, 2])
         if not is_clinical_mri:
-            gt_conf = 100.0 * (0.45 * p_rec + 0.55 * p_long)
-            blended_conf = 0.65 * float(t.get("confidence", 65.0)) + 0.35 * gt_conf
+            gt_conf_ood = 100.0 * (0.45 * p_rec + 0.55 * p_long)
+            phys_blend = 0.65 * float(t.get("confidence", 65.0)) + 0.35 * gt_conf_ood
+            if max_mean_pm <= 0.15:
+                blended_conf = phys_blend
+            else:
+                w_in = (max_mean_pm - 0.15) / 0.20
+                gt_conf_in = 100.0 * (0.45 * p_rec + 0.55 * p_1to1)
+                blended_conf = (1.0 - w_in) * phys_blend + w_in * gt_conf_in
         else:
             blended_conf = 100.0 * (0.45 * p_rec + 0.55 * p_1to1)
             # Upgrade B: Dai et al. 2020 Axial TV Continuity & Aleong/Kim Uncertainty Adjustment

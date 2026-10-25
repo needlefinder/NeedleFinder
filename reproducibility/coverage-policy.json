@@ -1,0 +1,7 @@
+{
+  "description": "Initial critical-module floors; measured CI reports include statements and branches. Increase floors as tests expand. These are targets, not claimed measured coverage.",
+  "critical_modules": {
+    "NeedleFinder/NeedleFinderLib/EvaluationMetrics.py": 90,
+    "NeedleFinder/NeedleFinderLib/DatasetSplits.py": 90
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "release_status": "candidate-not-paper-validated",
+  "outer_folds": 5,
+  "inner_folds": 5,
+  "outer_assignment": "patient index modulo 5, preserving archived case order",
+  "stage1_seed": "1000 + 10 * outer_fold + inner_fold",
+  "stage2_seed": "42 + outer_fold",
+  "metric_bootstrap_seed": 42,
+  "matching_threshold_mm": 3.5,
+  "onnx_parity_atol": 0.00002,
+  "onnx_parity_rtol": 0.0001,
+  "clinical_baseline": "external independently approved JSON, required by NEEDLEFINDER_CLINICAL_BASELINE",
+  "data": "Access-controlled clinical MRI; configure NEEDLEFINDER_DATA_DIR and NEEDLEFINDER_TEST_DATA. Image files are not part of this release scaffold.",
+  "known_change": "Corrected production NumPy tip-localizer convolution from hard-coded three taps to the trained five-tap architecture; regenerated ONNX from existing weights. Clinical and paper validation required.",
+  "paper_reproduction_requirement": "Rerun the declared paper configuration from pinned data/checkpoints and compare every claimed result within declared tolerances. Archived summary consistency alone is insufficient."
+}

@@ -1,0 +1,12 @@
+__pycache__/
+*.py[cod]
+.venv*/
+.pytest_cache/
+.coverage*
+!.coveragerc
+coverage.json
+coverage.xml
+htmlcov/
+build/
+dist/
+reproducibility/runs/
