@@ -76,4 +76,3 @@ class Dedicated1DTipLocalizer(nn.Module):
         dz_res = self.reg_head(torch.cat([h_center, h_mean], dim=-1)).squeeze(-1) * 10.0
         dz_pred_mm = 0.75 * dz_soft + 0.25 * dz_res
         return dz_pred_mm, step_logits
-

@@ -271,5 +271,3 @@ def evaluate_method_unified(preds_per_case, gts_per_case, aux_short_gts_per_case
         "bootstrap_95ci_1000_patients": bootstrap_ci95,
     }
     return summary, per_patient
-
-
