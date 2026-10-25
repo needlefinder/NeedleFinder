@@ -35,8 +35,16 @@ def main():
     if a.suite=='coverage' and not failed:
         failed |= subprocess.run([sys.executable,'-m','coverage','json'],cwd=ROOT).returncode!=0
         if not failed:failed |= subprocess.run([sys.executable,'tools/check_coverage.py'],cwd=ROOT).returncode!=0
+    external_inputs={}
+    if a.suite=='clinical':
+        baseline=Path(os.environ.get('NEEDLEFINDER_CLINICAL_BASELINE',''))
+        if baseline.is_file():external_inputs['baseline_sha256']=sha256(baseline)
+        data=Path(os.environ.get('NEEDLEFINDER_TEST_DATA',''))
+        if os.environ.get('NEEDLEFINDER_TEST_DATA') and data.is_dir():
+            external_inputs['data_files']={str(p.relative_to(data)):sha256(p) for p in sorted(data.rglob('*'))
+                                          if p.is_file() and p.suffix.lower() in {'.nrrd','.vtk','.acsv'}}
     receipt={'suite':a.suite,'status':'failed' if failed else 'passed','source_fingerprint':before,
-             'tests':tests,'skipped':skipped,'command':cmd,'python':sys.version,
+             'tests':tests,'skipped':skipped,'command':cmd,'python':sys.version,'external_inputs':external_inputs,
              'report':report.name,'report_sha256':sha256(report) if report.exists() else None}
     (a.output/f'{a.suite}.json').write_text(json.dumps(receipt,indent=2)+'\n')
     return int(failed)

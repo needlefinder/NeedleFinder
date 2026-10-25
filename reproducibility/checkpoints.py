@@ -13,7 +13,7 @@ def checkpoint_sha256(path):
 
 def write_checkpoint_record(path, split, patient_ids, seed):
     record={'training_indices':split['inner_train'],'selection_indices':split['inner_val'],
-            'calibration_indices':split['inner_val'],'patient_ids':list(patient_ids),'seed':seed,
+            'calibration':'not performed by this Stage 1 trainer','patient_ids':list(patient_ids),'seed':seed,
             'checkpoint_sha256':checkpoint_sha256(path)}
     Path(str(path)+'.provenance.json').write_text(json.dumps(record,indent=2)+'\n')
     return record
@@ -26,7 +26,7 @@ def read_checkpoint_record(path, split, patient_ids, seed):
     record=json.loads(sidecar.read_text())
     if record.get('patient_ids')!=list(patient_ids) or record.get('seed')!=seed:
         raise ValueError('Checkpoint patient ordering or seed differs from this run')
-    for field,part in [('training_indices','inner_train'),('selection_indices','inner_val'),('calibration_indices','inner_val')]:
+    for field,part in [('training_indices','inner_train'),('selection_indices','inner_val')]:
         if record.get(field)!=split[part]:raise ValueError(f'Checkpoint split mismatch: {field}')
     if record.get('checkpoint_sha256')!=checkpoint_sha256(path):raise ValueError('Checkpoint checksum mismatch')
     return record
