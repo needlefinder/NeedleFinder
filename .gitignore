@@ -10,3 +10,6 @@ htmlcov/
 build/
 dist/
 reproducibility/runs/
+vault/paper/rendered/
+vault/paper/_manuscript_html_tmp.md
+vault/paper/_style_html_tmp.html
