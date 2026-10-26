@@ -15,8 +15,6 @@ def resolve_path(value):
         ('/mnt/SSD/github/needlefinder/vault/paper/benchmarks_clean', ROOT / 'benchmarks/clean'),
         ('/home/guillaume/github/needlefinder/vault/paper/benchmarks_rerun', ROOT / 'benchmarks/rerun'),
         ('/mnt/SSD/github/needlefinder/vault/paper/benchmarks_rerun', ROOT / 'benchmarks/rerun'),
-        ('/home/guillaume/github/needlefinder/vault/paper/benchmarks', ROOT / 'benchmarks/legacy'),
-        ('/mnt/SSD/github/needlefinder/vault/paper/benchmarks', ROOT / 'benchmarks/legacy'),
         ('/home/guillaume/github/needlefinder/vault/sources', ROOT / 'reproducibility/results'),
         ('/mnt/SSD/github/needlefinder/vault/sources', ROOT / 'reproducibility/results'),
         ('/home/guillaume/github/needlefinder/vault/reports/figures/data', ROOT / 'reproducibility/results/figures_data'),

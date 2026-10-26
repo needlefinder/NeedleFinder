@@ -1,31 +1,22 @@
-# Reproducing and releasing NeedleFinder
+# Reproducing and Verifying NeedleFinder (`paper-media-2026-v1`)
 
-The core repository owns the algorithms. A separate paper companion pins a core
-commit through a Git submodule; it contains no copied implementation. The local
-checkout has two remotes: `origin` is the public extension and `private` is the
-2026 working repository. Push to a named remote explicitly. Do not assume they
-contain the same source or that a paper candidate belongs on the public default branch.
+This directory contains pinned validation environments, frozen 54-patient cross-validation
+splits (`splits-54.json`), artifact SHA-256 locks (`artifacts.lock.json`), and
+archived machine-readable benchmark results (`results/`) for the 2026 NeedleFinder
+manuscript.
 
-## Release status (`paper-media-2026-v1`)
+## Reproducibility Tiers
 
-This release fixes a production tip-localizer bug in the Slicer NumPy fallback
-(`NeuralNeedleNet._conv1d_same_np`), which previously used only three taps of
-the trained five-tap kernels. The corrected NumPy implementation and exported
-`dedicated_1d_tip_localizer.onnx` now match the five-tap PyTorch
-`Dedicated1DTipLocalizer` training architecture within `2e-5` absolute tolerance.
-Full GPU reproduction on `edelweiss` (`tools/validate.py paper_reproduction`)
-confirmed that all 54-case nested CV paper benchmarks used the five-tap PyTorch
-`Dedicated1DTipLocalizer` directly and reproduce every reported manuscript metric
-identically (`89.13%` F1, `89.38%` F1 with literature fusion). The previous
-untracked ONNX export was retained locally under
-`reproducibility/runs/original-models/` for comparison.
+Reproduction and verification are organized into three explicit tiers according to
+hardware and clinical data requirements:
 
-## Environment and quick checks
+| Tier | Command(s) | Requirements | What It Verifies |
+| --- | --- | --- | --- |
+| **1. Fast CPU & Archive Verification** (~15 s) | `tools/release.py verify`<br>`tools/validate.py fast`<br>`tools/validate.py parity`<br>`tools/validate.py coverage`<br>`tools/verify_paper_results.py`<br>`tools/verify_archived_oof.py` | Python 3.10+, CPU PyTorch (`requirements-parity.lock`), C++17 or Rust toolchain; **no private clinical images required** | All 30 locked artifact SHA-256 digests; geometry, spline, Hungarian $1\text{:}1$ matching, and split-isolation unit tests; synthetic 3D volume + native C++/Rust tracking; PyTorch/NumPy/ONNX parity (`< 2e-5`); and re-evaluation of the archived 54-case out-of-fold (OOF) trajectories in `reproducibility/results/`. |
+| **2. Live GPU Checkpoint & Inference Reproduction** (~90 s) | `tools/validate.py clinical`<br>`tests/slicer_smoke.py`<br>`tools/validate.py paper_reproduction`<br>`tools/release.py check` | 4-case clinical regression set (`NEEDLEFINDER_TEST_DATA`), 3D Slicer 5.12+, and CUDA GPU with the 25 pinned Stage 1 checkpoints (`NEEDLEFINDER_WORK_DIR`) | 4-case clinical MRI regression (`67` reference trajectories); headless 3D Slicer MRML/VTK smoke test; SHA-256 & split-provenance verification of all 25 nested $5 \times 5$ Stage 1 3D U-Net checkpoints against `splits-54.json`; live GPU Stage 1 inference + 4-view TTA parity; and full 54-case live GPU Stage 2 + 5-tap 1D-tip inference, peer-reviewed baselines 1–6, Wilcoxon tests, Table 3, MSD specificity, and Experiments 1–4. |
+| **3. End-to-End Training from Scratch** (multi-GPU hours) | `benchmarks/clean/prepare_clean_dataset.py` $\rightarrow$ `benchmarks/clean/run_exp4_4d_insertion_and_ct.py` | Full clinical MRI/CT cohort (`NEEDLEFINDER_DATA_DIR`) and CUDA GPU workstation | Full dataset preprocessing, 51-volume self-supervised 3D U-Net pre-training, strictly nested $5 \times 5$ Stage 1 3D U-Net training (25 models), Stage 2A/2B + 1D tip localizer training, baseline training, and all clinical translation experiments. |
 
-The test environment targets CPython 3.10.6, with exact dependency versions in
-`requirements-test.lock` and `requirements-parity.lock`. The latter adds CPU
-PyTorch. These locks describe the candidate validation environment, not a claim
-about the original GPU training environment. They pin versions but not wheel hashes.
+## Quick Start (Tier 1 — CPU & Archive Verification)
 
 ```bash
 python3.10 -m venv .venv
@@ -34,61 +25,43 @@ python3.10 -m venv .venv
 .venv/bin/python tools/validate.py fast
 .venv/bin/python tools/validate.py parity
 .venv/bin/python tools/validate.py coverage
-.venv/bin/python tools/validate.py clinical
-.venv/bin/python tools/validate.py paper_reproduction
 .venv/bin/python tools/verify_paper_results.py \
   --output reproducibility/runs/archived-results.csv
+.venv/bin/python tools/verify_archived_oof.py
 ```
 
-`pytest.ini` confines discovery to real tests; historical research scripts named
-`test_*` are not accidentally executed. Fast tests need a C++17 compiler or Rust
-for the synthetic native-tracking integration. No clinical files or network are
-required after dependencies are installed. Slicer GUI APIs are doubled in pytest;
-the separate Slicer test uses real MRML/VTK and must run in its own process.
+- `pytest.ini` restricts test discovery to `tests/`.
+- `coverage` enforces $\ge 90\%$ statement + branch coverage floors on `EvaluationMetrics.py` (`98.41%`) and `DatasetSplits.py` (`100%`).
 
-CI reports whole-source statement/branch coverage and enforces 90% floors for the
-isolated matching metrics and split logic. These are initial requirements, not
-claimed measured coverage. Coverage deliberately includes untested core modules;
-there is no misleading whole-project 90% claim. Increase per-module floors as
-geometry, tracking, inference, and UI tests expand.
+## Data Paths & Frozen Splits
 
-The archive verifier recomputes detection scores and shaft/tip means and medians
-for the 26 method/cohort rows with saved per-needle distributions. Other rows and
-full training/inference are outside that check. It does not certify paper reproduction.
+`reproducibility/paths.py` maps historical workstation paths via environment variables:
 
-## Data and historical experiment paths
+- `NEEDLEFINDER_WORK_DIR`: working directory for caches and model checkpoints (default: `reproducibility/runs/work`).
+- `NEEDLEFINDER_DATA_DIR`: root directory containing the clinical imaging datasets (`GYN Cases`, etc.).
+- `NEEDLEFINDER_TEST_DATA`: directory containing the four clinical regression cases (`Case 12`, `Case 29`, `Case 44`, `Case 66`).
+- `NEEDLEFINDER_CLINICAL_BASELINE`: frozen trajectory regression baseline (default: `NeedleFinder/Testing/clinical_mri_frozen_baseline.json`).
 
-`reproducibility/paths.py` replaces hard-coded workstation paths in the clean and
-rerun experiment scripts:
+`reproducibility/splits-54.json` freezes the 54-patient ordering, all 25 nested $5 \times 5$ inner training/validation splits, per-fold random seeds (`1000 + 10 * outer_fold + inner_fold`), and the SHA-256 digest of the 54-case metadata (`44d6be12b0f8b3e7e85327b70108a83106ff899e69f555a5516377ba905252a4`). Stage 1 training and verification (`reproducibility/checkpoints.py`) bind every checkpoint (`unet3d_outer{0..4}_inner{0..4}.pt`) to a `.provenance.json` sidecar that fails closed if the patient ordering, split indices, or seed differ.
 
-- `NEEDLEFINDER_WORK_DIR`: scratch caches and model outputs (default `reproducibility/runs/work`).
-- `NEEDLEFINDER_DATA_DIR`: directory replacing the historical Dropbox root; for example it contains `GYN Cases`.
-- `NEEDLEFINDER_TEST_DATA`: root containing the four clinical regression case directories.
-- `NEEDLEFINDER_CLINICAL_BASELINE`: reviewed JSON trajectory baseline; absence fails the clinical gate.
+## Clinical, Slicer, and GPU Reproduction (Tier 2)
 
-Do not distribute clinical images merely because source code is licensed. Data
-access and model/artifact permissions remain separate. Record input checksums in
-the run's manifest. Existing NumPy-2 pickle archives need a NumPy-2 environment or
-an explicitly verified conversion to a portable format; the candidate CPU test
-lock is not suitable for loading every historical pickle.
+```bash
+NEEDLEFINDER_TEST_DATA=/path/to/cases \
+NEEDLEFINDER_CLINICAL_BASELINE=NeedleFinder/Testing/clinical_mri_frozen_baseline.json \
+  .venv/bin/python tools/validate.py clinical
 
-`splits-54.json` freezes the archived patient ordering, 25 inner splits, seeds,
-and the source metadata checksum (`44d6be12b0f8b3e7e85327b70108a83106ff899e69f555a5516377ba905252a4`).
-Stage 1 uses the tested split helper and writes `.provenance.json` sidecars next
-to all 25 nested checkpoints (`unet3d_outer{0..4}_inner{0..4}.pt`). Reusing a
-checkpoint with a different order, seed, split or checksum fails. All 25 nested
-Stage 1 checkpoints on `edelweiss` have verified `.provenance.json` sidecars bound
-to `splits-54.json`.
+/path/to/Slicer --no-main-window --no-splash --disable-cli-modules \
+  --additional-module-paths "$PWD/NeedleFinder" \
+  --python-script "$PWD/tests/slicer_smoke.py"
 
-## Full paper experiments
+.venv/bin/python tools/validate.py paper_reproduction
+.venv/bin/python tools/release.py check
+```
 
-Run expensive experiments in a dedicated clone of the pinned commit, with the
-correct GPU training environment, data and original checkpoint provenance. The
-scripts below still require those external inputs; the CPU parity environment is
-not a substitute for a validated GPU training lock. Several scripts write derived
-JSON into their clone's vault, so never run the chain in the archival working copy.
+## Full Paper Training Pipeline (Tier 3)
 
-The clean pipeline entry points, in order, are:
+To retrain the entire pipeline from scratch on a GPU workstation with `NEEDLEFINDER_DATA_DIR` and `NEEDLEFINDER_WORK_DIR` configured, run the scripts in [`benchmarks/clean/`](../benchmarks/README.md) in order:
 
 1. `benchmarks/clean/prepare_clean_dataset.py`
 2. `benchmarks/clean/pretrain_ssl_unet3d.py`
@@ -98,78 +71,21 @@ The clean pipeline entry points, in order, are:
 6. `benchmarks/clean/run_part2_literature_fusion_inside_needlefinder.py`
 7. `benchmarks/clean/export_clean_unified_and_table3.py`
 8. `benchmarks/clean/benchmark_public_pelvic_mri_clean.py`
-9. `benchmarks/clean/run_exp1_tg43_dosimetry.py` through `run_exp4_4d_insertion_and_ct.py`.
+9. `benchmarks/clean/run_exp1_tg43_dosimetry.py` through `benchmarks/clean/run_exp4_4d_insertion_and_ct.py`
 
-Use each script's documented inputs/options; do not infer missing training caches
-from aggregate result files. Archived machine-readable benchmark JSONs, OOF
-trajectory pickles, and figure data arrays are stored in `reproducibility/results/`
-and locked by SHA-256 in `reproducibility/artifacts.lock.json`.
-
-Re-export the tip model without retraining:
+To re-export the production 1D tip localizer ONNX weights without retraining:
 
 ```bash
 .venv/bin/python tools/export_tip_model.py \
   --output NeedleFinder/NeedleFinderLib/dedicated_1d_tip_localizer.onnx
 ```
 
-Changing a model requires reviewing and refreshing `artifacts.lock.json`, running
-parity and clinical checks, and issuing a new version. Never silently replace an
-asset attached to a published paper release.
+## Release Manifest & Companion Repository
 
-## Clinical and Slicer validation
-
-Clinical baseline schema: `cases` maps the four case names to ordered lists of
-`{"ras": [[x,y,z], ...], "confidence": number}`. Set explicit
-`trajectory_atol_mm` and `confidence_atol`; record the baseline source commit,
-input hashes and independent review in the baseline provenance. Do not create a
-baseline from current predictions and call that a regression result.
+Every validation suite writes a receipt in `reproducibility/runs/evidence/` bound to the exact source fingerprint (`tools/release.py`).
 
 ```bash
-NEEDLEFINDER_TEST_DATA=/path/to/cases \
-NEEDLEFINDER_CLINICAL_BASELINE=/path/to/approved-baseline.json \
-  .venv/bin/python tools/validate.py clinical
-
-/path/to/Slicer --no-main-window --no-splash --disable-cli-modules \
-  --additional-module-paths "$PWD/NeedleFinder" \
-  --python-script "$PWD/tests/slicer_smoke.py"
+.venv/bin/python tools/release.py check
+.venv/bin/python tools/release.py manifest --output dist/paper-media-2026-v1-manifest.json
+.venv/bin/python tools/create_paper_companion.py --output dist/paper-companion
 ```
-
-Slicer needs a working display or Xvfb with the xcb plugin. `WITH_GENERIC_TESTS`
-also registers the existing Slicer module self-tests in CTest; the smoke test does
-not replace those full UI tests.
-
-## Freezing and sharing
-
-1. Verify from a fresh clone. Commit all required code, models/references, tests,
-   locks and documentation. Ignore caches and bytecode.
-2. Run checks using `tools/validate.py`. Receipts include source fingerprints and
-   report checksums; failed, skipped, missing, or stale checks block release.
-3. Generate `python tools/release.py manifest --output dist/candidate-manifest.json`.
-   It includes full commit/tree IDs, source fingerprint, artifact hashes, environment
-   and protocol checksum. It is labeled candidate until full validation exists.
-4. `python tools/release.py check` requires fast, parity, clinical, Slicer, coverage,
-   and full paper-reproduction evidence. The paper-reproduction receipt is supplied
-   only after a reviewed full run, with the same receipt fields and a hashed report
-   recording commands, data/checkpoint hashes, hardware, tolerances and comparisons.
-5. Create an annotated immutable-version tag. Use `paper-media-2026-v1-rc1` for a
-   candidate and `paper-media-2026-v1` only after all gates pass. Never move a paper tag.
-6. Push the reviewed commit and tag to the intended repository. Enable GitHub
-   release immutability, attach all assets to a draft, then publish. Require the
-   `fast` and `parity-and-coverage` CI checks on the authoritative branch.
-7. Archive the exact release with Zenodo and cite the version-specific DOI plus
-   tag/SHA in the manuscript and `CITATION.cff`. A DOI has not yet been minted.
-
-A tag identifies source; the manifest also identifies weights, inputs and outputs.
-On another machine, check out the full SHA and run `tools/release.py verify` before
-running experiments. Git pulls and filesystem syncing are not release identification.
-
-Create a local separate paper companion after committing the core:
-
-```bash
-python tools/create_paper_companion.py --output dist/paper-companion
-```
-
-It pins `core` to the exact commit through a Git submodule and records the SHA in
-`core-version.json`. Its default core URL is the existing 2026 remote; this commit
-must be pushed there before other users can initialize it. The generator neither
-publishes nor changes repository visibility.

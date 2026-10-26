@@ -28,42 +28,6 @@
       "bytes": 127449,
       "sha256": "47e318d1234570891b8246dfb0a98fa05bcf346fe694f5571c5c62eda1c3096c"
     },
-    "reproducibility/results/2026-10-21-54cases-benchmark.json": {
-      "bytes": 323612,
-      "sha256": "0942b7fdffdb5f4314a93e65a29187d5df95ca6d0e48a9a056c69f3e4b1378cb"
-    },
-    "reproducibility/results/2026-10-21-auto-needle-detection-benchmark.json": {
-      "bytes": 83538,
-      "sha256": "14f3e3028a08b22d5611b66ad8c5025742ed3663bd31d3264efa4245c79eaa8c"
-    },
-    "reproducibility/results/2026-10-22-interobserver-543-benchmark.json": {
-      "bytes": 5175,
-      "sha256": "54b1529e382b8e350ef11b959250062469d2c274943874ac72f6dcfbaa4d4153"
-    },
-    "reproducibility/results/2026-10-22-irgm-poly3-rows-recheck.json": {
-      "bytes": 2447,
-      "sha256": "eca29f51bb4e49b27e651d3436cb1c69f4e22001ce21dc0fabff9b0d6ae66ec2"
-    },
-    "reproducibility/results/2026-10-22-oof-overwrite-regeneration-report.json": {
-      "bytes": 1070,
-      "sha256": "674e06251804a5fb50fc2f600f9086a15e70e6bdd3a393fc371e52a5f8eda650"
-    },
-    "reproducibility/results/2026-10-22-public-pelvic-mri-specificity-benchmark.json": {
-      "bytes": 63234,
-      "sha256": "c3ff9b274c798e99d13859e45d0deeea343bd2967771ddb988f2f472926f4713"
-    },
-    "reproducibility/results/2026-10-22-table3-observers-and-nf.json": {
-      "bytes": 20781,
-      "sha256": "e00a59c5ae6f5245fcadd7678a1b26cf052f21cbad551941e2e7160eef06c970"
-    },
-    "reproducibility/results/2026-10-22-unified-apples-to-apples-benchmark.json": {
-      "bytes": 913567,
-      "sha256": "e51b276c6f33659af395c9048f989fa5cbb38d396d35173fa1961bd44eca632d"
-    },
-    "reproducibility/results/2026-10-22-wilcoxon-recheck-synth-vs-irgm.json": {
-      "bytes": 25660,
-      "sha256": "656ce32d2219216f1c7ce8791780184e23b477878a065314a6e062294f496fa2"
-    },
     "reproducibility/results/2026-10-23-cases-meta-54-clean.pkl": {
       "bytes": 4413650,
       "sha256": "44d6be12b0f8b3e7e85327b70108a83106ff899e69f555a5516377ba905252a4"
@@ -112,23 +76,11 @@
       "bytes": 491450,
       "sha256": "a51716601c060b127897dc3281899d0d899a7a77d385ecf249a8708b11a1d675"
     },
-    "reproducibility/results/2026-10-23-synth-cache-provenance-rerun.json": {
-      "bytes": 148,
-      "sha256": "9ed533c5732ae460494798979a7778ae462b2bae6b5cbf7d03081f203b46b059"
-    },
     "reproducibility/results/2026-10-23-table3-observers-and-nf-clean.json": {
       "bytes": 26634,
       "sha256": "a59a4dcc107f25a9fe53652cd44459fd31c955da6b6218f1c3f8d60ca2e4fbc8"
     },
-    "reproducibility/results/2026-10-23-table3-observers-and-nf-rerun.json": {
-      "bytes": 26634,
-      "sha256": "a59a4dcc107f25a9fe53652cd44459fd31c955da6b6218f1c3f8d60ca2e4fbc8"
-    },
     "reproducibility/results/2026-10-23-unified-clean-nested-benchmark.json": {
-      "bytes": 1726920,
-      "sha256": "5f6892e478564de5bf2d4051349a0b2046f362b5b7a42e5a2f31f9611e79ad7b"
-    },
-    "reproducibility/results/2026-10-23-unified-rerun-benchmark.json": {
       "bytes": 1726920,
       "sha256": "5f6892e478564de5bf2d4051349a0b2046f362b5b7a42e5a2f31f9611e79ad7b"
     },
@@ -153,8 +105,8 @@
       "sha256": "da514276d5e189d2842f2447dfbf511bc8a89ae0f847e66ad231b9f70d4c4949"
     },
     "reproducibility/results/2026-10-26-exp4-zero-config-ct-update.json": {
-      "bytes": 73512,
-      "sha256": "19a55b5be8d812f679d550d0d352c210315848e5398eb05c1c9aa98ae2cf0746"
+      "bytes": 72101,
+      "sha256": "a683ebfa97b9e04f0068edee8e13debe458ed896a476729cee764debe61bd795"
     },
     "reproducibility/results/figures_data/qualitative_cases.npz": {
       "bytes": 896626,

@@ -1,8 +1,8 @@
 # NeedleFinder 2026 Paper Benchmarks
 
-This directory contains all training, cross-validation, baseline reproduction,
-specificity, and clinical translation scripts for the 2026 NeedleFinder manuscript
-(tag `paper-media-2026-v1`).
+This directory contains all training, strictly nested $5 \times 5$ cross-validation,
+peer-reviewed baseline reproduction, zero-needle specificity, and clinical
+translation scripts for the 2026 NeedleFinder manuscript (tag `paper-media-2026-v1`).
 
 ## Directory Structure
 
@@ -10,8 +10,8 @@ specificity, and clinical translation scripts for the 2026 NeedleFinder manuscri
   pipeline (`54` patients, `1,063` catheters), peer-reviewed baseline reproductions,
   literature fusion, specificity evaluation, timing/calibration audits, and
   clinical translation Experiments 1–4:
-  1. `prepare_clean_dataset.py` — Build multi-rater consensus supervision (`40/40`
-     dual-traced scenes), automatic reference-free `k_lim_auto` slab bounds, and
+  1. `prepare_clean_dataset.py` — Multi-rater consensus supervision (`40/40`
+     dual-traced scenes), reference-free automatic `k_lim_auto` slab bounds, and
      54-case metadata (`step1_clean_dataset_summary.json`).
   2. `pretrain_ssl_unet3d.py` — Self-supervised 3D U-Net pre-training on 51 external
      pelvic MRI volumes (`step2_ssl_pretrain_summary.json`).
@@ -52,12 +52,17 @@ specificity, and clinical translation scripts for the 2026 NeedleFinder manuscri
       zero-configuration paired pelvic CT evaluation (`38` paired patients).
 
 - **`benchmarks/rerun/`** — Shared evaluation, graph construction, and baseline
-  training modules imported by `benchmarks/clean/` (`evaluate_unified_apples_to_apples.py`,
-  `train_baselines_pmb2026.py`, `train_and_eval_unet3d.py`, `train_graphnet3d.py`,
-  `train_export_graphnet_prod.py`, `prepare_and_inspect_dataset.py`, etc.).
-
-- **`benchmarks/legacy/`** — Earlier 5-fold cross-validation scripts preserved for
-  reproducibility.
+  training modules imported by `benchmarks/clean/`:
+  - `evaluate_nn_pipeline.py`
+  - `evaluate_unified_apples_to_apples.py`
+  - `prepare_and_inspect_dataset.py`
+  - `run_synthbrachy3t_full.py`
+  - `run_xiao2026_and_fewshot_benchmark.py`
+  - `test_synthbrachy3t_v2.py`
+  - `train_and_eval_unet3d.py`
+  - `train_baselines_pmb2026.py`
+  - `train_export_graphnet_prod.py`
+  - `train_graphnet3d.py`
 
 ## Archived Results & Automated Verification
 

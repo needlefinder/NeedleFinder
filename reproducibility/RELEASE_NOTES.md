@@ -1,32 +1,31 @@
-# Paper release (`paper-media-2026-v1`): validated test and reproducibility infrastructure
+# Release Notes (`paper-media-2026-v1`)
 
-This release (`paper-media-2026-v1`) provides fast geometry/matching/leakage unit
-tests, synthetic native C++/Rust tracking verification, PyTorch/NumPy/ONNX model
-parity checks, CI workflows, version-pinned validation dependencies, artifact
-SHA-256 locks, frozen 54-patient splits (`reproducibility/splits-54.json`),
-checkpoint provenance sidecars for all 25 nested Stage 1 3D U-Net checkpoints,
-and release manifests. A separate paper companion repository pins the exact core
-commit via a Git submodule rather than copying algorithms.
+Tag `paper-media-2026-v1` is the frozen code, model weight, and benchmark archive
+release accompanying the 2026 NeedleFinder manuscript.
 
-The parity test suite exposed and fixed a production defect in the Slicer NumPy
-fallback (`NeuralNeedleNet._conv1d_same_np`), which previously used only three
-taps of the five-tap trained 1D tip convolutions. Both the NumPy fallback and
-exported `dedicated_1d_tip_localizer.onnx` now match the five-tap PyTorch
-`Dedicated1DTipLocalizer` training architecture within `2e-5` absolute tolerance.
-Live GPU reproduction on `edelweiss` (`NVIDIA GeForce RTX 4090`, PyTorch
-`2.11.0+cu130`) confirmed that all 54-case nested CV paper benchmarks used the
-five-tap PyTorch `Dedicated1DTipLocalizer` directly and reproduce every reported
-manuscript metric identically (`89.13%` F1, `95%` bootstrap CI `[87.02%, 91.33%]`,
-`0.5885 mm` shaft error, `6.2335 mm` mean / `2.265 mm` median 3D tip error;
-`89.38%` F1 with literature fusion). Similarly, all 54 BWH clinical GYN MRI cases
-satisfy `is_ct_hu == False` and `z_ijk_axis == 2`, so the zero-configuration pelvic
-CT and multi-axis insertion guards do not alter the 54-case GYN MRI tracking path.
+## Highlights
 
-Release status: `paper-validated` (tag `paper-media-2026-v1`). All six release
-gates (`fast`, `parity`, `coverage`, `clinical`, `slicer`, and `paper_reproduction`)
-and `tools/release.py check` pass on the clean release tree. Note that
-`paper_reproduction` executes live GPU Stage 1 inference/TTA parity and full
-54-case live GPU Stage 2 + 1D-tip inference from the 25 provenance-verified
-Stage 1 checkpoints rather than retraining all 25 3D U-Net checkpoints from
-scratch. No external Zenodo DOI has been minted yet; cite tag
-`paper-media-2026-v1` and its exact commit SHA.
+- **3D Slicer Extension (`NeedleFinder/`)**:
+  - Four automated 3D needle/catheter tracking algorithms (`Kalman`, `Particle Filter`,
+    `iGyne`, and `Minimum-Cost Path`), native C++17 / Rust acceleration
+    (`NeedleFinderRust`), and two-stage hybrid deep-learning / bundle graph-transformer
+    refinement (`NeuralNeedleNet`, `TipLocalizerModel`).
+  - Exact parity (`< 2e-5` absolute tolerance) across PyTorch training models,
+    exported ONNX production models, and NumPy fallback inference for Stage 1
+    3D U-Net, Stage 2A MPNN, Stage 2B Tip-Aware Bundle Graph Transformer, and
+    the five-tap 1D Tip Localizer (`dedicated_1d_tip_localizer.onnx`).
+- **Complete 2026 Paper Benchmark Suite (`benchmarks/clean/` & `benchmarks/rerun/`)**:
+  - End-to-end scripts for multi-rater consensus supervision (`40/40` dual-traced
+    cases), 51-volume self-supervised 3D U-Net pre-training, strictly nested
+    $5 \times 5$ cross-validation (`54` patients, `1,063` catheters), peer-reviewed
+    baseline reproductions (`1–6`), literature fusion (`89.13%` $\rightarrow$ `89.38%` F1),
+    zero-needle specificity on 48 public `MSD Task05_Prostate` 3T MRI scans,
+    and clinical translation Experiments 1–4 (TG-43 dosimetry, split-conformal +
+    Grubbs/TOST non-inferiority, zero-shot 3T prostate & 297 multi-sequence MRI
+    transfer, and 4D serial insertion + paired pelvic CT).
+- **Locked Artifacts & Automated Release Gates (`reproducibility/` & `tools/`)**:
+  - Frozen 54-patient nested $5 \times 5$ splits (`reproducibility/splits-54.json`),
+    SHA-256 lock (`reproducibility/artifacts.lock.json`) covering all 30 production
+    models and archived benchmark outputs (`reproducibility/results/`), and six
+    automated release gates (`fast`, `parity`, `coverage`, `clinical`, `slicer`,
+    and `paper_reproduction`) verified by `tools/release.py check`.
