@@ -3253,6 +3253,10 @@ class TrackingAlgorithmsMixin:
       script: bool = False,
       renderNeedles: bool = True,
       secondaryVolumeNode=None,
+      freehandMode: bool = False,
+      insertionAxis: str = "auto",
+      _targetRasAxis: int = 2,
+      _allowFallback: bool = True,
   ):
     """Automatically detect and segment all needles in the 3D volume without manual seed clicks.
 
@@ -3313,8 +3317,27 @@ class TrackingAlgorithmsMixin:
         dtype=np.float64,
     )
 
-    # Zero-risk Sagittal/Coronal axis canonicalization: only triggers when the Superior-Inferior (RAS Z)
-    # axis is not array axis 0 (IJK axis 2 = K). On all axial volumes, z_ijk_axis == 2 (0.00% change).
+    axis_tag = str(insertionAxis or "auto").strip().upper()
+    if axis_tag in ("LR", "RL", "X", "0"):
+      _targetRasAxis = 0
+      freehandMode = True
+      _allowFallback = False
+    elif axis_tag in ("AP", "PA", "Y", "1"):
+      _targetRasAxis = 1
+      freehandMode = True
+      _allowFallback = False
+    elif axis_tag in ("SI", "IS", "Z", "2"):
+      _targetRasAxis = 2
+      _allowFallback = False
+
+    if _targetRasAxis in (0, 1):
+      ijk_to_ras_mat = ijk_to_ras_mat.copy()
+      ijk_to_ras_mat[[_targetRasAxis, 2], :] = ijk_to_ras_mat[[2, _targetRasAxis], :]
+      if kLim is None:
+        kLim = 0
+
+    # Zero-risk Sagittal/Coronal/Multi-Axis canonicalization: aligns the active tracking RAS axis
+    # with array axis 0 (IJK axis 2 = K). On all axial S-I volumes, z_ijk_axis == 2 (0.00% change).
     col_norms = np.maximum(1e-6, np.linalg.norm(ijk_to_ras_mat[:3, :3], axis=0))
     z_ijk_axis = int(np.argmax(np.abs(ijk_to_ras_mat[2, :3]) / col_norms))
     if z_ijk_axis != 2:
@@ -3326,11 +3349,12 @@ class TrackingAlgorithmsMixin:
         vol_raw = np.ascontiguousarray(np.swapaxes(vol_raw, 0, 2), dtype=np.float64)
         sp_i, sp_k = sp_k, sp_i
         ijk_to_ras_mat = ijk_to_ras_mat[:, [2, 1, 0, 3]].copy()
-      if float(ijk_to_ras_mat[2, 2]) < 0.0:
-        K_perm = vol_raw.shape[0]
-        vol_raw = np.ascontiguousarray(vol_raw[::-1], dtype=np.float64)
-        ijk_to_ras_mat[:3, 3] = ijk_to_ras_mat[:3, 3] + ijk_to_ras_mat[:3, 2] * float(K_perm - 1)
-        ijk_to_ras_mat[:3, 2] = -ijk_to_ras_mat[:3, 2]
+    if (z_ijk_axis != 2 or _targetRasAxis in (0, 1)) and float(ijk_to_ras_mat[2, 2]) < 0.0:
+      K_perm = vol_raw.shape[0]
+      vol_raw = np.ascontiguousarray(vol_raw[::-1], dtype=np.float64)
+      ijk_to_ras_mat = ijk_to_ras_mat.copy()
+      ijk_to_ras_mat[:3, 3] = ijk_to_ras_mat[:3, 3] + ijk_to_ras_mat[:3, 2] * float(K_perm - 1)
+      ijk_to_ras_mat[:3, 2] = -ijk_to_ras_mat[:3, 2]
 
     K, J, I = vol_raw.shape
     rot_mat = ijk_to_ras_mat[:3, :3]
@@ -3442,8 +3466,12 @@ class TrackingAlgorithmsMixin:
           pass
 
     k0 = max(0, k_lim - 1)
-    i0, i1 = int(0.16 * I), int(0.84 * I)
-    j0, j1 = int(0.16 * J), int(0.84 * J)
+    if freehandMode:
+      i0, i1 = int(0.04 * I), int(0.96 * I)
+      j0, j1 = int(0.04 * J), int(0.96 * J)
+    else:
+      i0, i1 = int(0.16 * I), int(0.84 * I)
+      j0, j1 = int(0.16 * J), int(0.84 * J)
     if i1 - i0 < 26 or j1 - j0 < 26:
       i0, i1 = 0, I
       j0, j1 = 0, J
@@ -3735,7 +3763,8 @@ class TrackingAlgorithmsMixin:
           return None
         slope_x = (fit_x[-1] - fit_x[0]) / dz
         slope_y = (fit_y[-1] - fit_y[0]) / dz
-        if math.hypot(slope_x, slope_y) > 0.72:
+        max_allowed_slope = 1.15 if freehandMode else 0.72
+        if math.hypot(slope_x, slope_y) > max_allowed_slope:
           return None
 
         k_rels = arr_pts[:, 2] - k0
@@ -3743,51 +3772,56 @@ class TrackingAlgorithmsMixin:
         pi_abs = np.array([si_a, bi_a])
         pj_abs = np.array([sj_a, bj_a])
 
-        bx_lin = float(fit_x[0] + slope_x * (z_base_ras - z_vals[0]))
-        by_lin = float(fit_y[0] + slope_y * (z_base_ras - z_vals[0]))
-        if len(px) == 3:
-          bx_poly = float((px[0] * z_base_ras + px[1]) * z_base_ras + px[2])
-          by_poly = float((py[0] * z_base_ras + py[1]) * z_base_ras + py[2])
+        if freehandMode and abs(float(z_vals[0] - z_base_ras)) > 2.5 * sp_k:
+          bx, by = float(fit_x[0]), float(fit_y[0])
+          base_xy = np.array([bx, by])
+          smooth_ras = np.column_stack([fit_x, fit_y, z_vals])
         else:
-          bx_poly = float(px[0] * z_base_ras + px[1])
-          by_poly = float(py[0] * z_base_ras + py[1])
-        use_linear_ext = (
-            (sp_k >= 2.8 and z_vals[0] > z_base_ras + 2.0 * sp_k)
-            or ((K - k0) * sp_k > 185.0 and (abs(float(z_vals[0] - z_base_ras)) > 22.0 or math.hypot(bx_poly - bx_lin, by_poly - by_lin) > 3.5))
-        )
-        if use_linear_ext:
-          bx, by = bx_lin, by_lin
-        else:
-          bx, by = bx_poly, by_poly
-        base_xy = np.array([bx, by])
-        if z_vals[-1] >= z_vals[0]:
-          above_mask = z_vals > z_base_ras + 0.15 * sp_k
-        else:
-          above_mask = z_vals < z_base_ras - 0.15 * sp_k
-        if np.any(above_mask):
-          fx_ab = fit_x[above_mask]
-          fy_ab = fit_y[above_mask]
-          fz_ab = z_vals[above_mask]
-          z_first = float(fz_ab[0])
-          if use_linear_ext and abs(z_first - z_base_ras) > 6.0 * sp_k:
-            n_ext = max(2, int(round(abs(z_first - z_base_ras) / sp_k)))
-            z_ext = np.linspace(z_base_ras, z_first, n_ext, endpoint=False)
-            x_ext = float(fx_ab[0]) + slope_x * (z_ext - z_first)
-            y_ext = float(fy_ab[0]) + slope_y * (z_ext - z_first)
-            smooth_ras = np.vstack([
-                np.column_stack([x_ext, y_ext, z_ext]),
-                np.column_stack([fx_ab, fy_ab, fz_ab]),
-            ])
+          bx_lin = float(fit_x[0] + slope_x * (z_base_ras - z_vals[0]))
+          by_lin = float(fit_y[0] + slope_y * (z_base_ras - z_vals[0]))
+          if len(px) == 3:
+            bx_poly = float((px[0] * z_base_ras + px[1]) * z_base_ras + px[2])
+            by_poly = float((py[0] * z_base_ras + py[1]) * z_base_ras + py[2])
+          else:
+            bx_poly = float(px[0] * z_base_ras + px[1])
+            by_poly = float(py[0] * z_base_ras + py[1])
+          use_linear_ext = (
+              (sp_k >= 2.8 and z_vals[0] > z_base_ras + 2.0 * sp_k)
+              or ((K - k0) * sp_k > 185.0 and (abs(float(z_vals[0] - z_base_ras)) > 22.0 or math.hypot(bx_poly - bx_lin, by_poly - by_lin) > 3.5))
+          )
+          if use_linear_ext:
+            bx, by = bx_lin, by_lin
+          else:
+            bx, by = bx_poly, by_poly
+          base_xy = np.array([bx, by])
+          if z_vals[-1] >= z_vals[0]:
+            above_mask = z_vals > z_base_ras + 0.15 * sp_k
+          else:
+            above_mask = z_vals < z_base_ras - 0.15 * sp_k
+          if np.any(above_mask):
+            fx_ab = fit_x[above_mask]
+            fy_ab = fit_y[above_mask]
+            fz_ab = z_vals[above_mask]
+            z_first = float(fz_ab[0])
+            if use_linear_ext and abs(z_first - z_base_ras) > 6.0 * sp_k:
+              n_ext = max(2, int(round(abs(z_first - z_base_ras) / sp_k)))
+              z_ext = np.linspace(z_base_ras, z_first, n_ext, endpoint=False)
+              x_ext = float(fx_ab[0]) + slope_x * (z_ext - z_first)
+              y_ext = float(fy_ab[0]) + slope_y * (z_ext - z_first)
+              smooth_ras = np.vstack([
+                  np.column_stack([x_ext, y_ext, z_ext]),
+                  np.column_stack([fx_ab, fy_ab, fz_ab]),
+              ])
+            else:
+              smooth_ras = np.vstack([
+                  [bx, by, z_base_ras],
+                  np.column_stack([fx_ab, fy_ab, fz_ab]),
+              ])
           else:
             smooth_ras = np.vstack([
                 [bx, by, z_base_ras],
-                np.column_stack([fx_ab, fy_ab, fz_ab]),
+                [fit_x[-1], fit_y[-1], z_vals[-1]],
             ])
-        else:
-          smooth_ras = np.vstack([
-              [bx, by, z_base_ras],
-              [fit_x[-1], fit_y[-1], z_vals[-1]],
-          ])
 
         mean_r = float(np.mean(arr_pts[:, 3]))
         p75_r = fast_pct(arr_pts[:, 3], 75)
@@ -3906,7 +3940,7 @@ class TrackingAlgorithmsMixin:
           cap_val = float(np.percentile(pos_v, 99.0))
           np.minimum(resp_sub, cap_val, out=resp_sub)
 
-        max_seed_k = min(K_sub - 2, max(18, min(42, int(round(62.0 / sp_k)))))
+        max_seed_k = max(1, K_sub - 2) if freehandMode else min(K_sub - 2, max(18, min(42, int(round(62.0 / sp_k)))))
         seed_cut = cand_thresh * ((0.82 if K_sub <= 28 else 0.88) if pass_idx == 1 else 0.62)
         seeds = []
         used_rust_nms = False
@@ -3960,9 +3994,14 @@ class TrackingAlgorithmsMixin:
 
         visited = np.zeros((K_sub, J_sub, I_sub), dtype=bool)
         trajs_out = []
-        max_step_px = (0.65 if pass_idx == 1 else 0.52) * (sp_k / sp_i)
+        max_step_px = ((1.05 if pass_idx == 1 else 0.85) if freehandMode else (0.65 if pass_idx == 1 else 0.52)) * (sp_k / sp_i)
+        eff_search_r_px = max(search_r_px, int(math.ceil(max_step_px)) + 1) if freehandMode else search_r_px
         decay = -0.36 if pass_idx == 1 else -0.46
-        gauss_base = np.ascontiguousarray(np.exp(decay * ((xx_grid * sp_i) ** 2 + (yy_grid * sp_j) ** 2)), dtype=np.float64)
+        if eff_search_r_px != search_r_px:
+          yy_g_eff, xx_g_eff = np.mgrid[-eff_search_r_px:eff_search_r_px + 1, -eff_search_r_px:eff_search_r_px + 1]
+          gauss_base = np.ascontiguousarray(np.exp(decay * ((xx_g_eff * sp_i) ** 2 + (yy_g_eff * sp_j) ** 2)), dtype=np.float64)
+        else:
+          gauss_base = np.ascontiguousarray(np.exp(decay * ((xx_grid * sp_i) ** 2 + (yy_grid * sp_j) ** 2)), dtype=np.float64)
         resp_ptr = resp_sub.ctypes.data_as(_FLOAT_PTR)
         cs_ptr = c_smooth.ctypes.data_as(_FLOAT_PTR)
         sym_ptr = ring_sym.ctypes.data_as(_FLOAT_PTR)
@@ -3989,7 +4028,7 @@ class TrackingAlgorithmsMixin:
               s_val,
               cand_thresh,
               max_step_px,
-              search_r_px,
+              eff_search_r_px,
               max_gap_slices,
               min_pts_slices,
               pass_idx,
@@ -4089,7 +4128,7 @@ class TrackingAlgorithmsMixin:
           z_span_mm = float(ras_pts[-1, 2] - ras_pts[0, 2])
           if z_span_mm < (8.5 if K_sub <= 28 else 11.5):
             continue
-          if k_min_rel > 12 and z_span_mm < (18.0 if K_sub <= 36 else 26.0):
+          if not freehandMode and k_min_rel > 12 and z_span_mm < (18.0 if K_sub <= 36 else 26.0):
             continue
 
           if is_1d_trench_artifact(arr_pts, k_min_rel):
@@ -4115,13 +4154,13 @@ class TrackingAlgorithmsMixin:
               resp_sub[k_v, j_lo:j_hi, i_lo:i_hi] *= 0.08
 
           trajs_out.append(pkg)
-        if K_sub * sp_k > 185.0:
+        if K_sub * sp_k > 185.0 or freehandMode:
           trajs_out = stitch_trajs(trajs_out, cand_thresh)
         return trajs_out
 
       def dedup_trajs(traj_list, existing_list=None):
         out = list(existing_list) if existing_list else []
-        is_deep = ((K - k0) * sp_k > 185.0)
+        is_deep = ((K - k0) * sp_k > 185.0) or freehandMode
         for t in sorted(traj_list, key=lambda x: -x["raw_score"]):
           dup = False
           t_bx, t_by = float(t["base_xy"][0]), float(t["base_xy"][1])
@@ -4196,20 +4235,61 @@ class TrackingAlgorithmsMixin:
       K_sub = K - k0
 
       nn_preds = None
-      try:
-        nn_preds = run_nn_3d_segmentation(vol_work, sp_i, sp_j, sp_k, i0, i1, j0, j1, k0, K, resp1, cs1, rsym1)
-        if nn_preds is not None and not script:
-          create_or_update_slicer_labelmap(volumeNode, nn_preds, k0, i0, i1, j0, j1, K, J, I, threshold=0.40)
-      except Exception:
-        nn_preds = None
+      if not is_ct_hu:
+        try:
+          nn_preds = run_nn_3d_segmentation(vol_work, sp_i, sp_j, sp_k, i0, i1, j0, j1, k0, K, resp1, cs1, rsym1)
+          if nn_preds is not None and not script:
+            create_or_update_slicer_labelmap(volumeNode, nn_preds, k0, i0, i1, j0, j1, K, J, I, threshold=0.40)
+        except Exception:
+          nn_preds = None
 
       pos_vals = resp1[resp1 > 0.5]
       cand_thresh = max(1.2, float(np.percentile(pos_vals, 50))) if len(pos_vals) else 1.2
 
+      def _try_generalized_fallback():
+        if not _allowFallback:
+          return []
+        best_fb = []
+        best_score = -1.0
+        if not freehandMode or k_lim > 0:
+          cand_z = self.autoDetectAllNeedles(
+              volumeNode=volumeNode, kLim=0, minConfidence=minConfidence,
+              script=script, renderNeedles=False, secondaryVolumeNode=None,
+              freehandMode=True, insertionAxis=insertionAxis,
+              _targetRasAxis=_targetRasAxis, _allowFallback=False,
+          )
+          if cand_z:
+            sc_z = sum(float(x.get("confidence", 0.0)) for x in cand_z)
+            if sc_z > best_score:
+              best_fb, best_score = cand_z, sc_z
+        if not best_fb and axis_tag == "AUTO":
+          for ax_try in (1, 0):
+            if ax_try == _targetRasAxis:
+              continue
+            cand_ax = self.autoDetectAllNeedles(
+                volumeNode=volumeNode, kLim=0, minConfidence=minConfidence,
+                script=script, renderNeedles=False, secondaryVolumeNode=None,
+                freehandMode=True, insertionAxis="auto",
+                _targetRasAxis=ax_try, _allowFallback=False,
+            )
+            if cand_ax:
+              sc_ax = sum(float(x.get("confidence", 0.0)) for x in cand_ax)
+              if sc_ax > best_score:
+                best_fb, best_score = cand_ax, sc_ax
+        return best_fb
+
       update_progress(34, "Stage 2/6: Seeding & tracking candidate 3D trajectories (Pass 1)...")
       trajs1 = track_pass(resp1, cs1, rsym1, i0, j0, cand_thresh, pass_idx=1)
       if not trajs1:
-        return []
+        filtered = _try_generalized_fallback()
+        if not filtered:
+          return []
+        if secondaryVolumeNode is not None:
+          try:
+            filtered, _ = self.refineTipsWithSecondaryVolume(filtered, secondaryVolumeNode)
+          except Exception:
+            pass
+        return filtered
       prelim1 = dedup_trajs(trajs1)
 
       update_progress(48, "Stage 3/6: Estimating needle bundle consensus & inpainting locked tracts...")
@@ -4219,7 +4299,8 @@ class TrackingAlgorithmsMixin:
           if abs(t["base_xy"][0] - fov_center_ras[0]) <= 48.0
           and abs(t["base_xy"][1] - fov_center_ras[1]) <= 64.0
       ]
-      base_pool = pelvic_cands if len(pelvic_cands) >= 3 else prelim1
+      has_central_bundle = (len(pelvic_cands) >= 3) and not freehandMode
+      base_pool = pelvic_cands if has_central_bundle else prelim1
       low_k_cands = [t for t in base_pool if t["k_min_rel"] <= k_tol]
       vote_pool = low_k_cands[:min(30, len(low_k_cands))] if len(low_k_cands) >= 3 else base_pool[:min(30, len(base_pool))]
 
@@ -4235,9 +4316,12 @@ class TrackingAlgorithmsMixin:
         d_xy = np.hypot(bases[:, 0] - bases[idx, 0], bases[:, 1] - bases[idx, 1])
         d_sl = np.hypot(slopes[:, 0] - slopes[idx, 0], slopes[:, 1] - slopes[idx, 1])
         inliers = (d_xy <= 42.0) & (d_sl <= 0.25)
-        dx_fov = float(bases[idx, 0] - fov_center_ras[0])
-        dy_fov = float(bases[idx, 1] - fov_center_ras[1])
-        fov_prior = np.exp(-0.5 * ((dx_fov / 35.0) ** 2 + (dy_fov / 48.0) ** 2))
+        if has_central_bundle:
+          dx_fov = float(bases[idx, 0] - fov_center_ras[0])
+          dy_fov = float(bases[idx, 1] - fov_center_ras[1])
+          fov_prior = np.exp(-0.5 * ((dx_fov / 35.0) ** 2 + (dy_fov / 48.0) ** 2))
+        else:
+          fov_prior = 1.0
         c_score = float(np.sum(clamped_w[inliers])) * (int(np.sum(inliers)) ** 0.80) * fov_prior
         if c_score > best_cluster_score:
           best_cluster_score = c_score
@@ -4303,7 +4387,28 @@ class TrackingAlgorithmsMixin:
         adaptive_rad = 38.5
         adaptive_sdev = 0.34
 
+      is_high_snr_freehand = any(
+          t["p75_r"] >= 14.0 and t["mean_r"] >= 11.0 and t["rmse"] <= 0.35 and t["high_frac"] >= 0.85
+          for t in prelim1
+      )
+      is_template_bundle = False if (freehandMode or (not (has_central_bundle and len(core_inliers) >= 3) and is_high_snr_freehand)) else True
+      if not is_template_bundle and not freehandMode:
+        for t_fh in prelim1:
+          if t_fh["z_start_ras"] > z_base_ras + 2.5 * sp_k and len(t_fh["ras"]) > len(t_fh["raw_ks"]):
+            keep_m = t_fh["ras"][:, 2] >= t_fh["z_start_ras"] - 0.15
+            if np.sum(keep_m) >= 2:
+              t_fh["ras"] = t_fh["ras"][keep_m]
+              t_fh["base_xy"] = t_fh["ras"][0, :2].copy()
+              t_fh["length_mm"] = float(np.sum(np.linalg.norm(np.diff(t_fh["ras"], axis=0), axis=1)))
+
       def passes_bundle_filter(t, pass_num=1):
+        if not is_template_bundle:
+          min_z_fh = 9.0 if K_sub <= 28 else 13.0
+          return (
+              t["z_span_tracked"] >= min_z_fh
+              and t["rmse"] <= 1.35
+              and t["raw_score"] >= 0.10 * bundle_max_raw
+          )
         max_fov_dx = 56.5 if is_deep_scan else 49.5
         if abs(t["base_xy"][0] - fov_center_ras[0]) > max_fov_dx or abs(t["base_xy"][1] - fov_center_ras[1]) > 66.0:
           return False
@@ -4566,6 +4671,12 @@ class TrackingAlgorithmsMixin:
           jev_sdev = slope_dev
 
         jev_sdev_norm = min(2.0, jev_sdev / 0.25)
+        if not is_template_bundle:
+          k_min_mm_norm = min(0.20, k_min_mm_norm)
+          dist_mid_norm = min(0.25, dist_mid_norm)
+          dist_med_norm = min(0.25, dist_med_norm)
+          slope_dev_norm = min(0.15, slope_dev_norm)
+          jev_sdev_norm = min(0.15, jev_sdev_norm)
         if t["pass"] == 3:
           if not (t["z_span_tracked"] >= 45.0 and t["rmse"] <= 0.75 and jev_sdev_norm <= 0.20 and heur_conf >= 47.0):
             continue
@@ -4621,6 +4732,7 @@ class TrackingAlgorithmsMixin:
           nn_tubes = extract_nn_labelmap_tubes(
               nn_preds, resp1, k0, i0, j0, sp_i, sp_j, sp_k,
               ijk_to_ras_mat, ras_to_ijk, filtered, include_obturator=True,
+              is_template_bundle=is_template_bundle,
           )
           for nt in nn_tubes:
             nt["ras"] = nt["points"]
@@ -4631,6 +4743,7 @@ class TrackingAlgorithmsMixin:
               ijk_to_ras_mat, ras_to_ijk, filtered,
               min_confidence=float(minConfidence),
               script=script,
+              is_template_bundle=is_template_bundle,
           )
           self.lastDetectionDecisions = {
               "n_candidates": int(LAST_STAGE2_DECISIONS.get("n_candidates", 0)),
@@ -4646,6 +4759,20 @@ class TrackingAlgorithmsMixin:
                             "confidence": float(t.get("confidence", 0.0)), "rank": r_i + 1, "length_mm": float(t.get("length_mm", 0.0))}
                            for r_i, t in enumerate(sorted(rejected_fb, key=lambda t: -float(t.get("confidence", 0.0))))],
           }
+
+      if _targetRasAxis in (0, 1) and filtered:
+        for t_ax in filtered:
+          for k_arr in ("ras", "points"):
+            if k_arr in t_ax and t_ax[k_arr] is not None:
+              pts_w = np.asarray(t_ax[k_arr], dtype=np.float64).copy()
+              pts_w[:, [_targetRasAxis, 2]] = pts_w[:, [2, _targetRasAxis]]
+              t_ax[k_arr] = pts_w
+          if "tip_ras" in t_ax and t_ax["tip_ras"] is not None:
+            tp_w = np.asarray(t_ax["tip_ras"], dtype=np.float64).copy()
+            tp_w[[_targetRasAxis, 2]] = tp_w[[2, _targetRasAxis]]
+            t_ax["tip_ras"] = tp_w
+          diffs_ax = np.diff(t_ax["ras"], axis=0)
+          t_ax["length_mm"] = float(np.sum(np.linalg.norm(diffs_ax, axis=1))) if len(diffs_ax) > 0 else 0.0
 
       if secondaryVolumeNode is not None and filtered:
         try:

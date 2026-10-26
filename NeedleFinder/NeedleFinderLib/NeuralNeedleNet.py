@@ -250,8 +250,8 @@ def run_nn_3d_segmentation(vol, sp_i, sp_j, sp_k, i0, i1, j0, j1, k0, K, resp_su
     p_mask_w = 1.0 / (1.0 + np.exp(-np.clip(out[0], -20.0, 20.0)))
 
     # Zero-shot thick-slice canonical Z-upsampling guard: only triggers on out-of-distribution
-    # thick-slice scans (sp_k_eff > 2.2 mm with weak native U-Net response p99.9 < 0.35).
-    if sp_k_eff > 2.2 and float(np.percentile(p_mask_w, 99.9)) < 0.35:
+    # thick-slice implant scans (sp_k_eff > 2.2 mm with weak native U-Net response p99.9 < 0.35).
+    if sp_k_eff > 2.2 and (k0 > 0 or K_sub >= 25) and float(np.percentile(p_mask_w, 99.9)) < 0.35:
         K_up = K_sub * 2
         sp_k_up = sp_k_eff * 0.5
         ch0_up = _upsample_2x_k(ch0, K_up)
@@ -342,7 +342,7 @@ def create_or_update_slicer_labelmap(volumeNode, nn_preds, k0, i0, i1, j0, j1, K
 def extract_nn_labelmap_tubes(
     nn_preds, resp_roi, k0, i0, j0, sp_i, sp_j, sp_k,
     ijk_to_ras, ras_to_ijk, existing_trajs,
-    include_obturator=True,
+    include_obturator=True, is_template_bundle=True,
 ):
     """
     Stage 2 Direct Labelmap + Tangent-Field Tube Reconstructor:
@@ -507,7 +507,7 @@ def extract_nn_labelmap_tubes(
 
         ks = sorted(pts.keys())
         k_min_rel = min(ks)
-        if not include_obturator and k_min_rel > int(round(32.0 / sp_k)):
+        if is_template_bundle and not include_obturator and k_min_rel > int(round(32.0 / sp_k)):
             continue
 
         arr_pts = np.array([[pts[k][0] + i0, pts[k][1] + j0, k + k0, pts[k][2]] for k in ks], dtype=np.float64)
@@ -534,13 +534,15 @@ def extract_nn_labelmap_tubes(
         dz = float(z_vals[-1] - z_vals[0])
         sx = float(fit_x[-1] - fit_x[0]) / dz
         sy = float(fit_y[-1] - fit_y[0]) / dz
-        if math.hypot(sx, sy) > 0.42:
+        max_tube_slope = 0.42 if is_template_bundle else 1.05
+        if math.hypot(sx, sy) > max_tube_slope:
             continue
-        if float(np.hypot(sx - med_slope[0], sy - med_slope[1])) > 0.26:
-            continue
-        mid_xy = np.array([float(np.mean(fit_x)), float(np.mean(fit_y))])
-        if float(np.hypot(mid_xy[0] - bundle_center[0], mid_xy[1] - bundle_center[1])) > 38.0:
-            continue
+        if is_template_bundle:
+            if float(np.hypot(sx - med_slope[0], sy - med_slope[1])) > 0.26:
+                continue
+            mid_xy = np.array([float(np.mean(fit_x)), float(np.mean(fit_y))])
+            if float(np.hypot(mid_xy[0] - bundle_center[0], mid_xy[1] - bundle_center[1])) > 38.0:
+                continue
 
         mean_pm = float(np.mean([p_mask[k, int(round(pts[k][1])), int(round(pts[k][0]))] for k in ks]))
         mean_po = float(np.mean([p_obt[k, int(round(pts[k][1])), int(round(pts[k][0]))] for k in ks]))
@@ -1253,7 +1255,7 @@ def run_mpnn_and_graph_transformer(
     vol, nn_preds, resp_roi, cs_roi, rsym_roi,
     k0, i0, j0, sp_i, sp_j, sp_k,
     ijk_to_ras_mat, ras_to_ijk, candidate_trajs,
-    min_confidence=50.0, script=False,
+    min_confidence=50.0, script=False, is_template_bundle=True,
 ):
     """
     Run Stage 2 (Slicer v2.0 Production Pipeline):
@@ -1498,7 +1500,8 @@ def run_mpnn_and_graph_transformer(
                         fy = np.polyval(py1, pts[:, 2])
                         rmse = float(np.sqrt(np.mean((pts[:, 0] - fx) ** 2 + (pts[:, 1] - fy) ** 2)))
                         sl = np.array([float(px1[0]), float(py1[0])])
-                        if rmse <= 1.25 and np.linalg.norm(sl) <= 0.45:
+                        max_mpnn_sl = 0.45 if is_template_bundle else 1.05
+                        if rmse <= 1.25 and np.linalg.norm(sl) <= max_mpnn_sl:
                             s_ras = np.column_stack([fx, fy, pts[:, 2]])
                             mpnn_trajs.append({
                                 "ras": s_ras,
@@ -1713,6 +1716,9 @@ def run_mpnn_and_graph_transformer(
         pr = prof_meta[u]
         d_base = float(np.hypot(p["base_xy"][0] - med_base[0], p["base_xy"][1] - med_base[1])) / 40.0
         d_slope = float(np.hypot(p["slope"][0] - med_slope[0], p["slope"][1] - med_slope[1])) / 0.25
+        if not is_template_bundle:
+            d_base = min(d_base, 0.25)
+            d_slope = min(d_slope, 0.15)
         z_low = float(ras[0, 2] - z_base_ras) / 50.0
         z_high = float(ras[-1, 2] - z_base_ras) / 100.0
         dz_prof = float(pr["z_prof_tip"] - ras[-1, 2]) / 20.0
@@ -1819,13 +1825,16 @@ def run_mpnn_and_graph_transformer(
                 blended_conf -= 5.5
             if t.get("is_stitched", False) and p.get("frac_active", 0.0) >= 0.65:
                 blended_conf += 2.2
+        if not is_template_bundle and p.get("mean_sym", 0.0) >= 0.22:
+            heur_c = float(t.get("confidence", 70.0))
+            blended_conf = max(blended_conf, 0.82 * heur_c + 0.18 * blended_conf)
         t["confidence"] = float(np.clip(blended_conf, 1.0, 99.9))
         t["graph_prob"] = float(0.45 * p_rec + 0.55 * p_1to1)
         conf_arr[i] = t["confidence"]
 
     # IRGM implant centroid & radius in XY physical space
     high_idx = np.where(conf_arr >= 55.0)[0]
-    if len(high_idx) >= 3:
+    if is_template_bundle and len(high_idx) >= 3:
         all_xy = np.concatenate([pool[idx]["ras"][:, :2] for idx in high_idx], axis=0)
         center_xy = np.median(all_xy, axis=0)
         dists_core = np.linalg.norm(all_xy - center_xy[None, :], axis=1)
