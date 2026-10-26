@@ -29,7 +29,7 @@ class ArchiveReader(pickle.Unpickler):
 
 
 def main():
-    paths = [ROOT / 'vault/sources' / name for name in (
+    paths = [ROOT / 'reproducibility/results' / name for name in (
         '2026-10-23-cases-meta-54-clean.pkl',
         '2026-10-23-stage2-clean-final-oof-predictions.pkl',
         '2026-10-23-unified-clean-nested-benchmark.json')]

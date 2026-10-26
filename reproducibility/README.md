@@ -90,20 +90,20 @@ JSON into their clone's vault, so never run the chain in the archival working co
 
 The clean pipeline entry points, in order, are:
 
-1. `vault/paper/benchmarks_clean/prepare_clean_dataset.py`
-2. `vault/paper/benchmarks_clean/pretrain_ssl_unet3d.py`
-3. `vault/paper/benchmarks_clean/train_nested_stage1.py`
-4. `vault/paper/benchmarks_clean/run_stage2_and_tip_clean.py`
-5. `vault/paper/benchmarks_clean/run_part1_peer_baselines_and_unc_maps.py`
-6. `vault/paper/benchmarks_clean/run_part2_literature_fusion_inside_needlefinder.py`
-7. `vault/paper/benchmarks_clean/export_clean_unified_and_table3.py`
-8. `vault/paper/benchmarks_clean/benchmark_public_pelvic_mri_clean.py`
-9. `vault/paper/benchmarks_clean/run_exp1_tg43_dosimetry.py` through `run_exp4_4d_insertion_and_ct.py`.
+1. `benchmarks/clean/prepare_clean_dataset.py`
+2. `benchmarks/clean/pretrain_ssl_unet3d.py`
+3. `benchmarks/clean/train_nested_stage1.py`
+4. `benchmarks/clean/run_stage2_and_tip_clean.py`
+5. `benchmarks/clean/run_part1_peer_baselines_and_unc_maps.py`
+6. `benchmarks/clean/run_part2_literature_fusion_inside_needlefinder.py`
+7. `benchmarks/clean/export_clean_unified_and_table3.py`
+8. `benchmarks/clean/benchmark_public_pelvic_mri_clean.py`
+9. `benchmarks/clean/run_exp1_tg43_dosimetry.py` through `run_exp4_4d_insertion_and_ct.py`.
 
 Use each script's documented inputs/options; do not infer missing training caches
-from aggregate result files. Once validated, figures are built with
-`python vault/paper/generate_pmb_figures.py`; the full manuscript build is
-`bash vault/paper/build_paper.sh` (requires its Pandoc/TeX/fonts dependencies).
+from aggregate result files. Archived machine-readable benchmark JSONs, OOF
+trajectory pickles, and figure data arrays are stored in `reproducibility/results/`
+and locked by SHA-256 in `reproducibility/artifacts.lock.json`.
 
 Re-export the tip model without retraining:
 

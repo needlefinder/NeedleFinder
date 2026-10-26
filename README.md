@@ -55,11 +55,24 @@ If you use NeedleFinder in your research, please cite:
 - Pernelle G., Mehrtash A., Barber L., Damato A., Wang W., Seethamraju R.T., Schmidt E., Cormack R.A., Wells W., Viswanathan A., Kapur T. *"Validation of Catheter Segmentation for MR-Guided Gynecologic Cancer Brachytherapy."* MICCAI 2013, LNCS vol. 8151, pp. 380–387 (2013).
 - Mastmeyer A., Pernelle G., et al. *"Accurate Model-based Segmentation of Gynecologic Brachytherapy Catheter Collections in MRI-Images."* Medical Image Analysis (2017).
 
-## Tests and paper reproducibility
+## Tests and paper reproducibility (`paper-media-2026-v1`)
 
-See [reproducibility/README.md](reproducibility/README.md) for pinned test dependencies,
-automated tests, branch-coverage policy, model checksums, the paper companion
-repository, and release gates. The current candidate includes a tip-localizer
-convolution correction and requires clinical/paper revalidation before a final
-paper release. A branch name or synced folder is not an exact paper version;
-use the tagged commit and artifact manifest.
+See [`reproducibility/README.md`](reproducibility/README.md),
+[`reproducibility/VALIDATION.md`](reproducibility/VALIDATION.md), and
+[`benchmarks/README.md`](benchmarks/README.md) for pinned test dependencies,
+automated validation suites (`fast`, `parity`, `coverage`, `clinical`, `slicer`,
+and `paper_reproduction`), frozen 54-patient splits (`reproducibility/splits-54.json`),
+artifact SHA-256 locks (`reproducibility/artifacts.lock.json`), archived benchmark
+outputs (`reproducibility/results/`), and the complete benchmark script suite
+(`benchmarks/clean/` and `benchmarks/rerun/`).
+
+```bash
+python3.10 -m venv .venv
+.venv/bin/python -m pip install -r reproducibility/requirements-parity.lock
+.venv/bin/python tools/release.py verify
+.venv/bin/python tools/validate.py fast
+.venv/bin/python tools/validate.py parity
+.venv/bin/python tools/validate.py coverage
+.venv/bin/python tools/verify_paper_results.py --output reproducibility/runs/archived-results.csv
+.venv/bin/python tools/verify_archived_oof.py
+```

@@ -1,0 +1,457 @@
+{
+  "generated_at": "2026-10-25",
+  "experiment": "Experiment 2, Part 2D recomputed with the two flipped-reference (Team 2 as reference) shaft non-inferiority endpoints added",
+  "script": "vault/paper/benchmarks_clean/run_exp2_uncertainty_triage_conformal_grubbs.py (run_part2d_grubbs_and_tost, patched: shaft_*_vs_rater2_ref_margin_0p25mm endpoints; patient-level and bootstrap branches use shaft_xy_23 vs shaft_xy_12 for the flipped shaft labels)",
+  "inputs": [
+    "/tmp/cases_meta_54_clean.pkl",
+    "/tmp/stage2_clean_final_oof_predictions_full.pkl"
+  ],
+  "elapsed_sec": 11.24,
+  "part2d_grubbs_three_cornered_hat_and_tost": {
+    "n_dual_traced_scenes": 40,
+    "n_three_way_matched_catheters": 432,
+    "pairwise_discrepancy_distributions": {
+      "shaft_xy_rater1_vs_rater2_mm": {
+        "mean": 0.718,
+        "sd": 0.6047,
+        "median": 0.4949,
+        "iqr": 0.5111,
+        "q25": 0.3333,
+        "q75": 0.8444,
+        "p95": 2.0596
+      },
+      "shaft_xy_nf2026_vs_rater1_mm": {
+        "mean": 0.5579,
+        "sd": 0.3841,
+        "median": 0.4349,
+        "iqr": 0.3377,
+        "q25": 0.3196,
+        "q75": 0.6573,
+        "p95": 1.2454
+      },
+      "shaft_xy_nf2026_vs_rater2_mm": {
+        "mean": 0.774,
+        "sd": 0.6638,
+        "median": 0.5164,
+        "iqr": 0.6337,
+        "q25": 0.3481,
+        "q75": 0.9818,
+        "p95": 2.0799
+      },
+      "tip_3d_rater1_vs_rater2_mm": {
+        "mean": 6.1033,
+        "sd": 7.8995,
+        "median": 3.1786,
+        "iqr": 5.445,
+        "q25": 1.9263,
+        "q75": 7.3713,
+        "p95": 20.9541
+      },
+      "tip_3d_nf2026_vs_rater1_mm": {
+        "mean": 5.5061,
+        "sd": 8.5138,
+        "median": 2.3275,
+        "iqr": 5.012,
+        "q25": 1.0818,
+        "q75": 6.0938,
+        "p95": 20.8315
+      },
+      "tip_3d_nf2026_vs_rater2_mm": {
+        "mean": 7.5343,
+        "sd": 9.5574,
+        "median": 3.9241,
+        "iqr": 6.4241,
+        "q25": 1.9525,
+        "q75": 8.3766,
+        "p95": 27.0286
+      },
+      "dz_tip_signed_rater1_minus_rater2_mm": {
+        "mean": 2.1867,
+        "sd": 9.2447,
+        "median": 1.8479,
+        "iqr": 4.7001,
+        "q25": -0.4439,
+        "q75": 4.2562,
+        "p95": 15.7881
+      },
+      "dz_tip_signed_rater1_minus_nf2026_mm": {
+        "mean": 0.5123,
+        "sd": 9.6422,
+        "median": -0.0,
+        "iqr": 4.3361,
+        "q25": -2.4919,
+        "q75": 1.8442,
+        "p95": 16.7555
+      },
+      "dz_tip_signed_rater2_minus_nf2026_mm": {
+        "mean": -1.6744,
+        "sd": 11.408,
+        "median": -1.9192,
+        "iqr": 6.336,
+        "q25": -5.659,
+        "q75": 0.677,
+        "p95": 19.131
+      }
+    },
+    "intrinsic_source_error_sd_estimates": {
+      "in_plane_shaft_sd_classic_mm": {
+        "Rater1_CY": {
+          "point": 0.3875,
+          "ci95_10000boot": [
+            0.2733,
+            0.4805
+          ]
+        },
+        "Rater2_LB_AMe": {
+          "point": 0.855,
+          "ci95_10000boot": [
+            0.5924,
+            1.091
+          ]
+        },
+        "NeedleFinder_2026_OOF": {
+          "point": 0.5556,
+          "ci95_10000boot": [
+            0.463,
+            0.6441
+          ]
+        }
+      },
+      "in_plane_shaft_sd_robust_mad_mm": {
+        "Rater1_CY": {
+          "point": 0.3475,
+          "ci95_10000boot": [
+            0.2118,
+            0.4443
+          ]
+        },
+        "Rater2_LB_AMe": {
+          "point": 0.4823,
+          "ci95_10000boot": [
+            0.3675,
+            0.7103
+          ]
+        },
+        "NeedleFinder_2026_OOF": {
+          "point": 0.39,
+          "ci95_10000boot": [
+            0.3167,
+            0.4813
+          ]
+        }
+      },
+      "axial_tip_sd_robust_mad_mm": {
+        "Rater1_CY": {
+          "point": 0.001,
+          "ci95_10000boot": [
+            0.001,
+            2.0194
+          ]
+        },
+        "Rater2_LB_AMe": {
+          "point": 3.5545,
+          "ci95_10000boot": [
+            2.5934,
+            4.6245
+          ]
+        },
+        "NeedleFinder_2026_OOF": {
+          "point": 2.9761,
+          "ci95_10000boot": [
+            2.0714,
+            3.7764
+          ]
+        }
+      },
+      "axial_tip_sd_winsorized15_mm": {
+        "Rater1_CY": {
+          "point": 3.7679,
+          "ci95_10000boot": [
+            3.0717,
+            4.3448
+          ]
+        },
+        "Rater2_LB_AMe": {
+          "point": 5.0931,
+          "ci95_10000boot": [
+            4.2158,
+            5.9706
+          ]
+        },
+        "NeedleFinder_2026_OOF": {
+          "point": 4.9355,
+          "ci95_10000boot": [
+            4.2339,
+            5.5377
+          ]
+        }
+      }
+    },
+    "tost_non_inferiority_and_equivalence_tests": {
+      "shaft_mean_noninferiority_margin_0p25mm": {
+        "label": "shaft_mean_nf_vs_cy_compared_to_lb_vs_cy",
+        "statistic_mode": "mean",
+        "margin_delta_mm": 0.25,
+        "n_patients": 40,
+        "n_catheters": 432,
+        "nf2026_value_mm": 0.5579,
+        "human_interobserver_value_mm": 0.718,
+        "paired_difference_nf_minus_human_mm": -0.1601,
+        "patient_level_mean_diff_mm": -0.1565,
+        "patient_level_median_diff_mm": 0.036,
+        "ci90_patient_bootstrap_mm": [
+          -0.311,
+          -0.0245
+        ],
+        "ci95_patient_bootstrap_mm": [
+          -0.3425,
+          -0.0038
+        ],
+        "non_inferiority_p_value_wilcoxon_patient_40": 1.3458702596835792e-08,
+        "tost_equivalence_p_value_wilcoxon_patient_40": 0.010773030070595269,
+        "two_sided_superiority_p_value_wilcoxon_patient_40": 0.9840937587196095,
+        "non_inferiority_p_value_parametric_patient_40": 1.1526906351639536e-06,
+        "non_inferiority_p_value_wilcoxon_catheter_432": 1.6379357966242173e-41,
+        "two_sided_superiority_p_value_wilcoxon_catheter_432": 0.0003755260939677353,
+        "non_inferiority_p_value_wilcoxon": 1.6379357966242173e-41,
+        "tost_equivalence_p_value_wilcoxon": 5.546999053611451e-10,
+        "non_inferiority_p_value_parametric": 3.575736452928538e-38,
+        "tost_equivalence_p_value_parametric": 0.0024084644356219265,
+        "non_inferiority_p_value_bootstrap": 0.0,
+        "is_non_inferior_at_alpha_0p05": true,
+        "is_equivalent_tost_at_alpha_0p05": false
+      },
+      "shaft_median_noninferiority_margin_0p25mm": {
+        "label": "shaft_median_nf_vs_cy_compared_to_lb_vs_cy",
+        "statistic_mode": "median",
+        "margin_delta_mm": 0.25,
+        "n_patients": 40,
+        "n_catheters": 432,
+        "nf2026_value_mm": 0.4349,
+        "human_interobserver_value_mm": 0.4949,
+        "paired_difference_nf_minus_human_mm": -0.06,
+        "patient_level_mean_diff_mm": -0.1734,
+        "patient_level_median_diff_mm": 0.0013,
+        "ci90_patient_bootstrap_mm": [
+          -0.1861,
+          0.0124
+        ],
+        "ci95_patient_bootstrap_mm": [
+          -0.2078,
+          0.0229
+        ],
+        "non_inferiority_p_value_wilcoxon_patient_40": 8.221832104027271e-10,
+        "tost_equivalence_p_value_wilcoxon_patient_40": 0.012949305320944404,
+        "two_sided_superiority_p_value_wilcoxon_patient_40": 0.5272133391008538,
+        "non_inferiority_p_value_parametric_patient_40": 9.769256955728735e-08,
+        "non_inferiority_p_value_wilcoxon_catheter_432": 1.6379357966242173e-41,
+        "two_sided_superiority_p_value_wilcoxon_catheter_432": 0.0003755260939677353,
+        "non_inferiority_p_value_wilcoxon": 1.6379357966242173e-41,
+        "tost_equivalence_p_value_wilcoxon": 5.546999053611451e-10,
+        "non_inferiority_p_value_parametric": null,
+        "tost_equivalence_p_value_parametric": null,
+        "non_inferiority_p_value_bootstrap": 0.0,
+        "is_non_inferior_at_alpha_0p05": true,
+        "is_equivalent_tost_at_alpha_0p05": true
+      },
+      "tip_median_noninferiority_margin_1p0mm": {
+        "label": "tip_median_nf_vs_cy_compared_to_lb_vs_cy",
+        "statistic_mode": "median",
+        "margin_delta_mm": 1.0,
+        "n_patients": 40,
+        "n_catheters": 432,
+        "nf2026_value_mm": 2.3275,
+        "human_interobserver_value_mm": 3.1786,
+        "paired_difference_nf_minus_human_mm": -0.8511,
+        "patient_level_mean_diff_mm": -1.6638,
+        "patient_level_median_diff_mm": -1.1589,
+        "ci90_patient_bootstrap_mm": [
+          -1.4636,
+          -0.5161
+        ],
+        "ci95_patient_bootstrap_mm": [
+          -1.6066,
+          -0.4042
+        ],
+        "non_inferiority_p_value_wilcoxon_patient_40": 2.6392626750748605e-07,
+        "tost_equivalence_p_value_wilcoxon_patient_40": 0.7975311301752299,
+        "two_sided_superiority_p_value_wilcoxon_patient_40": 0.001517616927230847,
+        "non_inferiority_p_value_parametric_patient_40": 1.791475876986568e-06,
+        "non_inferiority_p_value_wilcoxon_catheter_432": 2.2321481795114538e-14,
+        "two_sided_superiority_p_value_wilcoxon_catheter_432": 1.669655856584883e-05,
+        "non_inferiority_p_value_wilcoxon": 2.2321481795114538e-14,
+        "tost_equivalence_p_value_wilcoxon": 0.2501606406195507,
+        "non_inferiority_p_value_parametric": null,
+        "tost_equivalence_p_value_parametric": null,
+        "non_inferiority_p_value_bootstrap": 0.0,
+        "is_non_inferior_at_alpha_0p05": true,
+        "is_equivalent_tost_at_alpha_0p05": false
+      },
+      "tip_mean_noninferiority_margin_1p5mm": {
+        "label": "tip_mean_nf_vs_cy_compared_to_lb_vs_cy",
+        "statistic_mode": "mean",
+        "margin_delta_mm": 1.5,
+        "n_patients": 40,
+        "n_catheters": 432,
+        "nf2026_value_mm": 5.5061,
+        "human_interobserver_value_mm": 6.1033,
+        "paired_difference_nf_minus_human_mm": -0.5972,
+        "patient_level_mean_diff_mm": -1.1103,
+        "patient_level_median_diff_mm": -1.163,
+        "ci90_patient_bootstrap_mm": [
+          -1.7984,
+          0.5663
+        ],
+        "ci95_patient_bootstrap_mm": [
+          -2.0636,
+          0.757
+        ],
+        "non_inferiority_p_value_wilcoxon_patient_40": 0.00010960075724142371,
+        "tost_equivalence_p_value_wilcoxon_patient_40": 0.15053075633932167,
+        "two_sided_superiority_p_value_wilcoxon_patient_40": 0.11814906760264421,
+        "non_inferiority_p_value_parametric_patient_40": 0.00016676473931947442,
+        "non_inferiority_p_value_wilcoxon_catheter_432": 6.75207940971215e-19,
+        "two_sided_superiority_p_value_wilcoxon_catheter_432": 1.669655856584883e-05,
+        "non_inferiority_p_value_wilcoxon": 6.75207940971215e-19,
+        "tost_equivalence_p_value_wilcoxon": 0.0004985312635878291,
+        "non_inferiority_p_value_parametric": 3.5887953247966292e-06,
+        "tost_equivalence_p_value_parametric": 0.026675467619154403,
+        "non_inferiority_p_value_bootstrap": 0.0014,
+        "is_non_inferior_at_alpha_0p05": true,
+        "is_equivalent_tost_at_alpha_0p05": false
+      },
+      "tip_median_vs_rater2_ref_margin_1p0mm": {
+        "label": "tip_median_nf_vs_rater2_ref_compared_to_cy_vs_lb",
+        "statistic_mode": "median",
+        "margin_delta_mm": 1.0,
+        "n_patients": 40,
+        "n_catheters": 432,
+        "nf2026_value_mm": 3.9241,
+        "human_interobserver_value_mm": 3.1786,
+        "paired_difference_nf_minus_human_mm": 0.7455,
+        "patient_level_mean_diff_mm": 0.87,
+        "patient_level_median_diff_mm": 0.2946,
+        "ci90_patient_bootstrap_mm": [
+          0.2048,
+          0.9842
+        ],
+        "ci95_patient_bootstrap_mm": [
+          0.1132,
+          1.0884
+        ],
+        "non_inferiority_p_value_wilcoxon_patient_40": 0.07304447402020742,
+        "tost_equivalence_p_value_wilcoxon_patient_40": 0.07304447402020742,
+        "two_sided_superiority_p_value_wilcoxon_patient_40": 0.08415465162215696,
+        "non_inferiority_p_value_parametric_patient_40": 0.3680502574035955,
+        "non_inferiority_p_value_wilcoxon_catheter_432": 9.631861200075831e-05,
+        "two_sided_superiority_p_value_wilcoxon_catheter_432": 0.01400425337181813,
+        "non_inferiority_p_value_wilcoxon": 9.631861200075831e-05,
+        "tost_equivalence_p_value_wilcoxon": 9.631861200075831e-05,
+        "non_inferiority_p_value_parametric": null,
+        "tost_equivalence_p_value_parametric": null,
+        "non_inferiority_p_value_bootstrap": 0.046,
+        "is_non_inferior_at_alpha_0p05": true,
+        "is_equivalent_tost_at_alpha_0p05": true
+      },
+      "tip_mean_vs_rater2_ref_margin_1p5mm": {
+        "label": "tip_mean_nf_vs_rater2_ref_compared_to_cy_vs_lb",
+        "statistic_mode": "mean",
+        "margin_delta_mm": 1.5,
+        "n_patients": 40,
+        "n_catheters": 432,
+        "nf2026_value_mm": 7.5343,
+        "human_interobserver_value_mm": 6.1033,
+        "paired_difference_nf_minus_human_mm": 1.431,
+        "patient_level_mean_diff_mm": 1.2767,
+        "patient_level_median_diff_mm": 1.0641,
+        "ci90_patient_bootstrap_mm": [
+          0.794,
+          2.1089
+        ],
+        "ci95_patient_bootstrap_mm": [
+          0.6828,
+          2.261
+        ],
+        "non_inferiority_p_value_wilcoxon_patient_40": 0.11852515531882091,
+        "tost_equivalence_p_value_wilcoxon_patient_40": 0.11852515531882091,
+        "two_sided_superiority_p_value_wilcoxon_patient_40": 0.001862897997852997,
+        "non_inferiority_p_value_parametric_patient_40": 0.29267831503661,
+        "non_inferiority_p_value_wilcoxon_catheter_432": 8.08051677807564e-09,
+        "two_sided_superiority_p_value_wilcoxon_catheter_432": 0.01400425337181813,
+        "non_inferiority_p_value_wilcoxon": 8.08051677807564e-09,
+        "tost_equivalence_p_value_wilcoxon": 8.08051677807564e-09,
+        "non_inferiority_p_value_parametric": 0.4308308118121986,
+        "tost_equivalence_p_value_parametric": 0.4308308118121986,
+        "non_inferiority_p_value_bootstrap": 0.4168,
+        "is_non_inferior_at_alpha_0p05": false,
+        "is_equivalent_tost_at_alpha_0p05": false
+      },
+      "shaft_mean_vs_rater2_ref_margin_0p25mm": {
+        "label": "shaft_mean_nf_vs_rater2_ref_compared_to_cy_vs_lb",
+        "statistic_mode": "mean",
+        "margin_delta_mm": 0.25,
+        "n_patients": 40,
+        "n_catheters": 432,
+        "nf2026_value_mm": 0.774,
+        "human_interobserver_value_mm": 0.718,
+        "paired_difference_nf_minus_human_mm": 0.0559,
+        "patient_level_mean_diff_mm": 0.047,
+        "patient_level_median_diff_mm": 0.0285,
+        "ci90_patient_bootstrap_mm": [
+          0.012,
+          0.0964
+        ],
+        "ci95_patient_bootstrap_mm": [
+          0.0019,
+          0.104
+        ],
+        "non_inferiority_p_value_wilcoxon_patient_40": 6.930349627509713e-10,
+        "tost_equivalence_p_value_wilcoxon_patient_40": 6.930349627509713e-10,
+        "two_sided_superiority_p_value_wilcoxon_patient_40": 0.03560432962331106,
+        "non_inferiority_p_value_parametric_patient_40": 2.039484226029447e-20,
+        "non_inferiority_p_value_wilcoxon_catheter_432": 8.971445062409105e-38,
+        "two_sided_superiority_p_value_wilcoxon_catheter_432": 0.003021608747150527,
+        "non_inferiority_p_value_wilcoxon": 8.971445062409105e-38,
+        "tost_equivalence_p_value_wilcoxon": 8.971445062409105e-38,
+        "non_inferiority_p_value_parametric": 3.758531075531357e-23,
+        "tost_equivalence_p_value_parametric": 3.758531075531357e-23,
+        "non_inferiority_p_value_bootstrap": 0.0,
+        "is_non_inferior_at_alpha_0p05": true,
+        "is_equivalent_tost_at_alpha_0p05": true
+      },
+      "shaft_median_vs_rater2_ref_margin_0p25mm": {
+        "label": "shaft_median_nf_vs_rater2_ref_compared_to_cy_vs_lb",
+        "statistic_mode": "median",
+        "margin_delta_mm": 0.25,
+        "n_patients": 40,
+        "n_catheters": 432,
+        "nf2026_value_mm": 0.5164,
+        "human_interobserver_value_mm": 0.4949,
+        "paired_difference_nf_minus_human_mm": 0.0215,
+        "patient_level_mean_diff_mm": 0.0224,
+        "patient_level_median_diff_mm": 0.0288,
+        "ci90_patient_bootstrap_mm": [
+          -0.0356,
+          0.0832
+        ],
+        "ci95_patient_bootstrap_mm": [
+          -0.0509,
+          0.0992
+        ],
+        "non_inferiority_p_value_wilcoxon_patient_40": 3.001332515850663e-11,
+        "tost_equivalence_p_value_wilcoxon_patient_40": 3.001332515850663e-11,
+        "two_sided_superiority_p_value_wilcoxon_patient_40": 0.24792719178185507,
+        "non_inferiority_p_value_parametric_patient_40": 2.8715851798120304e-26,
+        "non_inferiority_p_value_wilcoxon_catheter_432": 8.971445062409105e-38,
+        "two_sided_superiority_p_value_wilcoxon_catheter_432": 0.003021608747150527,
+        "non_inferiority_p_value_wilcoxon": 8.971445062409105e-38,
+        "tost_equivalence_p_value_wilcoxon": 8.971445062409105e-38,
+        "non_inferiority_p_value_parametric": null,
+        "tost_equivalence_p_value_parametric": null,
+        "non_inferiority_p_value_bootstrap": 0.0,
+        "is_non_inferior_at_alpha_0p05": true,
+        "is_equivalent_tost_at_alpha_0p05": true
+      }
+    }
+  }
+}

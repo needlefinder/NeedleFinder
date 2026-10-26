@@ -1,0 +1,4324 @@
+{
+  "experiment": "Experiment 3: Zero-Shot Cross-Organ Transfer (Case 100 Prostate) & Same-Session Cross-Sequence Generalization",
+  "timestamp": "2026-10-23",
+  "total_runtime_s": 1670.58,
+  "part_3a_prostate_zero_shot_transfer": {
+    "scan_metadata": {
+      "case_name": "Case 100 Prostate",
+      "nrrd_filename": "33 AX space trial 1.6 SLICE COVER TEMPLATE.nrrd",
+      "shape_kij": [
+        120,
+        416,
+        640
+      ],
+      "spacing_ras_mm": [
+        0.46875,
+        0.46875,
+        1.6
+      ],
+      "n_reference_catheters": 14,
+      "gt_z_range_ras_mm": [
+        3.78,
+        70.17
+      ],
+      "gt_span_range_mm": [
+        50.24,
+        65.41
+      ],
+      "gt_nearest_neighbor_xy_mm": {
+        "min": 2.52,
+        "median": 7.25,
+        "max": 10.79
+      },
+      "k_lim_operating_points": {
+        "k_lim_auto_reference_free": 40,
+        "k_lim_acsv_raw": 49,
+        "k_lim_acsv_tilt_safe": 47,
+        "k_sym_safe_distal_perineal": 46,
+        "z_lim_acsv_ras_mm": 3.132,
+        "z_lim_auto_ras_mm": -10.632
+      }
+    },
+    "operating_modes": {
+      "reference_free_auto_klim40": {
+        "stage0_rust_physics_tracker": {
+          "n_gt": 14,
+          "n_pred": 16,
+          "tp": 14,
+          "fp": 2,
+          "fn": 0,
+          "recall_1to1_pct": 100.0,
+          "precision_1to1_pct": 87.5,
+          "f1_1to1_pct": 93.33,
+          "shaft_mean_mm": 0.381,
+          "shaft_median_mm": 0.335,
+          "shaft_iqr_mm": 0.116,
+          "shaft_p95_mm": 0.789,
+          "tip_3d_mean_mm": 6.378,
+          "tip_3d_median_mm": 2.09,
+          "tip_3d_iqr_mm": 7.49,
+          "tip_3d_p95_mm": 24.936,
+          "runtime_s": 2.939
+        },
+        "baseline1_pmb2019_unet_walk": {
+          "n_gt": 14,
+          "n_pred": 14,
+          "tp": 13,
+          "fp": 1,
+          "fn": 1,
+          "recall_1to1_pct": 92.86,
+          "precision_1to1_pct": 92.86,
+          "f1_1to1_pct": 92.86,
+          "shaft_mean_mm": 0.319,
+          "shaft_median_mm": 0.284,
+          "shaft_iqr_mm": 0.074,
+          "shaft_p95_mm": 0.594,
+          "tip_3d_mean_mm": 3.286,
+          "tip_3d_median_mm": 2.875,
+          "tip_3d_iqr_mm": 1.561,
+          "tip_3d_p95_mm": 7.965,
+          "runtime_s": 1.074
+        },
+        "baseline2_resunet_cldice_1ch": {
+          "n_gt": 14,
+          "n_pred": 25,
+          "tp": 14,
+          "fp": 11,
+          "fn": 0,
+          "recall_1to1_pct": 100.0,
+          "precision_1to1_pct": 56.0,
+          "f1_1to1_pct": 71.79,
+          "shaft_mean_mm": 0.242,
+          "shaft_median_mm": 0.239,
+          "shaft_iqr_mm": 0.07,
+          "shaft_p95_mm": 0.363,
+          "tip_3d_mean_mm": 4.519,
+          "tip_3d_median_mm": 2.479,
+          "tip_3d_iqr_mm": 3.051,
+          "tip_3d_p95_mm": 14.998,
+          "runtime_s": 4.043,
+          "prob_p999": 0.9899
+        },
+        "nf2026_stage1_nntubes_zero_exposure_gyn": {
+          "n_gt": 14,
+          "n_pred": 13,
+          "tp": 13,
+          "fp": 0,
+          "fn": 1,
+          "recall_1to1_pct": 92.86,
+          "precision_1to1_pct": 100.0,
+          "f1_1to1_pct": 96.3,
+          "shaft_mean_mm": 0.284,
+          "shaft_median_mm": 0.29,
+          "shaft_iqr_mm": 0.119,
+          "shaft_p95_mm": 0.408,
+          "tip_3d_mean_mm": 2.245,
+          "tip_3d_median_mm": 2.402,
+          "tip_3d_iqr_mm": 1.586,
+          "tip_3d_p95_mm": 5.373,
+          "runtime_s": 10.308,
+          "p_mask_max": 1.0,
+          "p_mask_p999": 0.9802,
+          "p_peak_max": 0.8534,
+          "p_obt_max": 0.9453
+        },
+        "nf2026_stage1_nntubes_full_nested_gyn": {
+          "n_gt": 14,
+          "n_pred": 14,
+          "tp": 14,
+          "fp": 0,
+          "fn": 0,
+          "recall_1to1_pct": 100.0,
+          "precision_1to1_pct": 100.0,
+          "f1_1to1_pct": 100.0,
+          "shaft_mean_mm": 0.321,
+          "shaft_median_mm": 0.304,
+          "shaft_iqr_mm": 0.179,
+          "shaft_p95_mm": 0.513,
+          "tip_3d_mean_mm": 2.16,
+          "tip_3d_median_mm": 1.077,
+          "tip_3d_iqr_mm": 1.601,
+          "tip_3d_p95_mm": 5.78,
+          "runtime_s": 10.276,
+          "p_mask_max": 0.9999,
+          "p_mask_p999": 0.9851,
+          "p_peak_max": 0.8388,
+          "p_obt_max": 0.8705
+        },
+        "nf2026_full_stage2_zero_exposure_gyn_tau35": {
+          "n_gt": 14,
+          "n_pred": 13,
+          "tp": 13,
+          "fp": 0,
+          "fn": 1,
+          "recall_1to1_pct": 92.86,
+          "precision_1to1_pct": 100.0,
+          "f1_1to1_pct": 96.3,
+          "shaft_mean_mm": 0.377,
+          "shaft_median_mm": 0.333,
+          "shaft_iqr_mm": 0.115,
+          "shaft_p95_mm": 0.83,
+          "tip_3d_mean_mm": 1.644,
+          "tip_3d_median_mm": 0.992,
+          "tip_3d_iqr_mm": 1.237,
+          "tip_3d_p95_mm": 3.955,
+          "runtime_s": 14.829
+        },
+        "nf2026_full_stage2_zero_exposure_gyn_tau50": {
+          "n_gt": 14,
+          "n_pred": 13,
+          "tp": 13,
+          "fp": 0,
+          "fn": 1,
+          "recall_1to1_pct": 92.86,
+          "precision_1to1_pct": 100.0,
+          "f1_1to1_pct": 96.3,
+          "shaft_mean_mm": 0.377,
+          "shaft_median_mm": 0.333,
+          "shaft_iqr_mm": 0.115,
+          "shaft_p95_mm": 0.83,
+          "tip_3d_mean_mm": 1.644,
+          "tip_3d_median_mm": 0.992,
+          "tip_3d_iqr_mm": 1.237,
+          "tip_3d_p95_mm": 3.955,
+          "runtime_s": 14.595
+        },
+        "nf2026_full_stage2_full_nested_gyn_tau35": {
+          "n_gt": 14,
+          "n_pred": 13,
+          "tp": 13,
+          "fp": 0,
+          "fn": 1,
+          "recall_1to1_pct": 92.86,
+          "precision_1to1_pct": 100.0,
+          "f1_1to1_pct": 96.3,
+          "shaft_mean_mm": 0.409,
+          "shaft_median_mm": 0.333,
+          "shaft_iqr_mm": 0.119,
+          "shaft_p95_mm": 1.011,
+          "tip_3d_mean_mm": 2.477,
+          "tip_3d_median_mm": 1.388,
+          "tip_3d_iqr_mm": 1.379,
+          "tip_3d_p95_mm": 7.559,
+          "runtime_s": 14.597
+        },
+        "nf2026_full_stage2_full_nested_gyn_tau50": {
+          "n_gt": 14,
+          "n_pred": 12,
+          "tp": 12,
+          "fp": 0,
+          "fn": 2,
+          "recall_1to1_pct": 85.71,
+          "precision_1to1_pct": 100.0,
+          "f1_1to1_pct": 92.31,
+          "shaft_mean_mm": 0.307,
+          "shaft_median_mm": 0.329,
+          "shaft_iqr_mm": 0.113,
+          "shaft_p95_mm": 0.484,
+          "tip_3d_mean_mm": 1.614,
+          "tip_3d_median_mm": 1.205,
+          "tip_3d_iqr_mm": 1.03,
+          "tip_3d_p95_mm": 3.839,
+          "runtime_s": 15.002
+        }
+      },
+      "standard_template_acsv_klim47": {
+        "stage0_rust_physics_tracker": {
+          "n_gt": 14,
+          "n_pred": 16,
+          "tp": 14,
+          "fp": 2,
+          "fn": 0,
+          "recall_1to1_pct": 100.0,
+          "precision_1to1_pct": 87.5,
+          "f1_1to1_pct": 93.33,
+          "shaft_mean_mm": 0.381,
+          "shaft_median_mm": 0.343,
+          "shaft_iqr_mm": 0.16,
+          "shaft_p95_mm": 0.762,
+          "tip_3d_mean_mm": 6.589,
+          "tip_3d_median_mm": 1.419,
+          "tip_3d_iqr_mm": 7.642,
+          "tip_3d_p95_mm": 25.67,
+          "runtime_s": 2.521
+        },
+        "baseline1_pmb2019_unet_walk": {
+          "n_gt": 14,
+          "n_pred": 13,
+          "tp": 13,
+          "fp": 0,
+          "fn": 1,
+          "recall_1to1_pct": 92.86,
+          "precision_1to1_pct": 100.0,
+          "f1_1to1_pct": 96.3,
+          "shaft_mean_mm": 0.34,
+          "shaft_median_mm": 0.292,
+          "shaft_iqr_mm": 0.108,
+          "shaft_p95_mm": 0.664,
+          "tip_3d_mean_mm": 4.113,
+          "tip_3d_median_mm": 3.414,
+          "tip_3d_iqr_mm": 1.78,
+          "tip_3d_p95_mm": 8.987,
+          "runtime_s": 0.784
+        },
+        "baseline2_resunet_cldice_1ch": {
+          "n_gt": 14,
+          "n_pred": 28,
+          "tp": 14,
+          "fp": 14,
+          "fn": 0,
+          "recall_1to1_pct": 100.0,
+          "precision_1to1_pct": 50.0,
+          "f1_1to1_pct": 66.67,
+          "shaft_mean_mm": 0.255,
+          "shaft_median_mm": 0.243,
+          "shaft_iqr_mm": 0.094,
+          "shaft_p95_mm": 0.372,
+          "tip_3d_mean_mm": 4.989,
+          "tip_3d_median_mm": 2.47,
+          "tip_3d_iqr_mm": 3.036,
+          "tip_3d_p95_mm": 17.73,
+          "runtime_s": 3.887,
+          "prob_p999": 0.9925
+        },
+        "nf2026_stage1_nntubes_zero_exposure_gyn": {
+          "n_gt": 14,
+          "n_pred": 13,
+          "tp": 13,
+          "fp": 0,
+          "fn": 1,
+          "recall_1to1_pct": 92.86,
+          "precision_1to1_pct": 100.0,
+          "f1_1to1_pct": 96.3,
+          "shaft_mean_mm": 0.296,
+          "shaft_median_mm": 0.304,
+          "shaft_iqr_mm": 0.105,
+          "shaft_p95_mm": 0.429,
+          "tip_3d_mean_mm": 2.37,
+          "tip_3d_median_mm": 2.431,
+          "tip_3d_iqr_mm": 1.585,
+          "tip_3d_p95_mm": 5.375,
+          "runtime_s": 9.547,
+          "p_mask_max": 1.0,
+          "p_mask_p999": 0.9825,
+          "p_peak_max": 0.8519,
+          "p_obt_max": 0.9404
+        },
+        "nf2026_stage1_nntubes_full_nested_gyn": {
+          "n_gt": 14,
+          "n_pred": 14,
+          "tp": 14,
+          "fp": 0,
+          "fn": 0,
+          "recall_1to1_pct": 100.0,
+          "precision_1to1_pct": 100.0,
+          "f1_1to1_pct": 100.0,
+          "shaft_mean_mm": 0.319,
+          "shaft_median_mm": 0.34,
+          "shaft_iqr_mm": 0.171,
+          "shaft_p95_mm": 0.49,
+          "tip_3d_mean_mm": 2.362,
+          "tip_3d_median_mm": 1.701,
+          "tip_3d_iqr_mm": 1.6,
+          "tip_3d_p95_mm": 5.79,
+          "runtime_s": 9.488,
+          "p_mask_max": 0.9999,
+          "p_mask_p999": 0.9856,
+          "p_peak_max": 0.8336,
+          "p_obt_max": 0.8689
+        },
+        "nf2026_full_stage2_zero_exposure_gyn_tau35": {
+          "n_gt": 14,
+          "n_pred": 14,
+          "tp": 14,
+          "fp": 0,
+          "fn": 0,
+          "recall_1to1_pct": 100.0,
+          "precision_1to1_pct": 100.0,
+          "f1_1to1_pct": 100.0,
+          "shaft_mean_mm": 0.397,
+          "shaft_median_mm": 0.342,
+          "shaft_iqr_mm": 0.161,
+          "shaft_p95_mm": 0.822,
+          "tip_3d_mean_mm": 5.0,
+          "tip_3d_median_mm": 1.573,
+          "tip_3d_iqr_mm": 3.016,
+          "tip_3d_p95_mm": 20.693,
+          "runtime_s": 13.484
+        },
+        "nf2026_full_stage2_zero_exposure_gyn_tau50": {
+          "n_gt": 14,
+          "n_pred": 14,
+          "tp": 14,
+          "fp": 0,
+          "fn": 0,
+          "recall_1to1_pct": 100.0,
+          "precision_1to1_pct": 100.0,
+          "f1_1to1_pct": 100.0,
+          "shaft_mean_mm": 0.397,
+          "shaft_median_mm": 0.342,
+          "shaft_iqr_mm": 0.161,
+          "shaft_p95_mm": 0.822,
+          "tip_3d_mean_mm": 5.0,
+          "tip_3d_median_mm": 1.573,
+          "tip_3d_iqr_mm": 3.016,
+          "tip_3d_p95_mm": 20.693,
+          "runtime_s": 13.593
+        },
+        "nf2026_full_stage2_full_nested_gyn_tau35": {
+          "n_gt": 14,
+          "n_pred": 14,
+          "tp": 14,
+          "fp": 0,
+          "fn": 0,
+          "recall_1to1_pct": 100.0,
+          "precision_1to1_pct": 100.0,
+          "f1_1to1_pct": 100.0,
+          "shaft_mean_mm": 0.398,
+          "shaft_median_mm": 0.342,
+          "shaft_iqr_mm": 0.162,
+          "shaft_p95_mm": 0.83,
+          "tip_3d_mean_mm": 4.989,
+          "tip_3d_median_mm": 1.427,
+          "tip_3d_iqr_mm": 2.99,
+          "tip_3d_p95_mm": 20.442,
+          "runtime_s": 13.549
+        },
+        "nf2026_full_stage2_full_nested_gyn_tau50": {
+          "n_gt": 14,
+          "n_pred": 13,
+          "tp": 13,
+          "fp": 0,
+          "fn": 1,
+          "recall_1to1_pct": 92.86,
+          "precision_1to1_pct": 100.0,
+          "f1_1to1_pct": 96.3,
+          "shaft_mean_mm": 0.373,
+          "shaft_median_mm": 0.335,
+          "shaft_iqr_mm": 0.159,
+          "shaft_p95_mm": 0.785,
+          "tip_3d_mean_mm": 3.963,
+          "tip_3d_median_mm": 1.385,
+          "tip_3d_iqr_mm": 2.76,
+          "tip_3d_p95_mm": 14.741,
+          "runtime_s": 13.522
+        }
+      },
+      "distal_perineal_slab_ksym26": {
+        "stage0_rust_physics_tracker": {
+          "n_gt": 14,
+          "n_pred": 14,
+          "tp": 14,
+          "fp": 0,
+          "fn": 0,
+          "recall_1to1_pct": 100.0,
+          "precision_1to1_pct": 100.0,
+          "f1_1to1_pct": 100.0,
+          "shaft_mean_mm": 0.475,
+          "shaft_median_mm": 0.359,
+          "shaft_iqr_mm": 0.16,
+          "shaft_p95_mm": 1.307,
+          "tip_3d_mean_mm": 6.026,
+          "tip_3d_median_mm": 2.771,
+          "tip_3d_iqr_mm": 8.142,
+          "tip_3d_p95_mm": 18.163,
+          "runtime_s": 2.598
+        },
+        "baseline1_pmb2019_unet_walk": {
+          "n_gt": 14,
+          "n_pred": 13,
+          "tp": 13,
+          "fp": 0,
+          "fn": 1,
+          "recall_1to1_pct": 92.86,
+          "precision_1to1_pct": 100.0,
+          "f1_1to1_pct": 96.3,
+          "shaft_mean_mm": 0.338,
+          "shaft_median_mm": 0.292,
+          "shaft_iqr_mm": 0.122,
+          "shaft_p95_mm": 0.666,
+          "tip_3d_mean_mm": 4.159,
+          "tip_3d_median_mm": 3.741,
+          "tip_3d_iqr_mm": 1.804,
+          "tip_3d_p95_mm": 8.828,
+          "runtime_s": 0.797
+        },
+        "baseline2_resunet_cldice_1ch": {
+          "n_gt": 14,
+          "n_pred": 27,
+          "tp": 14,
+          "fp": 13,
+          "fn": 0,
+          "recall_1to1_pct": 100.0,
+          "precision_1to1_pct": 51.85,
+          "f1_1to1_pct": 68.29,
+          "shaft_mean_mm": 0.258,
+          "shaft_median_mm": 0.235,
+          "shaft_iqr_mm": 0.101,
+          "shaft_p95_mm": 0.398,
+          "tip_3d_mean_mm": 4.99,
+          "tip_3d_median_mm": 2.473,
+          "tip_3d_iqr_mm": 3.039,
+          "tip_3d_p95_mm": 17.728,
+          "runtime_s": 3.887,
+          "prob_p999": 0.9923
+        },
+        "nf2026_stage1_nntubes_zero_exposure_gyn": {
+          "n_gt": 14,
+          "n_pred": 14,
+          "tp": 14,
+          "fp": 0,
+          "fn": 0,
+          "recall_1to1_pct": 100.0,
+          "precision_1to1_pct": 100.0,
+          "f1_1to1_pct": 100.0,
+          "shaft_mean_mm": 0.277,
+          "shaft_median_mm": 0.262,
+          "shaft_iqr_mm": 0.139,
+          "shaft_p95_mm": 0.413,
+          "tip_3d_mean_mm": 2.25,
+          "tip_3d_median_mm": 1.707,
+          "tip_3d_iqr_mm": 1.602,
+          "tip_3d_p95_mm": 5.217,
+          "runtime_s": 9.624,
+          "p_mask_max": 1.0,
+          "p_mask_p999": 0.9825,
+          "p_peak_max": 0.851,
+          "p_obt_max": 0.9403
+        },
+        "nf2026_stage1_nntubes_full_nested_gyn": {
+          "n_gt": 14,
+          "n_pred": 14,
+          "tp": 14,
+          "fp": 0,
+          "fn": 0,
+          "recall_1to1_pct": 100.0,
+          "precision_1to1_pct": 100.0,
+          "f1_1to1_pct": 100.0,
+          "shaft_mean_mm": 0.314,
+          "shaft_median_mm": 0.32,
+          "shaft_iqr_mm": 0.195,
+          "shaft_p95_mm": 0.478,
+          "tip_3d_mean_mm": 2.366,
+          "tip_3d_median_mm": 1.698,
+          "tip_3d_iqr_mm": 1.668,
+          "tip_3d_p95_mm": 5.789,
+          "runtime_s": 9.657,
+          "p_mask_max": 0.9999,
+          "p_mask_p999": 0.9857,
+          "p_peak_max": 0.8316,
+          "p_obt_max": 0.8683
+        },
+        "nf2026_full_stage2_zero_exposure_gyn_tau35": {
+          "n_gt": 14,
+          "n_pred": 14,
+          "tp": 14,
+          "fp": 0,
+          "fn": 0,
+          "recall_1to1_pct": 100.0,
+          "precision_1to1_pct": 100.0,
+          "f1_1to1_pct": 100.0,
+          "shaft_mean_mm": 0.397,
+          "shaft_median_mm": 0.359,
+          "shaft_iqr_mm": 0.161,
+          "shaft_p95_mm": 0.839,
+          "tip_3d_mean_mm": 2.699,
+          "tip_3d_median_mm": 1.269,
+          "tip_3d_iqr_mm": 1.163,
+          "tip_3d_p95_mm": 8.867,
+          "runtime_s": 13.815
+        },
+        "nf2026_full_stage2_zero_exposure_gyn_tau50": {
+          "n_gt": 14,
+          "n_pred": 14,
+          "tp": 14,
+          "fp": 0,
+          "fn": 0,
+          "recall_1to1_pct": 100.0,
+          "precision_1to1_pct": 100.0,
+          "f1_1to1_pct": 100.0,
+          "shaft_mean_mm": 0.397,
+          "shaft_median_mm": 0.359,
+          "shaft_iqr_mm": 0.161,
+          "shaft_p95_mm": 0.839,
+          "tip_3d_mean_mm": 2.699,
+          "tip_3d_median_mm": 1.269,
+          "tip_3d_iqr_mm": 1.163,
+          "tip_3d_p95_mm": 8.867,
+          "runtime_s": 13.943
+        },
+        "nf2026_full_stage2_full_nested_gyn_tau35": {
+          "n_gt": 14,
+          "n_pred": 13,
+          "tp": 13,
+          "fp": 0,
+          "fn": 1,
+          "recall_1to1_pct": 92.86,
+          "precision_1to1_pct": 100.0,
+          "f1_1to1_pct": 96.3,
+          "shaft_mean_mm": 0.414,
+          "shaft_median_mm": 0.352,
+          "shaft_iqr_mm": 0.153,
+          "shaft_p95_mm": 1.016,
+          "tip_3d_mean_mm": 2.549,
+          "tip_3d_median_mm": 1.233,
+          "tip_3d_iqr_mm": 1.439,
+          "tip_3d_p95_mm": 7.673,
+          "runtime_s": 13.79
+        },
+        "nf2026_full_stage2_full_nested_gyn_tau50": {
+          "n_gt": 14,
+          "n_pred": 13,
+          "tp": 13,
+          "fp": 0,
+          "fn": 1,
+          "recall_1to1_pct": 92.86,
+          "precision_1to1_pct": 100.0,
+          "f1_1to1_pct": 96.3,
+          "shaft_mean_mm": 0.414,
+          "shaft_median_mm": 0.352,
+          "shaft_iqr_mm": 0.153,
+          "shaft_p95_mm": 1.016,
+          "tip_3d_mean_mm": 2.549,
+          "tip_3d_median_mm": 1.233,
+          "tip_3d_iqr_mm": 1.439,
+          "tip_3d_p95_mm": 7.673,
+          "runtime_s": 13.718
+        }
+      }
+    },
+    "physics_channel_ablations": {
+      "reference_free_auto_klim40": {
+        "stage1_physics_active": {
+          "n_gt": 14,
+          "n_pred": 14,
+          "tp": 14,
+          "fp": 0,
+          "fn": 0,
+          "recall_1to1_pct": 100.0,
+          "precision_1to1_pct": 100.0,
+          "f1_1to1_pct": 100.0,
+          "shaft_mean_mm": 0.321,
+          "shaft_median_mm": 0.304,
+          "shaft_iqr_mm": 0.179,
+          "shaft_p95_mm": 0.513,
+          "tip_3d_mean_mm": 2.16,
+          "tip_3d_median_mm": 1.077,
+          "tip_3d_iqr_mm": 1.601,
+          "tip_3d_p95_mm": 5.78,
+          "runtime_s": 10.554,
+          "p_mask_max": 0.9999,
+          "p_mask_p999": 0.9851,
+          "p_peak_max": 0.8388,
+          "p_obt_max": 0.8705
+        },
+        "stage1_physics_zeroed_X1to3_eq_0": {
+          "n_gt": 14,
+          "n_pred": 0,
+          "tp": 0,
+          "fp": 0,
+          "fn": 14,
+          "recall_1to1_pct": 0.0,
+          "precision_1to1_pct": 0.0,
+          "f1_1to1_pct": 0.0,
+          "shaft_mean_mm": null,
+          "shaft_median_mm": null,
+          "shaft_iqr_mm": null,
+          "shaft_p95_mm": null,
+          "tip_3d_mean_mm": null,
+          "tip_3d_median_mm": null,
+          "tip_3d_iqr_mm": null,
+          "tip_3d_p95_mm": null,
+          "runtime_s": 10.315,
+          "p_mask_max": 0.036,
+          "p_mask_p999": 0.001,
+          "p_peak_max": 0.0713,
+          "p_obt_max": 0.0957
+        },
+        "full_nf2026_physics_active_tau35": {
+          "n_gt": 14,
+          "n_pred": 13,
+          "tp": 13,
+          "fp": 0,
+          "fn": 1,
+          "recall_1to1_pct": 92.86,
+          "precision_1to1_pct": 100.0,
+          "f1_1to1_pct": 96.3,
+          "shaft_mean_mm": 0.409,
+          "shaft_median_mm": 0.333,
+          "shaft_iqr_mm": 0.119,
+          "shaft_p95_mm": 1.011,
+          "tip_3d_mean_mm": 2.477,
+          "tip_3d_median_mm": 1.388,
+          "tip_3d_iqr_mm": 1.379,
+          "tip_3d_p95_mm": 7.559
+        },
+        "full_nf2026_stage2_physics_zeroed_tau35": {
+          "n_gt": 14,
+          "n_pred": 15,
+          "tp": 14,
+          "fp": 1,
+          "fn": 0,
+          "recall_1to1_pct": 100.0,
+          "precision_1to1_pct": 93.33,
+          "f1_1to1_pct": 96.55,
+          "shaft_mean_mm": 0.482,
+          "shaft_median_mm": 0.335,
+          "shaft_iqr_mm": 0.121,
+          "shaft_p95_mm": 1.368,
+          "tip_3d_mean_mm": 3.494,
+          "tip_3d_median_mm": 1.655,
+          "tip_3d_iqr_mm": 1.244,
+          "tip_3d_p95_mm": 13.892
+        },
+        "full_nf2026_stage1and2_physics_zeroed_tau35": {
+          "n_gt": 14,
+          "n_pred": 0,
+          "tp": 0,
+          "fp": 0,
+          "fn": 14,
+          "recall_1to1_pct": 0.0,
+          "precision_1to1_pct": 0.0,
+          "f1_1to1_pct": 0.0,
+          "shaft_mean_mm": null,
+          "shaft_median_mm": null,
+          "shaft_iqr_mm": null,
+          "shaft_p95_mm": null,
+          "tip_3d_mean_mm": null,
+          "tip_3d_median_mm": null,
+          "tip_3d_iqr_mm": null,
+          "tip_3d_p95_mm": null
+        },
+        "full_nf2026_physics_active_tau50": {
+          "n_gt": 14,
+          "n_pred": 12,
+          "tp": 12,
+          "fp": 0,
+          "fn": 2,
+          "recall_1to1_pct": 85.71,
+          "precision_1to1_pct": 100.0,
+          "f1_1to1_pct": 92.31,
+          "shaft_mean_mm": 0.307,
+          "shaft_median_mm": 0.329,
+          "shaft_iqr_mm": 0.113,
+          "shaft_p95_mm": 0.484,
+          "tip_3d_mean_mm": 1.614,
+          "tip_3d_median_mm": 1.205,
+          "tip_3d_iqr_mm": 1.03,
+          "tip_3d_p95_mm": 3.839
+        },
+        "full_nf2026_stage2_physics_zeroed_tau50": {
+          "n_gt": 14,
+          "n_pred": 13,
+          "tp": 12,
+          "fp": 1,
+          "fn": 2,
+          "recall_1to1_pct": 85.71,
+          "precision_1to1_pct": 92.31,
+          "f1_1to1_pct": 88.89,
+          "shaft_mean_mm": 0.319,
+          "shaft_median_mm": 0.329,
+          "shaft_iqr_mm": 0.098,
+          "shaft_p95_mm": 0.484,
+          "tip_3d_mean_mm": 3.049,
+          "tip_3d_median_mm": 1.655,
+          "tip_3d_iqr_mm": 1.131,
+          "tip_3d_p95_mm": 10.88
+        },
+        "full_nf2026_stage1and2_physics_zeroed_tau50": {
+          "n_gt": 14,
+          "n_pred": 0,
+          "tp": 0,
+          "fp": 0,
+          "fn": 14,
+          "recall_1to1_pct": 0.0,
+          "precision_1to1_pct": 0.0,
+          "f1_1to1_pct": 0.0,
+          "shaft_mean_mm": null,
+          "shaft_median_mm": null,
+          "shaft_iqr_mm": null,
+          "shaft_p95_mm": null,
+          "tip_3d_mean_mm": null,
+          "tip_3d_median_mm": null,
+          "tip_3d_iqr_mm": null,
+          "tip_3d_p95_mm": null
+        },
+        "pure_1ch_intensity_resunet_cldice": {
+          "n_gt": 14,
+          "n_pred": 25,
+          "tp": 14,
+          "fp": 11,
+          "fn": 0,
+          "recall_1to1_pct": 100.0,
+          "precision_1to1_pct": 56.0,
+          "f1_1to1_pct": 71.79,
+          "shaft_mean_mm": 0.242,
+          "shaft_median_mm": 0.239,
+          "shaft_iqr_mm": 0.07,
+          "shaft_p95_mm": 0.363,
+          "tip_3d_mean_mm": 4.519,
+          "tip_3d_median_mm": 2.479,
+          "tip_3d_iqr_mm": 3.051,
+          "tip_3d_p95_mm": 14.998,
+          "runtime_s": 4.043,
+          "prob_p999": 0.9899
+        }
+      },
+      "standard_template_acsv_klim47": {
+        "stage1_physics_active": {
+          "n_gt": 14,
+          "n_pred": 14,
+          "tp": 14,
+          "fp": 0,
+          "fn": 0,
+          "recall_1to1_pct": 100.0,
+          "precision_1to1_pct": 100.0,
+          "f1_1to1_pct": 100.0,
+          "shaft_mean_mm": 0.319,
+          "shaft_median_mm": 0.34,
+          "shaft_iqr_mm": 0.171,
+          "shaft_p95_mm": 0.49,
+          "tip_3d_mean_mm": 2.362,
+          "tip_3d_median_mm": 1.701,
+          "tip_3d_iqr_mm": 1.6,
+          "tip_3d_p95_mm": 5.79,
+          "runtime_s": 9.495,
+          "p_mask_max": 0.9999,
+          "p_mask_p999": 0.9856,
+          "p_peak_max": 0.8336,
+          "p_obt_max": 0.8689
+        },
+        "stage1_physics_zeroed_X1to3_eq_0": {
+          "n_gt": 14,
+          "n_pred": 0,
+          "tp": 0,
+          "fp": 0,
+          "fn": 14,
+          "recall_1to1_pct": 0.0,
+          "precision_1to1_pct": 0.0,
+          "f1_1to1_pct": 0.0,
+          "shaft_mean_mm": null,
+          "shaft_median_mm": null,
+          "shaft_iqr_mm": null,
+          "shaft_p95_mm": null,
+          "tip_3d_mean_mm": null,
+          "tip_3d_median_mm": null,
+          "tip_3d_iqr_mm": null,
+          "tip_3d_p95_mm": null,
+          "runtime_s": 9.413,
+          "p_mask_max": 0.0277,
+          "p_mask_p999": 0.0011,
+          "p_peak_max": 0.069,
+          "p_obt_max": 0.082
+        },
+        "full_nf2026_physics_active_tau35": {
+          "n_gt": 14,
+          "n_pred": 14,
+          "tp": 14,
+          "fp": 0,
+          "fn": 0,
+          "recall_1to1_pct": 100.0,
+          "precision_1to1_pct": 100.0,
+          "f1_1to1_pct": 100.0,
+          "shaft_mean_mm": 0.398,
+          "shaft_median_mm": 0.342,
+          "shaft_iqr_mm": 0.162,
+          "shaft_p95_mm": 0.83,
+          "tip_3d_mean_mm": 4.989,
+          "tip_3d_median_mm": 1.427,
+          "tip_3d_iqr_mm": 2.99,
+          "tip_3d_p95_mm": 20.442
+        },
+        "full_nf2026_stage2_physics_zeroed_tau35": {
+          "n_gt": 14,
+          "n_pred": 14,
+          "tp": 14,
+          "fp": 0,
+          "fn": 0,
+          "recall_1to1_pct": 100.0,
+          "precision_1to1_pct": 100.0,
+          "f1_1to1_pct": 100.0,
+          "shaft_mean_mm": 0.396,
+          "shaft_median_mm": 0.343,
+          "shaft_iqr_mm": 0.144,
+          "shaft_p95_mm": 0.795,
+          "tip_3d_mean_mm": 4.55,
+          "tip_3d_median_mm": 1.913,
+          "tip_3d_iqr_mm": 1.998,
+          "tip_3d_p95_mm": 20.309
+        },
+        "full_nf2026_stage1and2_physics_zeroed_tau35": {
+          "n_gt": 14,
+          "n_pred": 0,
+          "tp": 0,
+          "fp": 0,
+          "fn": 14,
+          "recall_1to1_pct": 0.0,
+          "precision_1to1_pct": 0.0,
+          "f1_1to1_pct": 0.0,
+          "shaft_mean_mm": null,
+          "shaft_median_mm": null,
+          "shaft_iqr_mm": null,
+          "shaft_p95_mm": null,
+          "tip_3d_mean_mm": null,
+          "tip_3d_median_mm": null,
+          "tip_3d_iqr_mm": null,
+          "tip_3d_p95_mm": null
+        },
+        "full_nf2026_physics_active_tau50": {
+          "n_gt": 14,
+          "n_pred": 13,
+          "tp": 13,
+          "fp": 0,
+          "fn": 1,
+          "recall_1to1_pct": 92.86,
+          "precision_1to1_pct": 100.0,
+          "f1_1to1_pct": 96.3,
+          "shaft_mean_mm": 0.373,
+          "shaft_median_mm": 0.335,
+          "shaft_iqr_mm": 0.159,
+          "shaft_p95_mm": 0.785,
+          "tip_3d_mean_mm": 3.963,
+          "tip_3d_median_mm": 1.385,
+          "tip_3d_iqr_mm": 2.76,
+          "tip_3d_p95_mm": 14.741
+        },
+        "full_nf2026_stage2_physics_zeroed_tau50": {
+          "n_gt": 14,
+          "n_pred": 14,
+          "tp": 14,
+          "fp": 0,
+          "fn": 0,
+          "recall_1to1_pct": 100.0,
+          "precision_1to1_pct": 100.0,
+          "f1_1to1_pct": 100.0,
+          "shaft_mean_mm": 0.396,
+          "shaft_median_mm": 0.343,
+          "shaft_iqr_mm": 0.144,
+          "shaft_p95_mm": 0.795,
+          "tip_3d_mean_mm": 4.55,
+          "tip_3d_median_mm": 1.913,
+          "tip_3d_iqr_mm": 1.998,
+          "tip_3d_p95_mm": 20.309
+        },
+        "full_nf2026_stage1and2_physics_zeroed_tau50": {
+          "n_gt": 14,
+          "n_pred": 0,
+          "tp": 0,
+          "fp": 0,
+          "fn": 14,
+          "recall_1to1_pct": 0.0,
+          "precision_1to1_pct": 0.0,
+          "f1_1to1_pct": 0.0,
+          "shaft_mean_mm": null,
+          "shaft_median_mm": null,
+          "shaft_iqr_mm": null,
+          "shaft_p95_mm": null,
+          "tip_3d_mean_mm": null,
+          "tip_3d_median_mm": null,
+          "tip_3d_iqr_mm": null,
+          "tip_3d_p95_mm": null
+        },
+        "pure_1ch_intensity_resunet_cldice": {
+          "n_gt": 14,
+          "n_pred": 28,
+          "tp": 14,
+          "fp": 14,
+          "fn": 0,
+          "recall_1to1_pct": 100.0,
+          "precision_1to1_pct": 50.0,
+          "f1_1to1_pct": 66.67,
+          "shaft_mean_mm": 0.255,
+          "shaft_median_mm": 0.243,
+          "shaft_iqr_mm": 0.094,
+          "shaft_p95_mm": 0.372,
+          "tip_3d_mean_mm": 4.989,
+          "tip_3d_median_mm": 2.47,
+          "tip_3d_iqr_mm": 3.036,
+          "tip_3d_p95_mm": 17.73,
+          "runtime_s": 3.887,
+          "prob_p999": 0.9925
+        }
+      }
+    },
+    "per_catheter_results": {
+      "reference_free_auto_klim40_zero_exposure_gyn_tau35": [
+        {
+          "catheter_id": 0,
+          "gt_z_range_mm": [
+            4.44,
+            60.57
+          ],
+          "gt_span_mm": 56.13,
+          "matched": false,
+          "nearest_pred_dist_mm": 3.052
+        },
+        {
+          "catheter_id": 1,
+          "gt_z_range_mm": [
+            4.35,
+            62.17
+          ],
+          "gt_span_mm": 57.82,
+          "matched": true,
+          "shaft_error_mm": 1.24,
+          "tip_3d_error_mm": 2.008,
+          "tip_dz_signed_mm": -1.991,
+          "tip_dxy_mm": 0.256
+        },
+        {
+          "catheter_id": 2,
+          "gt_z_range_mm": [
+            4.19,
+            63.77
+          ],
+          "gt_span_mm": 59.57,
+          "matched": true,
+          "shaft_error_mm": 0.393,
+          "tip_3d_error_mm": 3.81,
+          "tip_dz_signed_mm": 3.779,
+          "tip_dxy_mm": 0.485
+        },
+        {
+          "catheter_id": 3,
+          "gt_z_range_mm": [
+            4.65,
+            65.37
+          ],
+          "gt_span_mm": 60.71,
+          "matched": true,
+          "shaft_error_mm": 0.159,
+          "tip_3d_error_mm": 0.992,
+          "tip_dz_signed_mm": -0.8,
+          "tip_dxy_mm": 0.586
+        },
+        {
+          "catheter_id": 4,
+          "gt_z_range_mm": [
+            4.09,
+            58.97
+          ],
+          "gt_span_mm": 54.88,
+          "matched": true,
+          "shaft_error_mm": 0.382,
+          "tip_3d_error_mm": 0.865,
+          "tip_dz_signed_mm": 0.571,
+          "tip_dxy_mm": 0.65
+        },
+        {
+          "catheter_id": 5,
+          "gt_z_range_mm": [
+            3.93,
+            62.17
+          ],
+          "gt_span_mm": 58.24,
+          "matched": true,
+          "shaft_error_mm": 0.338,
+          "tip_3d_error_mm": 1.556,
+          "tip_dz_signed_mm": 1.338,
+          "tip_dxy_mm": 0.794
+        },
+        {
+          "catheter_id": 6,
+          "gt_z_range_mm": [
+            4.09,
+            65.37
+          ],
+          "gt_span_mm": 61.28,
+          "matched": true,
+          "shaft_error_mm": 0.327,
+          "tip_3d_error_mm": 0.593,
+          "tip_dz_signed_mm": 0.129,
+          "tip_dxy_mm": 0.579
+        },
+        {
+          "catheter_id": 7,
+          "gt_z_range_mm": [
+            3.93,
+            54.17
+          ],
+          "gt_span_mm": 50.24,
+          "matched": true,
+          "shaft_error_mm": 0.207,
+          "tip_3d_error_mm": 2.103,
+          "tip_dz_signed_mm": 1.989,
+          "tip_dxy_mm": 0.683
+        },
+        {
+          "catheter_id": 8,
+          "gt_z_range_mm": [
+            3.93,
+            60.57
+          ],
+          "gt_span_mm": 56.64,
+          "matched": true,
+          "shaft_error_mm": 0.34,
+          "tip_3d_error_mm": 0.937,
+          "tip_dz_signed_mm": -0.839,
+          "tip_dxy_mm": 0.417
+        },
+        {
+          "catheter_id": 9,
+          "gt_z_range_mm": [
+            3.78,
+            60.57
+          ],
+          "gt_span_mm": 56.79,
+          "matched": true,
+          "shaft_error_mm": 0.369,
+          "tip_3d_error_mm": 2.341,
+          "tip_dz_signed_mm": 2.173,
+          "tip_dxy_mm": 0.87
+        },
+        {
+          "catheter_id": 10,
+          "gt_z_range_mm": [
+            4.15,
+            60.57
+          ],
+          "gt_span_mm": 56.42,
+          "matched": true,
+          "shaft_error_mm": 0.278,
+          "tip_3d_error_mm": 0.889,
+          "tip_dz_signed_mm": -0.209,
+          "tip_dxy_mm": 0.864
+        },
+        {
+          "catheter_id": 11,
+          "gt_z_range_mm": [
+            4.28,
+            60.57
+          ],
+          "gt_span_mm": 56.29,
+          "matched": true,
+          "shaft_error_mm": 0.16,
+          "tip_3d_error_mm": 0.335,
+          "tip_dz_signed_mm": -0.281,
+          "tip_dxy_mm": 0.183
+        },
+        {
+          "catheter_id": 12,
+          "gt_z_range_mm": [
+            4.31,
+            66.97
+          ],
+          "gt_span_mm": 62.66,
+          "matched": true,
+          "shaft_error_mm": 0.392,
+          "tip_3d_error_mm": 4.171,
+          "tip_dz_signed_mm": 4.048,
+          "tip_dxy_mm": 1.007
+        },
+        {
+          "catheter_id": 13,
+          "gt_z_range_mm": [
+            4.76,
+            70.17
+          ],
+          "gt_span_mm": 65.41,
+          "matched": true,
+          "shaft_error_mm": 0.613,
+          "tip_3d_error_mm": 0.771,
+          "tip_dz_signed_mm": -0.632,
+          "tip_dxy_mm": 0.442
+        }
+      ],
+      "reference_free_auto_klim40_zero_exposure_gyn_tau50": [
+        {
+          "catheter_id": 0,
+          "gt_z_range_mm": [
+            4.44,
+            60.57
+          ],
+          "gt_span_mm": 56.13,
+          "matched": false,
+          "nearest_pred_dist_mm": 3.052
+        },
+        {
+          "catheter_id": 1,
+          "gt_z_range_mm": [
+            4.35,
+            62.17
+          ],
+          "gt_span_mm": 57.82,
+          "matched": true,
+          "shaft_error_mm": 1.24,
+          "tip_3d_error_mm": 2.008,
+          "tip_dz_signed_mm": -1.991,
+          "tip_dxy_mm": 0.256
+        },
+        {
+          "catheter_id": 2,
+          "gt_z_range_mm": [
+            4.19,
+            63.77
+          ],
+          "gt_span_mm": 59.57,
+          "matched": true,
+          "shaft_error_mm": 0.393,
+          "tip_3d_error_mm": 3.81,
+          "tip_dz_signed_mm": 3.779,
+          "tip_dxy_mm": 0.485
+        },
+        {
+          "catheter_id": 3,
+          "gt_z_range_mm": [
+            4.65,
+            65.37
+          ],
+          "gt_span_mm": 60.71,
+          "matched": true,
+          "shaft_error_mm": 0.159,
+          "tip_3d_error_mm": 0.992,
+          "tip_dz_signed_mm": -0.8,
+          "tip_dxy_mm": 0.586
+        },
+        {
+          "catheter_id": 4,
+          "gt_z_range_mm": [
+            4.09,
+            58.97
+          ],
+          "gt_span_mm": 54.88,
+          "matched": true,
+          "shaft_error_mm": 0.382,
+          "tip_3d_error_mm": 0.865,
+          "tip_dz_signed_mm": 0.571,
+          "tip_dxy_mm": 0.65
+        },
+        {
+          "catheter_id": 5,
+          "gt_z_range_mm": [
+            3.93,
+            62.17
+          ],
+          "gt_span_mm": 58.24,
+          "matched": true,
+          "shaft_error_mm": 0.338,
+          "tip_3d_error_mm": 1.556,
+          "tip_dz_signed_mm": 1.338,
+          "tip_dxy_mm": 0.794
+        },
+        {
+          "catheter_id": 6,
+          "gt_z_range_mm": [
+            4.09,
+            65.37
+          ],
+          "gt_span_mm": 61.28,
+          "matched": true,
+          "shaft_error_mm": 0.327,
+          "tip_3d_error_mm": 0.593,
+          "tip_dz_signed_mm": 0.129,
+          "tip_dxy_mm": 0.579
+        },
+        {
+          "catheter_id": 7,
+          "gt_z_range_mm": [
+            3.93,
+            54.17
+          ],
+          "gt_span_mm": 50.24,
+          "matched": true,
+          "shaft_error_mm": 0.207,
+          "tip_3d_error_mm": 2.103,
+          "tip_dz_signed_mm": 1.989,
+          "tip_dxy_mm": 0.683
+        },
+        {
+          "catheter_id": 8,
+          "gt_z_range_mm": [
+            3.93,
+            60.57
+          ],
+          "gt_span_mm": 56.64,
+          "matched": true,
+          "shaft_error_mm": 0.34,
+          "tip_3d_error_mm": 0.937,
+          "tip_dz_signed_mm": -0.839,
+          "tip_dxy_mm": 0.417
+        },
+        {
+          "catheter_id": 9,
+          "gt_z_range_mm": [
+            3.78,
+            60.57
+          ],
+          "gt_span_mm": 56.79,
+          "matched": true,
+          "shaft_error_mm": 0.369,
+          "tip_3d_error_mm": 2.341,
+          "tip_dz_signed_mm": 2.173,
+          "tip_dxy_mm": 0.87
+        },
+        {
+          "catheter_id": 10,
+          "gt_z_range_mm": [
+            4.15,
+            60.57
+          ],
+          "gt_span_mm": 56.42,
+          "matched": true,
+          "shaft_error_mm": 0.278,
+          "tip_3d_error_mm": 0.889,
+          "tip_dz_signed_mm": -0.209,
+          "tip_dxy_mm": 0.864
+        },
+        {
+          "catheter_id": 11,
+          "gt_z_range_mm": [
+            4.28,
+            60.57
+          ],
+          "gt_span_mm": 56.29,
+          "matched": true,
+          "shaft_error_mm": 0.16,
+          "tip_3d_error_mm": 0.335,
+          "tip_dz_signed_mm": -0.281,
+          "tip_dxy_mm": 0.183
+        },
+        {
+          "catheter_id": 12,
+          "gt_z_range_mm": [
+            4.31,
+            66.97
+          ],
+          "gt_span_mm": 62.66,
+          "matched": true,
+          "shaft_error_mm": 0.392,
+          "tip_3d_error_mm": 4.171,
+          "tip_dz_signed_mm": 4.048,
+          "tip_dxy_mm": 1.007
+        },
+        {
+          "catheter_id": 13,
+          "gt_z_range_mm": [
+            4.76,
+            70.17
+          ],
+          "gt_span_mm": 65.41,
+          "matched": true,
+          "shaft_error_mm": 0.613,
+          "tip_3d_error_mm": 0.771,
+          "tip_dz_signed_mm": -0.632,
+          "tip_dxy_mm": 0.442
+        }
+      ],
+      "reference_free_auto_klim40_full_nested_gyn_tau35": [
+        {
+          "catheter_id": 0,
+          "gt_z_range_mm": [
+            4.44,
+            60.57
+          ],
+          "gt_span_mm": 56.13,
+          "matched": false,
+          "nearest_pred_dist_mm": 1.813
+        },
+        {
+          "catheter_id": 1,
+          "gt_z_range_mm": [
+            4.35,
+            62.17
+          ],
+          "gt_span_mm": 57.82,
+          "matched": true,
+          "shaft_error_mm": 1.683,
+          "tip_3d_error_mm": 12.83,
+          "tip_dz_signed_mm": -12.488,
+          "tip_dxy_mm": 2.942
+        },
+        {
+          "catheter_id": 2,
+          "gt_z_range_mm": [
+            4.19,
+            63.77
+          ],
+          "gt_span_mm": 59.57,
+          "matched": true,
+          "shaft_error_mm": 0.393,
+          "tip_3d_error_mm": 3.67,
+          "tip_dz_signed_mm": 3.639,
+          "tip_dxy_mm": 0.477
+        },
+        {
+          "catheter_id": 3,
+          "gt_z_range_mm": [
+            4.65,
+            65.37
+          ],
+          "gt_span_mm": 60.71,
+          "matched": true,
+          "shaft_error_mm": 0.117,
+          "tip_3d_error_mm": 1.388,
+          "tip_dz_signed_mm": -1.302,
+          "tip_dxy_mm": 0.481
+        },
+        {
+          "catheter_id": 4,
+          "gt_z_range_mm": [
+            4.09,
+            58.97
+          ],
+          "gt_span_mm": 54.88,
+          "matched": true,
+          "shaft_error_mm": 0.382,
+          "tip_3d_error_mm": 0.641,
+          "tip_dz_signed_mm": 0.044,
+          "tip_dxy_mm": 0.639
+        },
+        {
+          "catheter_id": 5,
+          "gt_z_range_mm": [
+            3.93,
+            62.17
+          ],
+          "gt_span_mm": 58.24,
+          "matched": true,
+          "shaft_error_mm": 0.338,
+          "tip_3d_error_mm": 1.556,
+          "tip_dz_signed_mm": 1.338,
+          "tip_dxy_mm": 0.794
+        },
+        {
+          "catheter_id": 6,
+          "gt_z_range_mm": [
+            4.09,
+            65.37
+          ],
+          "gt_span_mm": 61.28,
+          "matched": true,
+          "shaft_error_mm": 0.327,
+          "tip_3d_error_mm": 0.593,
+          "tip_dz_signed_mm": 0.129,
+          "tip_dxy_mm": 0.579
+        },
+        {
+          "catheter_id": 7,
+          "gt_z_range_mm": [
+            3.93,
+            54.17
+          ],
+          "gt_span_mm": 50.24,
+          "matched": true,
+          "shaft_error_mm": 0.207,
+          "tip_3d_error_mm": 1.718,
+          "tip_dz_signed_mm": 1.594,
+          "tip_dxy_mm": 0.642
+        },
+        {
+          "catheter_id": 8,
+          "gt_z_range_mm": [
+            3.93,
+            60.57
+          ],
+          "gt_span_mm": 56.64,
+          "matched": true,
+          "shaft_error_mm": 0.34,
+          "tip_3d_error_mm": 0.937,
+          "tip_dz_signed_mm": -0.839,
+          "tip_dxy_mm": 0.417
+        },
+        {
+          "catheter_id": 9,
+          "gt_z_range_mm": [
+            3.78,
+            60.57
+          ],
+          "gt_span_mm": 56.79,
+          "matched": true,
+          "shaft_error_mm": 0.369,
+          "tip_3d_error_mm": 2.201,
+          "tip_dz_signed_mm": 2.027,
+          "tip_dxy_mm": 0.86
+        },
+        {
+          "catheter_id": 10,
+          "gt_z_range_mm": [
+            4.15,
+            60.57
+          ],
+          "gt_span_mm": 56.42,
+          "matched": true,
+          "shaft_error_mm": 0.272,
+          "tip_3d_error_mm": 1.022,
+          "tip_dz_signed_mm": -0.532,
+          "tip_dxy_mm": 0.873
+        },
+        {
+          "catheter_id": 11,
+          "gt_z_range_mm": [
+            4.28,
+            60.57
+          ],
+          "gt_span_mm": 56.29,
+          "matched": true,
+          "shaft_error_mm": 0.158,
+          "tip_3d_error_mm": 0.822,
+          "tip_dz_signed_mm": -0.813,
+          "tip_dxy_mm": 0.126
+        },
+        {
+          "catheter_id": 12,
+          "gt_z_range_mm": [
+            4.31,
+            66.97
+          ],
+          "gt_span_mm": 62.66,
+          "matched": true,
+          "shaft_error_mm": 0.392,
+          "tip_3d_error_mm": 4.045,
+          "tip_dz_signed_mm": 3.92,
+          "tip_dxy_mm": 0.998
+        },
+        {
+          "catheter_id": 13,
+          "gt_z_range_mm": [
+            4.76,
+            70.17
+          ],
+          "gt_span_mm": 65.41,
+          "matched": true,
+          "shaft_error_mm": 0.613,
+          "tip_3d_error_mm": 0.771,
+          "tip_dz_signed_mm": -0.632,
+          "tip_dxy_mm": 0.442
+        }
+      ],
+      "reference_free_auto_klim40_full_nested_gyn_tau50": [
+        {
+          "catheter_id": 0,
+          "gt_z_range_mm": [
+            4.44,
+            60.57
+          ],
+          "gt_span_mm": 56.13,
+          "matched": false,
+          "nearest_pred_dist_mm": 7.18
+        },
+        {
+          "catheter_id": 1,
+          "gt_z_range_mm": [
+            4.35,
+            62.17
+          ],
+          "gt_span_mm": 57.82,
+          "matched": false,
+          "nearest_pred_dist_mm": 7.198
+        },
+        {
+          "catheter_id": 2,
+          "gt_z_range_mm": [
+            4.19,
+            63.77
+          ],
+          "gt_span_mm": 59.57,
+          "matched": true,
+          "shaft_error_mm": 0.393,
+          "tip_3d_error_mm": 3.67,
+          "tip_dz_signed_mm": 3.639,
+          "tip_dxy_mm": 0.477
+        },
+        {
+          "catheter_id": 3,
+          "gt_z_range_mm": [
+            4.65,
+            65.37
+          ],
+          "gt_span_mm": 60.71,
+          "matched": true,
+          "shaft_error_mm": 0.117,
+          "tip_3d_error_mm": 1.388,
+          "tip_dz_signed_mm": -1.302,
+          "tip_dxy_mm": 0.481
+        },
+        {
+          "catheter_id": 4,
+          "gt_z_range_mm": [
+            4.09,
+            58.97
+          ],
+          "gt_span_mm": 54.88,
+          "matched": true,
+          "shaft_error_mm": 0.382,
+          "tip_3d_error_mm": 0.641,
+          "tip_dz_signed_mm": 0.044,
+          "tip_dxy_mm": 0.639
+        },
+        {
+          "catheter_id": 5,
+          "gt_z_range_mm": [
+            3.93,
+            62.17
+          ],
+          "gt_span_mm": 58.24,
+          "matched": true,
+          "shaft_error_mm": 0.338,
+          "tip_3d_error_mm": 1.556,
+          "tip_dz_signed_mm": 1.338,
+          "tip_dxy_mm": 0.794
+        },
+        {
+          "catheter_id": 6,
+          "gt_z_range_mm": [
+            4.09,
+            65.37
+          ],
+          "gt_span_mm": 61.28,
+          "matched": true,
+          "shaft_error_mm": 0.327,
+          "tip_3d_error_mm": 0.593,
+          "tip_dz_signed_mm": 0.129,
+          "tip_dxy_mm": 0.579
+        },
+        {
+          "catheter_id": 7,
+          "gt_z_range_mm": [
+            3.93,
+            54.17
+          ],
+          "gt_span_mm": 50.24,
+          "matched": true,
+          "shaft_error_mm": 0.207,
+          "tip_3d_error_mm": 1.718,
+          "tip_dz_signed_mm": 1.594,
+          "tip_dxy_mm": 0.642
+        },
+        {
+          "catheter_id": 8,
+          "gt_z_range_mm": [
+            3.93,
+            60.57
+          ],
+          "gt_span_mm": 56.64,
+          "matched": true,
+          "shaft_error_mm": 0.34,
+          "tip_3d_error_mm": 0.937,
+          "tip_dz_signed_mm": -0.839,
+          "tip_dxy_mm": 0.417
+        },
+        {
+          "catheter_id": 9,
+          "gt_z_range_mm": [
+            3.78,
+            60.57
+          ],
+          "gt_span_mm": 56.79,
+          "matched": true,
+          "shaft_error_mm": 0.369,
+          "tip_3d_error_mm": 2.201,
+          "tip_dz_signed_mm": 2.027,
+          "tip_dxy_mm": 0.86
+        },
+        {
+          "catheter_id": 10,
+          "gt_z_range_mm": [
+            4.15,
+            60.57
+          ],
+          "gt_span_mm": 56.42,
+          "matched": true,
+          "shaft_error_mm": 0.272,
+          "tip_3d_error_mm": 1.022,
+          "tip_dz_signed_mm": -0.532,
+          "tip_dxy_mm": 0.873
+        },
+        {
+          "catheter_id": 11,
+          "gt_z_range_mm": [
+            4.28,
+            60.57
+          ],
+          "gt_span_mm": 56.29,
+          "matched": true,
+          "shaft_error_mm": 0.158,
+          "tip_3d_error_mm": 0.822,
+          "tip_dz_signed_mm": -0.813,
+          "tip_dxy_mm": 0.126
+        },
+        {
+          "catheter_id": 12,
+          "gt_z_range_mm": [
+            4.31,
+            66.97
+          ],
+          "gt_span_mm": 62.66,
+          "matched": true,
+          "shaft_error_mm": 0.392,
+          "tip_3d_error_mm": 4.045,
+          "tip_dz_signed_mm": 3.92,
+          "tip_dxy_mm": 0.998
+        },
+        {
+          "catheter_id": 13,
+          "gt_z_range_mm": [
+            4.76,
+            70.17
+          ],
+          "gt_span_mm": 65.41,
+          "matched": true,
+          "shaft_error_mm": 0.613,
+          "tip_3d_error_mm": 0.771,
+          "tip_dz_signed_mm": -0.632,
+          "tip_dxy_mm": 0.442
+        }
+      ],
+      "standard_template_acsv_klim47_zero_exposure_gyn_tau35": [
+        {
+          "catheter_id": 0,
+          "gt_z_range_mm": [
+            4.44,
+            60.57
+          ],
+          "gt_span_mm": 56.13,
+          "matched": true,
+          "shaft_error_mm": 0.726,
+          "tip_3d_error_mm": 18.743,
+          "tip_dz_signed_mm": -18.712,
+          "tip_dxy_mm": 1.073
+        },
+        {
+          "catheter_id": 1,
+          "gt_z_range_mm": [
+            4.35,
+            62.17
+          ],
+          "gt_span_mm": 57.82,
+          "matched": true,
+          "shaft_error_mm": 1.089,
+          "tip_3d_error_mm": 8.684,
+          "tip_dz_signed_mm": 8.532,
+          "tip_dxy_mm": 1.619
+        },
+        {
+          "catheter_id": 2,
+          "gt_z_range_mm": [
+            4.19,
+            63.77
+          ],
+          "gt_span_mm": 59.57,
+          "matched": true,
+          "shaft_error_mm": 0.396,
+          "tip_3d_error_mm": 3.839,
+          "tip_dz_signed_mm": 3.807,
+          "tip_dxy_mm": 0.492
+        },
+        {
+          "catheter_id": 3,
+          "gt_z_range_mm": [
+            4.65,
+            65.37
+          ],
+          "gt_span_mm": 60.71,
+          "matched": true,
+          "shaft_error_mm": 0.225,
+          "tip_3d_error_mm": 24.314,
+          "tip_dz_signed_mm": -24.207,
+          "tip_dxy_mm": 2.276
+        },
+        {
+          "catheter_id": 4,
+          "gt_z_range_mm": [
+            4.09,
+            58.97
+          ],
+          "gt_span_mm": 54.88,
+          "matched": true,
+          "shaft_error_mm": 0.364,
+          "tip_3d_error_mm": 0.645,
+          "tip_dz_signed_mm": 0.546,
+          "tip_dxy_mm": 0.343
+        },
+        {
+          "catheter_id": 5,
+          "gt_z_range_mm": [
+            3.93,
+            62.17
+          ],
+          "gt_span_mm": 58.24,
+          "matched": true,
+          "shaft_error_mm": 0.347,
+          "tip_3d_error_mm": 1.234,
+          "tip_dz_signed_mm": 0.974,
+          "tip_dxy_mm": 0.758
+        },
+        {
+          "catheter_id": 6,
+          "gt_z_range_mm": [
+            4.09,
+            65.37
+          ],
+          "gt_span_mm": 61.28,
+          "matched": true,
+          "shaft_error_mm": 0.24,
+          "tip_3d_error_mm": 1.048,
+          "tip_dz_signed_mm": 0.787,
+          "tip_dxy_mm": 0.692
+        },
+        {
+          "catheter_id": 7,
+          "gt_z_range_mm": [
+            3.93,
+            54.17
+          ],
+          "gt_span_mm": 50.24,
+          "matched": true,
+          "shaft_error_mm": 0.22,
+          "tip_3d_error_mm": 1.652,
+          "tip_dz_signed_mm": 1.573,
+          "tip_dxy_mm": 0.505
+        },
+        {
+          "catheter_id": 8,
+          "gt_z_range_mm": [
+            3.93,
+            60.57
+          ],
+          "gt_span_mm": 56.64,
+          "matched": true,
+          "shaft_error_mm": 0.341,
+          "tip_3d_error_mm": 1.495,
+          "tip_dz_signed_mm": -1.434,
+          "tip_dxy_mm": 0.422
+        },
+        {
+          "catheter_id": 9,
+          "gt_z_range_mm": [
+            3.78,
+            60.57
+          ],
+          "gt_span_mm": 56.79,
+          "matched": true,
+          "shaft_error_mm": 0.37,
+          "tip_3d_error_mm": 2.054,
+          "tip_dz_signed_mm": 1.924,
+          "tip_dxy_mm": 0.721
+        },
+        {
+          "catheter_id": 10,
+          "gt_z_range_mm": [
+            4.15,
+            60.57
+          ],
+          "gt_span_mm": 56.42,
+          "matched": true,
+          "shaft_error_mm": 0.298,
+          "tip_3d_error_mm": 1.02,
+          "tip_dz_signed_mm": -0.281,
+          "tip_dxy_mm": 0.981
+        },
+        {
+          "catheter_id": 11,
+          "gt_z_range_mm": [
+            4.28,
+            60.57
+          ],
+          "gt_span_mm": 56.29,
+          "matched": true,
+          "shaft_error_mm": 0.166,
+          "tip_3d_error_mm": 0.232,
+          "tip_dz_signed_mm": -0.138,
+          "tip_dxy_mm": 0.186
+        },
+        {
+          "catheter_id": 12,
+          "gt_z_range_mm": [
+            4.31,
+            66.97
+          ],
+          "gt_span_mm": 62.66,
+          "matched": true,
+          "shaft_error_mm": 0.396,
+          "tip_3d_error_mm": 4.111,
+          "tip_dz_signed_mm": 3.987,
+          "tip_dxy_mm": 1.002
+        },
+        {
+          "catheter_id": 13,
+          "gt_z_range_mm": [
+            4.76,
+            70.17
+          ],
+          "gt_span_mm": 65.41,
+          "matched": true,
+          "shaft_error_mm": 0.619,
+          "tip_3d_error_mm": 0.928,
+          "tip_dz_signed_mm": -0.84,
+          "tip_dxy_mm": 0.395
+        }
+      ],
+      "standard_template_acsv_klim47_zero_exposure_gyn_tau50": [
+        {
+          "catheter_id": 0,
+          "gt_z_range_mm": [
+            4.44,
+            60.57
+          ],
+          "gt_span_mm": 56.13,
+          "matched": true,
+          "shaft_error_mm": 0.726,
+          "tip_3d_error_mm": 18.743,
+          "tip_dz_signed_mm": -18.712,
+          "tip_dxy_mm": 1.073
+        },
+        {
+          "catheter_id": 1,
+          "gt_z_range_mm": [
+            4.35,
+            62.17
+          ],
+          "gt_span_mm": 57.82,
+          "matched": true,
+          "shaft_error_mm": 1.089,
+          "tip_3d_error_mm": 8.684,
+          "tip_dz_signed_mm": 8.532,
+          "tip_dxy_mm": 1.619
+        },
+        {
+          "catheter_id": 2,
+          "gt_z_range_mm": [
+            4.19,
+            63.77
+          ],
+          "gt_span_mm": 59.57,
+          "matched": true,
+          "shaft_error_mm": 0.396,
+          "tip_3d_error_mm": 3.839,
+          "tip_dz_signed_mm": 3.807,
+          "tip_dxy_mm": 0.492
+        },
+        {
+          "catheter_id": 3,
+          "gt_z_range_mm": [
+            4.65,
+            65.37
+          ],
+          "gt_span_mm": 60.71,
+          "matched": true,
+          "shaft_error_mm": 0.225,
+          "tip_3d_error_mm": 24.314,
+          "tip_dz_signed_mm": -24.207,
+          "tip_dxy_mm": 2.276
+        },
+        {
+          "catheter_id": 4,
+          "gt_z_range_mm": [
+            4.09,
+            58.97
+          ],
+          "gt_span_mm": 54.88,
+          "matched": true,
+          "shaft_error_mm": 0.364,
+          "tip_3d_error_mm": 0.645,
+          "tip_dz_signed_mm": 0.546,
+          "tip_dxy_mm": 0.343
+        },
+        {
+          "catheter_id": 5,
+          "gt_z_range_mm": [
+            3.93,
+            62.17
+          ],
+          "gt_span_mm": 58.24,
+          "matched": true,
+          "shaft_error_mm": 0.347,
+          "tip_3d_error_mm": 1.234,
+          "tip_dz_signed_mm": 0.974,
+          "tip_dxy_mm": 0.758
+        },
+        {
+          "catheter_id": 6,
+          "gt_z_range_mm": [
+            4.09,
+            65.37
+          ],
+          "gt_span_mm": 61.28,
+          "matched": true,
+          "shaft_error_mm": 0.24,
+          "tip_3d_error_mm": 1.048,
+          "tip_dz_signed_mm": 0.787,
+          "tip_dxy_mm": 0.692
+        },
+        {
+          "catheter_id": 7,
+          "gt_z_range_mm": [
+            3.93,
+            54.17
+          ],
+          "gt_span_mm": 50.24,
+          "matched": true,
+          "shaft_error_mm": 0.22,
+          "tip_3d_error_mm": 1.652,
+          "tip_dz_signed_mm": 1.573,
+          "tip_dxy_mm": 0.505
+        },
+        {
+          "catheter_id": 8,
+          "gt_z_range_mm": [
+            3.93,
+            60.57
+          ],
+          "gt_span_mm": 56.64,
+          "matched": true,
+          "shaft_error_mm": 0.341,
+          "tip_3d_error_mm": 1.495,
+          "tip_dz_signed_mm": -1.434,
+          "tip_dxy_mm": 0.422
+        },
+        {
+          "catheter_id": 9,
+          "gt_z_range_mm": [
+            3.78,
+            60.57
+          ],
+          "gt_span_mm": 56.79,
+          "matched": true,
+          "shaft_error_mm": 0.37,
+          "tip_3d_error_mm": 2.054,
+          "tip_dz_signed_mm": 1.924,
+          "tip_dxy_mm": 0.721
+        },
+        {
+          "catheter_id": 10,
+          "gt_z_range_mm": [
+            4.15,
+            60.57
+          ],
+          "gt_span_mm": 56.42,
+          "matched": true,
+          "shaft_error_mm": 0.298,
+          "tip_3d_error_mm": 1.02,
+          "tip_dz_signed_mm": -0.281,
+          "tip_dxy_mm": 0.981
+        },
+        {
+          "catheter_id": 11,
+          "gt_z_range_mm": [
+            4.28,
+            60.57
+          ],
+          "gt_span_mm": 56.29,
+          "matched": true,
+          "shaft_error_mm": 0.166,
+          "tip_3d_error_mm": 0.232,
+          "tip_dz_signed_mm": -0.138,
+          "tip_dxy_mm": 0.186
+        },
+        {
+          "catheter_id": 12,
+          "gt_z_range_mm": [
+            4.31,
+            66.97
+          ],
+          "gt_span_mm": 62.66,
+          "matched": true,
+          "shaft_error_mm": 0.396,
+          "tip_3d_error_mm": 4.111,
+          "tip_dz_signed_mm": 3.987,
+          "tip_dxy_mm": 1.002
+        },
+        {
+          "catheter_id": 13,
+          "gt_z_range_mm": [
+            4.76,
+            70.17
+          ],
+          "gt_span_mm": 65.41,
+          "matched": true,
+          "shaft_error_mm": 0.619,
+          "tip_3d_error_mm": 0.928,
+          "tip_dz_signed_mm": -0.84,
+          "tip_dxy_mm": 0.395
+        }
+      ],
+      "standard_template_acsv_klim47_full_nested_gyn_tau35": [
+        {
+          "catheter_id": 0,
+          "gt_z_range_mm": [
+            4.44,
+            60.57
+          ],
+          "gt_span_mm": 56.13,
+          "matched": true,
+          "shaft_error_mm": 0.738,
+          "tip_3d_error_mm": 18.333,
+          "tip_dz_signed_mm": -18.299,
+          "tip_dxy_mm": 1.114
+        },
+        {
+          "catheter_id": 1,
+          "gt_z_range_mm": [
+            4.35,
+            62.17
+          ],
+          "gt_span_mm": 57.82,
+          "matched": true,
+          "shaft_error_mm": 1.089,
+          "tip_3d_error_mm": 8.328,
+          "tip_dz_signed_mm": 8.176,
+          "tip_dxy_mm": 1.587
+        },
+        {
+          "catheter_id": 2,
+          "gt_z_range_mm": [
+            4.19,
+            63.77
+          ],
+          "gt_span_mm": 59.57,
+          "matched": true,
+          "shaft_error_mm": 0.396,
+          "tip_3d_error_mm": 3.808,
+          "tip_dz_signed_mm": 3.776,
+          "tip_dxy_mm": 0.49
+        },
+        {
+          "catheter_id": 3,
+          "gt_z_range_mm": [
+            4.65,
+            65.37
+          ],
+          "gt_span_mm": 60.71,
+          "matched": true,
+          "shaft_error_mm": 0.225,
+          "tip_3d_error_mm": 24.359,
+          "tip_dz_signed_mm": -24.252,
+          "tip_dxy_mm": 2.279
+        },
+        {
+          "catheter_id": 4,
+          "gt_z_range_mm": [
+            4.09,
+            58.97
+          ],
+          "gt_span_mm": 54.88,
+          "matched": true,
+          "shaft_error_mm": 0.364,
+          "tip_3d_error_mm": 0.645,
+          "tip_dz_signed_mm": 0.546,
+          "tip_dxy_mm": 0.343
+        },
+        {
+          "catheter_id": 5,
+          "gt_z_range_mm": [
+            3.93,
+            62.17
+          ],
+          "gt_span_mm": 58.24,
+          "matched": true,
+          "shaft_error_mm": 0.347,
+          "tip_3d_error_mm": 1.234,
+          "tip_dz_signed_mm": 0.974,
+          "tip_dxy_mm": 0.758
+        },
+        {
+          "catheter_id": 6,
+          "gt_z_range_mm": [
+            4.09,
+            65.37
+          ],
+          "gt_span_mm": 61.28,
+          "matched": true,
+          "shaft_error_mm": 0.24,
+          "tip_3d_error_mm": 1.048,
+          "tip_dz_signed_mm": 0.787,
+          "tip_dxy_mm": 0.692
+        },
+        {
+          "catheter_id": 7,
+          "gt_z_range_mm": [
+            3.93,
+            54.17
+          ],
+          "gt_span_mm": 50.24,
+          "matched": true,
+          "shaft_error_mm": 0.22,
+          "tip_3d_error_mm": 1.385,
+          "tip_dz_signed_mm": 1.296,
+          "tip_dxy_mm": 0.487
+        },
+        {
+          "catheter_id": 8,
+          "gt_z_range_mm": [
+            3.93,
+            60.57
+          ],
+          "gt_span_mm": 56.64,
+          "matched": true,
+          "shaft_error_mm": 0.342,
+          "tip_3d_error_mm": 1.469,
+          "tip_dz_signed_mm": -1.407,
+          "tip_dxy_mm": 0.423
+        },
+        {
+          "catheter_id": 9,
+          "gt_z_range_mm": [
+            3.78,
+            60.57
+          ],
+          "gt_span_mm": 56.79,
+          "matched": true,
+          "shaft_error_mm": 0.37,
+          "tip_3d_error_mm": 2.206,
+          "tip_dz_signed_mm": 2.082,
+          "tip_dxy_mm": 0.728
+        },
+        {
+          "catheter_id": 10,
+          "gt_z_range_mm": [
+            4.15,
+            60.57
+          ],
+          "gt_span_mm": 56.42,
+          "matched": true,
+          "shaft_error_mm": 0.288,
+          "tip_3d_error_mm": 1.218,
+          "tip_dz_signed_mm": -0.717,
+          "tip_dxy_mm": 0.984
+        },
+        {
+          "catheter_id": 11,
+          "gt_z_range_mm": [
+            4.28,
+            60.57
+          ],
+          "gt_span_mm": 56.29,
+          "matched": true,
+          "shaft_error_mm": 0.164,
+          "tip_3d_error_mm": 0.712,
+          "tip_dz_signed_mm": -0.69,
+          "tip_dxy_mm": 0.174
+        },
+        {
+          "catheter_id": 12,
+          "gt_z_range_mm": [
+            4.31,
+            66.97
+          ],
+          "gt_span_mm": 62.66,
+          "matched": true,
+          "shaft_error_mm": 0.396,
+          "tip_3d_error_mm": 4.171,
+          "tip_dz_signed_mm": 4.048,
+          "tip_dxy_mm": 1.006
+        },
+        {
+          "catheter_id": 13,
+          "gt_z_range_mm": [
+            4.76,
+            70.17
+          ],
+          "gt_span_mm": 65.41,
+          "matched": true,
+          "shaft_error_mm": 0.619,
+          "tip_3d_error_mm": 0.937,
+          "tip_dz_signed_mm": -0.85,
+          "tip_dxy_mm": 0.394
+        }
+      ],
+      "standard_template_acsv_klim47_full_nested_gyn_tau50": [
+        {
+          "catheter_id": 0,
+          "gt_z_range_mm": [
+            4.44,
+            60.57
+          ],
+          "gt_span_mm": 56.13,
+          "matched": false,
+          "nearest_pred_dist_mm": 2.627
+        },
+        {
+          "catheter_id": 1,
+          "gt_z_range_mm": [
+            4.35,
+            62.17
+          ],
+          "gt_span_mm": 57.82,
+          "matched": true,
+          "shaft_error_mm": 1.089,
+          "tip_3d_error_mm": 8.328,
+          "tip_dz_signed_mm": 8.176,
+          "tip_dxy_mm": 1.587
+        },
+        {
+          "catheter_id": 2,
+          "gt_z_range_mm": [
+            4.19,
+            63.77
+          ],
+          "gt_span_mm": 59.57,
+          "matched": true,
+          "shaft_error_mm": 0.396,
+          "tip_3d_error_mm": 3.808,
+          "tip_dz_signed_mm": 3.776,
+          "tip_dxy_mm": 0.49
+        },
+        {
+          "catheter_id": 3,
+          "gt_z_range_mm": [
+            4.65,
+            65.37
+          ],
+          "gt_span_mm": 60.71,
+          "matched": true,
+          "shaft_error_mm": 0.225,
+          "tip_3d_error_mm": 24.359,
+          "tip_dz_signed_mm": -24.252,
+          "tip_dxy_mm": 2.279
+        },
+        {
+          "catheter_id": 4,
+          "gt_z_range_mm": [
+            4.09,
+            58.97
+          ],
+          "gt_span_mm": 54.88,
+          "matched": true,
+          "shaft_error_mm": 0.364,
+          "tip_3d_error_mm": 0.645,
+          "tip_dz_signed_mm": 0.546,
+          "tip_dxy_mm": 0.343
+        },
+        {
+          "catheter_id": 5,
+          "gt_z_range_mm": [
+            3.93,
+            62.17
+          ],
+          "gt_span_mm": 58.24,
+          "matched": true,
+          "shaft_error_mm": 0.347,
+          "tip_3d_error_mm": 1.234,
+          "tip_dz_signed_mm": 0.974,
+          "tip_dxy_mm": 0.758
+        },
+        {
+          "catheter_id": 6,
+          "gt_z_range_mm": [
+            4.09,
+            65.37
+          ],
+          "gt_span_mm": 61.28,
+          "matched": true,
+          "shaft_error_mm": 0.24,
+          "tip_3d_error_mm": 1.048,
+          "tip_dz_signed_mm": 0.787,
+          "tip_dxy_mm": 0.692
+        },
+        {
+          "catheter_id": 7,
+          "gt_z_range_mm": [
+            3.93,
+            54.17
+          ],
+          "gt_span_mm": 50.24,
+          "matched": true,
+          "shaft_error_mm": 0.22,
+          "tip_3d_error_mm": 1.385,
+          "tip_dz_signed_mm": 1.296,
+          "tip_dxy_mm": 0.487
+        },
+        {
+          "catheter_id": 8,
+          "gt_z_range_mm": [
+            3.93,
+            60.57
+          ],
+          "gt_span_mm": 56.64,
+          "matched": true,
+          "shaft_error_mm": 0.342,
+          "tip_3d_error_mm": 1.469,
+          "tip_dz_signed_mm": -1.407,
+          "tip_dxy_mm": 0.423
+        },
+        {
+          "catheter_id": 9,
+          "gt_z_range_mm": [
+            3.78,
+            60.57
+          ],
+          "gt_span_mm": 56.79,
+          "matched": true,
+          "shaft_error_mm": 0.37,
+          "tip_3d_error_mm": 2.206,
+          "tip_dz_signed_mm": 2.082,
+          "tip_dxy_mm": 0.728
+        },
+        {
+          "catheter_id": 10,
+          "gt_z_range_mm": [
+            4.15,
+            60.57
+          ],
+          "gt_span_mm": 56.42,
+          "matched": true,
+          "shaft_error_mm": 0.288,
+          "tip_3d_error_mm": 1.218,
+          "tip_dz_signed_mm": -0.717,
+          "tip_dxy_mm": 0.984
+        },
+        {
+          "catheter_id": 11,
+          "gt_z_range_mm": [
+            4.28,
+            60.57
+          ],
+          "gt_span_mm": 56.29,
+          "matched": true,
+          "shaft_error_mm": 0.164,
+          "tip_3d_error_mm": 0.712,
+          "tip_dz_signed_mm": -0.69,
+          "tip_dxy_mm": 0.174
+        },
+        {
+          "catheter_id": 12,
+          "gt_z_range_mm": [
+            4.31,
+            66.97
+          ],
+          "gt_span_mm": 62.66,
+          "matched": true,
+          "shaft_error_mm": 0.396,
+          "tip_3d_error_mm": 4.171,
+          "tip_dz_signed_mm": 4.048,
+          "tip_dxy_mm": 1.006
+        },
+        {
+          "catheter_id": 13,
+          "gt_z_range_mm": [
+            4.76,
+            70.17
+          ],
+          "gt_span_mm": 65.41,
+          "matched": true,
+          "shaft_error_mm": 0.619,
+          "tip_3d_error_mm": 0.937,
+          "tip_dz_signed_mm": -0.85,
+          "tip_dxy_mm": 0.394
+        }
+      ]
+    }
+  },
+  "part_3b_same_session_cross_sequence": {
+    "secondary_nrrd_inventory_counts": {
+      "primary_3d_space": 54,
+      "2D_AX_TSE_T2": 70,
+      "AX_T1_VIBE_POST": 35,
+      "AX_3D_wbSSFP_FISP": 9,
+      "2D_SAG_TSE_T2": 26,
+      "2D_COR_TSE_T2": 21,
+      "OTHER": 82
+    },
+    "n_aligned_post_insertion_axial_scans": 63,
+    "n_aligned_sag_cor_scans": 66,
+    "cross_sequence_benchmarks": {
+      "2D_AX_TSE_T2": {
+        "n_scans": 49,
+        "n_unique_patients": 30,
+        "slice_thickness_range_mm": [
+          2.4,
+          6.0
+        ],
+        "total_gt_in_slab": 1019,
+        "total_gt_dark_core_present": 882,
+        "vs_dark_core_present_gt": {
+          "stage0_rust_physics_tracker": {
+            "n_gt": 882,
+            "n_pred": 747,
+            "tp": 571,
+            "fp": 176,
+            "fn": 311,
+            "recall_1to1_pct": 64.74,
+            "precision_1to1_pct": 76.44,
+            "f1_1to1_pct": 70.1,
+            "shaft_mean_mm": 1.321,
+            "shaft_median_mm": 1.126,
+            "shaft_iqr_mm": 0.982,
+            "shaft_p95_mm": 2.826,
+            "tip_3d_mean_mm": 11.818,
+            "tip_3d_median_mm": 5.542,
+            "tip_3d_iqr_mm": 11.647,
+            "tip_3d_p95_mm": 46.657
+          },
+          "baseline1_pmb2019_unet_walk": {
+            "n_gt": 882,
+            "n_pred": 1139,
+            "tp": 777,
+            "fp": 362,
+            "fn": 105,
+            "recall_1to1_pct": 88.1,
+            "precision_1to1_pct": 68.22,
+            "f1_1to1_pct": 76.89,
+            "shaft_mean_mm": 1.125,
+            "shaft_median_mm": 0.957,
+            "shaft_iqr_mm": 0.82,
+            "shaft_p95_mm": 2.677,
+            "tip_3d_mean_mm": 16.145,
+            "tip_3d_median_mm": 5.407,
+            "tip_3d_iqr_mm": 16.512,
+            "tip_3d_p95_mm": 70.76
+          },
+          "baseline2_resunet_cldice": {
+            "n_gt": 882,
+            "n_pred": 1852,
+            "tp": 788,
+            "fp": 1064,
+            "fn": 94,
+            "recall_1to1_pct": 89.34,
+            "precision_1to1_pct": 42.55,
+            "f1_1to1_pct": 57.64,
+            "shaft_mean_mm": 1.192,
+            "shaft_median_mm": 1.001,
+            "shaft_iqr_mm": 0.866,
+            "shaft_p95_mm": 2.702,
+            "tip_3d_mean_mm": 14.381,
+            "tip_3d_median_mm": 5.335,
+            "tip_3d_iqr_mm": 14.557,
+            "tip_3d_p95_mm": 56.492
+          },
+          "nf2026_native_thick_slice": {
+            "n_gt": 882,
+            "n_pred": 500,
+            "tp": 398,
+            "fp": 102,
+            "fn": 484,
+            "recall_1to1_pct": 45.12,
+            "precision_1to1_pct": 79.6,
+            "f1_1to1_pct": 57.6,
+            "shaft_mean_mm": 1.325,
+            "shaft_median_mm": 1.129,
+            "shaft_iqr_mm": 1.019,
+            "shaft_p95_mm": 2.906,
+            "tip_3d_mean_mm": 13.442,
+            "tip_3d_median_mm": 5.627,
+            "tip_3d_iqr_mm": 13.335,
+            "tip_3d_p95_mm": 55.087
+          },
+          "nf2026_z_upsampled_1p6mm_stage1": {
+            "n_gt": 882,
+            "n_pred": 457,
+            "tp": 368,
+            "fp": 89,
+            "fn": 514,
+            "recall_1to1_pct": 41.72,
+            "precision_1to1_pct": 80.53,
+            "f1_1to1_pct": 54.97,
+            "shaft_mean_mm": 1.343,
+            "shaft_median_mm": 1.167,
+            "shaft_iqr_mm": 1.054,
+            "shaft_p95_mm": 2.895,
+            "tip_3d_mean_mm": 15.227,
+            "tip_3d_median_mm": 5.884,
+            "tip_3d_iqr_mm": 18.443,
+            "tip_3d_p95_mm": 59.225
+          },
+          "nf2026_z_upsampled_1p6mm_full_stage2": {
+            "n_gt": 882,
+            "n_pred": 1148,
+            "tp": 780,
+            "fp": 368,
+            "fn": 102,
+            "recall_1to1_pct": 88.44,
+            "precision_1to1_pct": 67.94,
+            "f1_1to1_pct": 76.85,
+            "shaft_mean_mm": 1.264,
+            "shaft_median_mm": 1.07,
+            "shaft_iqr_mm": 0.929,
+            "shaft_p95_mm": 2.8,
+            "tip_3d_mean_mm": 11.775,
+            "tip_3d_median_mm": 4.886,
+            "tip_3d_iqr_mm": 10.283,
+            "tip_3d_p95_mm": 47.597
+          }
+        },
+        "vs_all_in_slab_gt": {
+          "stage0_rust_physics_tracker": {
+            "n_gt": 1019,
+            "n_pred": 747,
+            "tp": 589,
+            "fp": 158,
+            "fn": 430,
+            "recall_1to1_pct": 57.8,
+            "precision_1to1_pct": 78.85,
+            "f1_1to1_pct": 66.7,
+            "shaft_mean_mm": 1.366,
+            "shaft_median_mm": 1.165,
+            "shaft_iqr_mm": 1.008,
+            "shaft_p95_mm": 3.019,
+            "tip_3d_mean_mm": 12.182,
+            "tip_3d_median_mm": 5.649,
+            "tip_3d_iqr_mm": 11.909,
+            "tip_3d_p95_mm": 48.801
+          },
+          "baseline1_pmb2019_unet_walk": {
+            "n_gt": 1019,
+            "n_pred": 1139,
+            "tp": 814,
+            "fp": 325,
+            "fn": 205,
+            "recall_1to1_pct": 79.88,
+            "precision_1to1_pct": 71.47,
+            "f1_1to1_pct": 75.44,
+            "shaft_mean_mm": 1.158,
+            "shaft_median_mm": 0.978,
+            "shaft_iqr_mm": 0.864,
+            "shaft_p95_mm": 2.755,
+            "tip_3d_mean_mm": 16.218,
+            "tip_3d_median_mm": 5.484,
+            "tip_3d_iqr_mm": 16.665,
+            "tip_3d_p95_mm": 70.492
+          },
+          "baseline2_resunet_cldice": {
+            "n_gt": 1019,
+            "n_pred": 1852,
+            "tp": 828,
+            "fp": 1024,
+            "fn": 191,
+            "recall_1to1_pct": 81.26,
+            "precision_1to1_pct": 44.71,
+            "f1_1to1_pct": 57.68,
+            "shaft_mean_mm": 1.242,
+            "shaft_median_mm": 1.049,
+            "shaft_iqr_mm": 0.939,
+            "shaft_p95_mm": 2.738,
+            "tip_3d_mean_mm": 14.742,
+            "tip_3d_median_mm": 5.635,
+            "tip_3d_iqr_mm": 14.983,
+            "tip_3d_p95_mm": 56.742
+          },
+          "nf2026_native_thick_slice": {
+            "n_gt": 1019,
+            "n_pred": 500,
+            "tp": 411,
+            "fp": 89,
+            "fn": 608,
+            "recall_1to1_pct": 40.33,
+            "precision_1to1_pct": 82.2,
+            "f1_1to1_pct": 54.11,
+            "shaft_mean_mm": 1.369,
+            "shaft_median_mm": 1.158,
+            "shaft_iqr_mm": 1.12,
+            "shaft_p95_mm": 3.038,
+            "tip_3d_mean_mm": 13.494,
+            "tip_3d_median_mm": 5.849,
+            "tip_3d_iqr_mm": 13.548,
+            "tip_3d_p95_mm": 54.87
+          },
+          "nf2026_z_upsampled_1p6mm_stage1": {
+            "n_gt": 1019,
+            "n_pred": 457,
+            "tp": 383,
+            "fp": 74,
+            "fn": 636,
+            "recall_1to1_pct": 37.59,
+            "precision_1to1_pct": 83.81,
+            "f1_1to1_pct": 51.9,
+            "shaft_mean_mm": 1.402,
+            "shaft_median_mm": 1.202,
+            "shaft_iqr_mm": 1.187,
+            "shaft_p95_mm": 3.053,
+            "tip_3d_mean_mm": 15.25,
+            "tip_3d_median_mm": 6.012,
+            "tip_3d_iqr_mm": 18.423,
+            "tip_3d_p95_mm": 59.624
+          },
+          "nf2026_z_upsampled_1p6mm_full_stage2": {
+            "n_gt": 1019,
+            "n_pred": 1148,
+            "tp": 818,
+            "fp": 330,
+            "fn": 201,
+            "recall_1to1_pct": 80.27,
+            "precision_1to1_pct": 71.25,
+            "f1_1to1_pct": 75.5,
+            "shaft_mean_mm": 1.31,
+            "shaft_median_mm": 1.102,
+            "shaft_iqr_mm": 1.004,
+            "shaft_p95_mm": 2.907,
+            "tip_3d_mean_mm": 11.817,
+            "tip_3d_median_mm": 4.959,
+            "tip_3d_iqr_mm": 10.416,
+            "tip_3d_p95_mm": 46.287
+          }
+        }
+      },
+      "AX_T1_VIBE_POST": {
+        "n_scans": 12,
+        "n_unique_patients": 2,
+        "slice_thickness_range_mm": [
+          4.0,
+          4.0
+        ],
+        "total_gt_in_slab": 318,
+        "total_gt_dark_core_present": 217,
+        "vs_dark_core_present_gt": {
+          "stage0_rust_physics_tracker": {
+            "n_gt": 217,
+            "n_pred": 157,
+            "tp": 115,
+            "fp": 42,
+            "fn": 102,
+            "recall_1to1_pct": 53.0,
+            "precision_1to1_pct": 73.25,
+            "f1_1to1_pct": 61.5,
+            "shaft_mean_mm": 2.016,
+            "shaft_median_mm": 1.882,
+            "shaft_iqr_mm": 1.306,
+            "shaft_p95_mm": 3.109,
+            "tip_3d_mean_mm": 11.485,
+            "tip_3d_median_mm": 7.151,
+            "tip_3d_iqr_mm": 10.937,
+            "tip_3d_p95_mm": 26.902
+          },
+          "baseline1_pmb2019_unet_walk": {
+            "n_gt": 217,
+            "n_pred": 214,
+            "tp": 128,
+            "fp": 86,
+            "fn": 89,
+            "recall_1to1_pct": 58.99,
+            "precision_1to1_pct": 59.81,
+            "f1_1to1_pct": 59.4,
+            "shaft_mean_mm": 2.017,
+            "shaft_median_mm": 1.917,
+            "shaft_iqr_mm": 1.281,
+            "shaft_p95_mm": 3.049,
+            "tip_3d_mean_mm": 19.136,
+            "tip_3d_median_mm": 11.891,
+            "tip_3d_iqr_mm": 16.378,
+            "tip_3d_p95_mm": 61.553
+          },
+          "baseline2_resunet_cldice": {
+            "n_gt": 217,
+            "n_pred": 850,
+            "tp": 143,
+            "fp": 707,
+            "fn": 74,
+            "recall_1to1_pct": 65.9,
+            "precision_1to1_pct": 16.82,
+            "f1_1to1_pct": 26.8,
+            "shaft_mean_mm": 1.959,
+            "shaft_median_mm": 1.836,
+            "shaft_iqr_mm": 1.397,
+            "shaft_p95_mm": 3.213,
+            "tip_3d_mean_mm": 20.415,
+            "tip_3d_median_mm": 11.743,
+            "tip_3d_iqr_mm": 18.048,
+            "tip_3d_p95_mm": 69.52
+          },
+          "nf2026_native_thick_slice": {
+            "n_gt": 217,
+            "n_pred": 95,
+            "tp": 70,
+            "fp": 25,
+            "fn": 147,
+            "recall_1to1_pct": 32.26,
+            "precision_1to1_pct": 73.68,
+            "f1_1to1_pct": 44.87,
+            "shaft_mean_mm": 2.17,
+            "shaft_median_mm": 2.364,
+            "shaft_iqr_mm": 1.32,
+            "shaft_p95_mm": 3.124,
+            "tip_3d_mean_mm": 11.177,
+            "tip_3d_median_mm": 10.555,
+            "tip_3d_iqr_mm": 8.081,
+            "tip_3d_p95_mm": 24.727
+          },
+          "nf2026_z_upsampled_1p6mm_stage1": {
+            "n_gt": 217,
+            "n_pred": 84,
+            "tp": 65,
+            "fp": 19,
+            "fn": 152,
+            "recall_1to1_pct": 29.95,
+            "precision_1to1_pct": 77.38,
+            "f1_1to1_pct": 43.19,
+            "shaft_mean_mm": 2.049,
+            "shaft_median_mm": 1.908,
+            "shaft_iqr_mm": 1.399,
+            "shaft_p95_mm": 3.174,
+            "tip_3d_mean_mm": 16.067,
+            "tip_3d_median_mm": 11.935,
+            "tip_3d_iqr_mm": 8.884,
+            "tip_3d_p95_mm": 63.159
+          },
+          "nf2026_z_upsampled_1p6mm_full_stage2": {
+            "n_gt": 217,
+            "n_pred": 236,
+            "tp": 127,
+            "fp": 109,
+            "fn": 90,
+            "recall_1to1_pct": 58.53,
+            "precision_1to1_pct": 53.81,
+            "f1_1to1_pct": 56.07,
+            "shaft_mean_mm": 2.051,
+            "shaft_median_mm": 1.87,
+            "shaft_iqr_mm": 1.331,
+            "shaft_p95_mm": 3.225,
+            "tip_3d_mean_mm": 10.474,
+            "tip_3d_median_mm": 8.084,
+            "tip_3d_iqr_mm": 11.461,
+            "tip_3d_p95_mm": 24.317
+          }
+        },
+        "vs_all_in_slab_gt": {
+          "stage0_rust_physics_tracker": {
+            "n_gt": 318,
+            "n_pred": 157,
+            "tp": 117,
+            "fp": 40,
+            "fn": 201,
+            "recall_1to1_pct": 36.79,
+            "precision_1to1_pct": 74.52,
+            "f1_1to1_pct": 49.26,
+            "shaft_mean_mm": 2.025,
+            "shaft_median_mm": 1.899,
+            "shaft_iqr_mm": 1.284,
+            "shaft_p95_mm": 3.107,
+            "tip_3d_mean_mm": 11.479,
+            "tip_3d_median_mm": 7.151,
+            "tip_3d_iqr_mm": 11.196,
+            "tip_3d_p95_mm": 26.746
+          },
+          "baseline1_pmb2019_unet_walk": {
+            "n_gt": 318,
+            "n_pred": 214,
+            "tp": 133,
+            "fp": 81,
+            "fn": 185,
+            "recall_1to1_pct": 41.82,
+            "precision_1to1_pct": 62.15,
+            "f1_1to1_pct": 50.0,
+            "shaft_mean_mm": 2.043,
+            "shaft_median_mm": 2.006,
+            "shaft_iqr_mm": 1.289,
+            "shaft_p95_mm": 3.048,
+            "tip_3d_mean_mm": 19.291,
+            "tip_3d_median_mm": 11.544,
+            "tip_3d_iqr_mm": 17.233,
+            "tip_3d_p95_mm": 61.483
+          },
+          "baseline2_resunet_cldice": {
+            "n_gt": 318,
+            "n_pred": 850,
+            "tp": 154,
+            "fp": 696,
+            "fn": 164,
+            "recall_1to1_pct": 48.43,
+            "precision_1to1_pct": 18.12,
+            "f1_1to1_pct": 26.37,
+            "shaft_mean_mm": 2.021,
+            "shaft_median_mm": 1.962,
+            "shaft_iqr_mm": 1.437,
+            "shaft_p95_mm": 3.306,
+            "tip_3d_mean_mm": 20.392,
+            "tip_3d_median_mm": 11.625,
+            "tip_3d_iqr_mm": 19.005,
+            "tip_3d_p95_mm": 69.458
+          },
+          "nf2026_native_thick_slice": {
+            "n_gt": 318,
+            "n_pred": 95,
+            "tp": 70,
+            "fp": 25,
+            "fn": 248,
+            "recall_1to1_pct": 22.01,
+            "precision_1to1_pct": 73.68,
+            "f1_1to1_pct": 33.9,
+            "shaft_mean_mm": 2.17,
+            "shaft_median_mm": 2.364,
+            "shaft_iqr_mm": 1.32,
+            "shaft_p95_mm": 3.124,
+            "tip_3d_mean_mm": 11.177,
+            "tip_3d_median_mm": 10.555,
+            "tip_3d_iqr_mm": 8.081,
+            "tip_3d_p95_mm": 24.727
+          },
+          "nf2026_z_upsampled_1p6mm_stage1": {
+            "n_gt": 318,
+            "n_pred": 84,
+            "tp": 65,
+            "fp": 19,
+            "fn": 253,
+            "recall_1to1_pct": 20.44,
+            "precision_1to1_pct": 77.38,
+            "f1_1to1_pct": 32.34,
+            "shaft_mean_mm": 2.049,
+            "shaft_median_mm": 1.908,
+            "shaft_iqr_mm": 1.399,
+            "shaft_p95_mm": 3.174,
+            "tip_3d_mean_mm": 16.067,
+            "tip_3d_median_mm": 11.935,
+            "tip_3d_iqr_mm": 8.884,
+            "tip_3d_p95_mm": 63.159
+          },
+          "nf2026_z_upsampled_1p6mm_full_stage2": {
+            "n_gt": 318,
+            "n_pred": 236,
+            "tp": 135,
+            "fp": 101,
+            "fn": 183,
+            "recall_1to1_pct": 42.45,
+            "precision_1to1_pct": 57.2,
+            "f1_1to1_pct": 48.74,
+            "shaft_mean_mm": 2.085,
+            "shaft_median_mm": 2.001,
+            "shaft_iqr_mm": 1.335,
+            "shaft_p95_mm": 3.348,
+            "tip_3d_mean_mm": 10.285,
+            "tip_3d_median_mm": 7.763,
+            "tip_3d_iqr_mm": 11.12,
+            "tip_3d_p95_mm": 23.816
+          }
+        }
+      },
+      "AX_3D_wbSSFP_FISP": {
+        "n_scans": 2,
+        "n_unique_patients": 2,
+        "slice_thickness_range_mm": [
+          2.0,
+          2.5
+        ],
+        "total_gt_in_slab": 51,
+        "total_gt_dark_core_present": 47,
+        "vs_dark_core_present_gt": {
+          "stage0_rust_physics_tracker": {
+            "n_gt": 47,
+            "n_pred": 40,
+            "tp": 38,
+            "fp": 2,
+            "fn": 9,
+            "recall_1to1_pct": 80.85,
+            "precision_1to1_pct": 95.0,
+            "f1_1to1_pct": 87.36,
+            "shaft_mean_mm": 0.837,
+            "shaft_median_mm": 0.682,
+            "shaft_iqr_mm": 0.391,
+            "shaft_p95_mm": 1.581,
+            "tip_3d_mean_mm": 14.172,
+            "tip_3d_median_mm": 2.679,
+            "tip_3d_iqr_mm": 19.993,
+            "tip_3d_p95_mm": 69.27
+          },
+          "baseline1_pmb2019_unet_walk": {
+            "n_gt": 47,
+            "n_pred": 45,
+            "tp": 42,
+            "fp": 3,
+            "fn": 5,
+            "recall_1to1_pct": 89.36,
+            "precision_1to1_pct": 93.33,
+            "f1_1to1_pct": 91.3,
+            "shaft_mean_mm": 0.847,
+            "shaft_median_mm": 0.712,
+            "shaft_iqr_mm": 0.484,
+            "shaft_p95_mm": 1.52,
+            "tip_3d_mean_mm": 23.714,
+            "tip_3d_median_mm": 10.623,
+            "tip_3d_iqr_mm": 43.499,
+            "tip_3d_p95_mm": 68.596
+          },
+          "baseline2_resunet_cldice": {
+            "n_gt": 47,
+            "n_pred": 67,
+            "tp": 46,
+            "fp": 21,
+            "fn": 1,
+            "recall_1to1_pct": 97.87,
+            "precision_1to1_pct": 68.66,
+            "f1_1to1_pct": 80.7,
+            "shaft_mean_mm": 0.813,
+            "shaft_median_mm": 0.729,
+            "shaft_iqr_mm": 0.444,
+            "shaft_p95_mm": 1.529,
+            "tip_3d_mean_mm": 16.021,
+            "tip_3d_median_mm": 3.025,
+            "tip_3d_iqr_mm": 23.787,
+            "tip_3d_p95_mm": 56.84
+          },
+          "nf2026_native_thick_slice": {
+            "n_gt": 47,
+            "n_pred": 22,
+            "tp": 22,
+            "fp": 0,
+            "fn": 25,
+            "recall_1to1_pct": 46.81,
+            "precision_1to1_pct": 100.0,
+            "f1_1to1_pct": 63.77,
+            "shaft_mean_mm": 0.701,
+            "shaft_median_mm": 0.734,
+            "shaft_iqr_mm": 0.498,
+            "shaft_p95_mm": 1.099,
+            "tip_3d_mean_mm": 8.442,
+            "tip_3d_median_mm": 2.921,
+            "tip_3d_iqr_mm": 7.285,
+            "tip_3d_p95_mm": 23.794
+          },
+          "nf2026_z_upsampled_1p6mm_stage1": {
+            "n_gt": 47,
+            "n_pred": 23,
+            "tp": 23,
+            "fp": 0,
+            "fn": 24,
+            "recall_1to1_pct": 48.94,
+            "precision_1to1_pct": 100.0,
+            "f1_1to1_pct": 65.71,
+            "shaft_mean_mm": 0.677,
+            "shaft_median_mm": 0.716,
+            "shaft_iqr_mm": 0.389,
+            "shaft_p95_mm": 1.087,
+            "tip_3d_mean_mm": 7.679,
+            "tip_3d_median_mm": 2.672,
+            "tip_3d_iqr_mm": 2.571,
+            "tip_3d_p95_mm": 24.083
+          },
+          "nf2026_z_upsampled_1p6mm_full_stage2": {
+            "n_gt": 47,
+            "n_pred": 52,
+            "tp": 46,
+            "fp": 6,
+            "fn": 1,
+            "recall_1to1_pct": 97.87,
+            "precision_1to1_pct": 88.46,
+            "f1_1to1_pct": 92.93,
+            "shaft_mean_mm": 0.899,
+            "shaft_median_mm": 0.719,
+            "shaft_iqr_mm": 0.42,
+            "shaft_p95_mm": 1.689,
+            "tip_3d_mean_mm": 13.222,
+            "tip_3d_median_mm": 3.397,
+            "tip_3d_iqr_mm": 5.849,
+            "tip_3d_p95_mm": 56.734
+          }
+        },
+        "vs_all_in_slab_gt": {
+          "stage0_rust_physics_tracker": {
+            "n_gt": 51,
+            "n_pred": 40,
+            "tp": 38,
+            "fp": 2,
+            "fn": 13,
+            "recall_1to1_pct": 74.51,
+            "precision_1to1_pct": 95.0,
+            "f1_1to1_pct": 83.52,
+            "shaft_mean_mm": 0.837,
+            "shaft_median_mm": 0.682,
+            "shaft_iqr_mm": 0.391,
+            "shaft_p95_mm": 1.581,
+            "tip_3d_mean_mm": 14.172,
+            "tip_3d_median_mm": 2.679,
+            "tip_3d_iqr_mm": 19.993,
+            "tip_3d_p95_mm": 69.27
+          },
+          "baseline1_pmb2019_unet_walk": {
+            "n_gt": 51,
+            "n_pred": 45,
+            "tp": 43,
+            "fp": 2,
+            "fn": 8,
+            "recall_1to1_pct": 84.31,
+            "precision_1to1_pct": 95.56,
+            "f1_1to1_pct": 89.58,
+            "shaft_mean_mm": 0.876,
+            "shaft_median_mm": 0.724,
+            "shaft_iqr_mm": 0.48,
+            "shaft_p95_mm": 1.532,
+            "tip_3d_mean_mm": 23.244,
+            "tip_3d_median_mm": 8.002,
+            "tip_3d_iqr_mm": 43.036,
+            "tip_3d_p95_mm": 68.407
+          },
+          "baseline2_resunet_cldice": {
+            "n_gt": 51,
+            "n_pred": 67,
+            "tp": 48,
+            "fp": 19,
+            "fn": 3,
+            "recall_1to1_pct": 94.12,
+            "precision_1to1_pct": 71.64,
+            "f1_1to1_pct": 81.36,
+            "shaft_mean_mm": 0.817,
+            "shaft_median_mm": 0.759,
+            "shaft_iqr_mm": 0.438,
+            "shaft_p95_mm": 1.522,
+            "tip_3d_mean_mm": 15.478,
+            "tip_3d_median_mm": 3.025,
+            "tip_3d_iqr_mm": 21.697,
+            "tip_3d_p95_mm": 55.484
+          },
+          "nf2026_native_thick_slice": {
+            "n_gt": 51,
+            "n_pred": 22,
+            "tp": 22,
+            "fp": 0,
+            "fn": 29,
+            "recall_1to1_pct": 43.14,
+            "precision_1to1_pct": 100.0,
+            "f1_1to1_pct": 60.27,
+            "shaft_mean_mm": 0.701,
+            "shaft_median_mm": 0.734,
+            "shaft_iqr_mm": 0.498,
+            "shaft_p95_mm": 1.099,
+            "tip_3d_mean_mm": 8.442,
+            "tip_3d_median_mm": 2.921,
+            "tip_3d_iqr_mm": 7.285,
+            "tip_3d_p95_mm": 23.794
+          },
+          "nf2026_z_upsampled_1p6mm_stage1": {
+            "n_gt": 51,
+            "n_pred": 23,
+            "tp": 23,
+            "fp": 0,
+            "fn": 28,
+            "recall_1to1_pct": 45.1,
+            "precision_1to1_pct": 100.0,
+            "f1_1to1_pct": 62.16,
+            "shaft_mean_mm": 0.677,
+            "shaft_median_mm": 0.716,
+            "shaft_iqr_mm": 0.389,
+            "shaft_p95_mm": 1.087,
+            "tip_3d_mean_mm": 7.679,
+            "tip_3d_median_mm": 2.672,
+            "tip_3d_iqr_mm": 2.571,
+            "tip_3d_p95_mm": 24.083
+          },
+          "nf2026_z_upsampled_1p6mm_full_stage2": {
+            "n_gt": 51,
+            "n_pred": 52,
+            "tp": 48,
+            "fp": 4,
+            "fn": 3,
+            "recall_1to1_pct": 94.12,
+            "precision_1to1_pct": 92.31,
+            "f1_1to1_pct": 93.2,
+            "shaft_mean_mm": 0.887,
+            "shaft_median_mm": 0.708,
+            "shaft_iqr_mm": 0.402,
+            "shaft_p95_mm": 1.685,
+            "tip_3d_mean_mm": 12.748,
+            "tip_3d_median_mm": 3.178,
+            "tip_3d_iqr_mm": 4.441,
+            "tip_3d_p95_mm": 56.478
+          }
+        }
+      }
+    },
+    "multi_sequence_late_tip_fusion": {
+      "n_paired_patients": 35,
+      "paired_case_names": [
+        "Case 008",
+        "Case 016",
+        "Case 024",
+        "Case 028",
+        "Case 029",
+        "Case 030",
+        "Case 031",
+        "Case 033",
+        "Case 034",
+        "Case 035",
+        "Case 037",
+        "Case 038",
+        "Case 039",
+        "Case 040",
+        "Case 041",
+        "Case 045",
+        "Case 048",
+        "Case 049",
+        "Case 051",
+        "Case 056",
+        "Case 058",
+        "Case 059",
+        "Case 060",
+        "Case 063",
+        "Case 064",
+        "Case 065",
+        "Case 066",
+        "Case 069",
+        "Case 070",
+        "Case 071",
+        "Case 072",
+        "Case 075",
+        "Case 076",
+        "Case 077",
+        "Case 078"
+      ],
+      "n_tips_refined": 175,
+      "primary_3d_space_only": {
+        "n_gt": 721,
+        "n_pred": 749,
+        "tp": 661,
+        "fp": 88,
+        "fn": 60,
+        "recall_1to1_pct": 91.68,
+        "precision_1to1_pct": 88.25,
+        "f1_1to1_pct": 89.93,
+        "shaft_mean_mm": 0.551,
+        "shaft_median_mm": 0.448,
+        "shaft_iqr_mm": 0.321,
+        "shaft_p95_mm": 1.296,
+        "tip_3d_mean_mm": 6.035,
+        "tip_3d_median_mm": 2.085,
+        "tip_3d_iqr_mm": 4.523,
+        "tip_3d_p95_mm": 24.38,
+        "tip_le_2mm_pct": 47.24,
+        "tip_le_3mm_pct": 61.35
+      },
+      "fused_3d_space_plus_2d_t2_tse": {
+        "n_gt": 721,
+        "n_pred": 749,
+        "tp": 661,
+        "fp": 88,
+        "fn": 60,
+        "recall_1to1_pct": 91.68,
+        "precision_1to1_pct": 88.25,
+        "f1_1to1_pct": 89.93,
+        "shaft_mean_mm": 0.551,
+        "shaft_median_mm": 0.451,
+        "shaft_iqr_mm": 0.321,
+        "shaft_p95_mm": 1.296,
+        "tip_3d_mean_mm": 6.051,
+        "tip_3d_median_mm": 2.085,
+        "tip_3d_iqr_mm": 4.515,
+        "tip_3d_p95_mm": 24.38,
+        "tip_le_2mm_pct": 47.7,
+        "tip_le_3mm_pct": 61.66,
+        "n_tips_refined_by_secondary_t2_tse": 175
+      }
+    },
+    "per_scan_results": [
+      {
+        "case_name": "Case 008",
+        "category": "2D_AX_TSE_T2",
+        "filename": "2 AX TSE T2.nrrd",
+        "sp_ras": [
+          0.8594,
+          0.8594,
+          2.4
+        ],
+        "n_gt_in_slab": 12,
+        "n_gt_present": 6,
+        "nf2026_tp_present": 0,
+        "nf2026_recall_present_pct": 0.0,
+        "nf2026_precision_present_pct": 0.0,
+        "nf2026_f1_present_pct": 0.0,
+        "nf2026_shaft_med_mm": null,
+        "nf2026_tip_med_mm": null
+      },
+      {
+        "case_name": "Case 024",
+        "category": "2D_AX_TSE_T2",
+        "filename": "9: AX TSE T2",
+        "sp_ras": [
+          0.6875,
+          0.6875,
+          6.0
+        ],
+        "n_gt_in_slab": 13,
+        "n_gt_present": 8,
+        "nf2026_tp_present": 6,
+        "nf2026_recall_present_pct": 75.0,
+        "nf2026_precision_present_pct": 100.0,
+        "nf2026_f1_present_pct": 85.7,
+        "nf2026_shaft_med_mm": 0.836,
+        "nf2026_tip_med_mm": 12.67
+      },
+      {
+        "case_name": "Case 024",
+        "category": "2D_AX_TSE_T2",
+        "filename": "10: AX TSE T2",
+        "sp_ras": [
+          0.6875,
+          0.6875,
+          6.0
+        ],
+        "n_gt_in_slab": 13,
+        "n_gt_present": 7,
+        "nf2026_tp_present": 7,
+        "nf2026_recall_present_pct": 100.0,
+        "nf2026_precision_present_pct": 77.8,
+        "nf2026_f1_present_pct": 87.5,
+        "nf2026_shaft_med_mm": 0.289,
+        "nf2026_tip_med_mm": 2.62
+      },
+      {
+        "case_name": "Case 029",
+        "category": "2D_AX_TSE_T2",
+        "filename": "11: AX TSE T2",
+        "sp_ras": [
+          0.875,
+          0.875,
+          4.8
+        ],
+        "n_gt_in_slab": 7,
+        "n_gt_present": 7,
+        "nf2026_tp_present": 7,
+        "nf2026_recall_present_pct": 100.0,
+        "nf2026_precision_present_pct": 53.9,
+        "nf2026_f1_present_pct": 70.0,
+        "nf2026_shaft_med_mm": 0.751,
+        "nf2026_tip_med_mm": 3.12
+      },
+      {
+        "case_name": "Case 029",
+        "category": "2D_AX_TSE_T2",
+        "filename": "11: AX TSE T2",
+        "sp_ras": [
+          0.875,
+          0.875,
+          4.8
+        ],
+        "n_gt_in_slab": 7,
+        "n_gt_present": 7,
+        "nf2026_tp_present": 7,
+        "nf2026_recall_present_pct": 100.0,
+        "nf2026_precision_present_pct": 53.9,
+        "nf2026_f1_present_pct": 70.0,
+        "nf2026_shaft_med_mm": 0.751,
+        "nf2026_tip_med_mm": 3.12
+      },
+      {
+        "case_name": "Case 030",
+        "category": "2D_AX_TSE_T2",
+        "filename": "9: AX TSE T2",
+        "sp_ras": [
+          0.6875,
+          0.6875,
+          6.0
+        ],
+        "n_gt_in_slab": 20,
+        "n_gt_present": 20,
+        "nf2026_tp_present": 19,
+        "nf2026_recall_present_pct": 95.0,
+        "nf2026_precision_present_pct": 76.0,
+        "nf2026_f1_present_pct": 84.4,
+        "nf2026_shaft_med_mm": 1.174,
+        "nf2026_tip_med_mm": 3.0
+      },
+      {
+        "case_name": "Case 031",
+        "category": "2D_AX_TSE_T2",
+        "filename": "10: AX TSE T2",
+        "sp_ras": [
+          0.6875,
+          0.6875,
+          6.0
+        ],
+        "n_gt_in_slab": 22,
+        "n_gt_present": 15,
+        "nf2026_tp_present": 14,
+        "nf2026_recall_present_pct": 93.3,
+        "nf2026_precision_present_pct": 50.0,
+        "nf2026_f1_present_pct": 65.1,
+        "nf2026_shaft_med_mm": 1.555,
+        "nf2026_tip_med_mm": 8.11
+      },
+      {
+        "case_name": "Case 031",
+        "category": "2D_AX_TSE_T2",
+        "filename": "12: AX TSE T2",
+        "sp_ras": [
+          0.6875,
+          0.6875,
+          6.0
+        ],
+        "n_gt_in_slab": 22,
+        "n_gt_present": 18,
+        "nf2026_tp_present": 17,
+        "nf2026_recall_present_pct": 94.4,
+        "nf2026_precision_present_pct": 48.6,
+        "nf2026_f1_present_pct": 64.2,
+        "nf2026_shaft_med_mm": 1.447,
+        "nf2026_tip_med_mm": 10.53
+      },
+      {
+        "case_name": "Case 037",
+        "category": "2D_AX_TSE_T2",
+        "filename": "4: AX TSE T2 MONITORING CATH PLACEMENT",
+        "sp_ras": [
+          0.875,
+          0.875,
+          3.0
+        ],
+        "n_gt_in_slab": 11,
+        "n_gt_present": 8,
+        "nf2026_tp_present": 8,
+        "nf2026_recall_present_pct": 100.0,
+        "nf2026_precision_present_pct": 66.7,
+        "nf2026_f1_present_pct": 80.0,
+        "nf2026_shaft_med_mm": 1.883,
+        "nf2026_tip_med_mm": 3.36
+      },
+      {
+        "case_name": "Case 037",
+        "category": "2D_AX_TSE_T2",
+        "filename": "5: AX TSE T2 MONITORING CATH PLACEMENT",
+        "sp_ras": [
+          0.875,
+          0.875,
+          3.0
+        ],
+        "n_gt_in_slab": 11,
+        "n_gt_present": 11,
+        "nf2026_tp_present": 10,
+        "nf2026_recall_present_pct": 90.9,
+        "nf2026_precision_present_pct": 71.4,
+        "nf2026_f1_present_pct": 80.0,
+        "nf2026_shaft_med_mm": 0.885,
+        "nf2026_tip_med_mm": 3.15
+      },
+      {
+        "case_name": "Case 037",
+        "category": "2D_AX_TSE_T2",
+        "filename": "6: AX TSE T2 MONITORING CATH PLACEMENT",
+        "sp_ras": [
+          0.875,
+          0.875,
+          3.0
+        ],
+        "n_gt_in_slab": 11,
+        "n_gt_present": 11,
+        "nf2026_tp_present": 11,
+        "nf2026_recall_present_pct": 100.0,
+        "nf2026_precision_present_pct": 91.7,
+        "nf2026_f1_present_pct": 95.7,
+        "nf2026_shaft_med_mm": 0.816,
+        "nf2026_tip_med_mm": 2.15
+      },
+      {
+        "case_name": "Case 037",
+        "category": "2D_AX_TSE_T2",
+        "filename": "4: AX TSE T2 MONITORING CATH PLACEMENT",
+        "sp_ras": [
+          0.875,
+          0.875,
+          3.0
+        ],
+        "n_gt_in_slab": 11,
+        "n_gt_present": 8,
+        "nf2026_tp_present": 8,
+        "nf2026_recall_present_pct": 100.0,
+        "nf2026_precision_present_pct": 66.7,
+        "nf2026_f1_present_pct": 80.0,
+        "nf2026_shaft_med_mm": 1.883,
+        "nf2026_tip_med_mm": 3.36
+      },
+      {
+        "case_name": "Case 037",
+        "category": "2D_AX_TSE_T2",
+        "filename": "5: AX TSE T2 MONITORING CATH PLACEMENT",
+        "sp_ras": [
+          0.875,
+          0.875,
+          3.0
+        ],
+        "n_gt_in_slab": 11,
+        "n_gt_present": 11,
+        "nf2026_tp_present": 10,
+        "nf2026_recall_present_pct": 90.9,
+        "nf2026_precision_present_pct": 71.4,
+        "nf2026_f1_present_pct": 80.0,
+        "nf2026_shaft_med_mm": 0.885,
+        "nf2026_tip_med_mm": 3.15
+      },
+      {
+        "case_name": "Case 037",
+        "category": "2D_AX_TSE_T2",
+        "filename": "6: AX TSE T2 MONITORING CATH PLACEMENT",
+        "sp_ras": [
+          0.875,
+          0.875,
+          3.0
+        ],
+        "n_gt_in_slab": 11,
+        "n_gt_present": 11,
+        "nf2026_tp_present": 11,
+        "nf2026_recall_present_pct": 100.0,
+        "nf2026_precision_present_pct": 91.7,
+        "nf2026_f1_present_pct": 95.7,
+        "nf2026_shaft_med_mm": 0.816,
+        "nf2026_tip_med_mm": 2.16
+      },
+      {
+        "case_name": "Case 038",
+        "category": "2D_AX_TSE_T2",
+        "filename": "24: AX TSE T2",
+        "sp_ras": [
+          0.6875,
+          0.6875,
+          6.0
+        ],
+        "n_gt_in_slab": 15,
+        "n_gt_present": 15,
+        "nf2026_tp_present": 14,
+        "nf2026_recall_present_pct": 93.3,
+        "nf2026_precision_present_pct": 73.7,
+        "nf2026_f1_present_pct": 82.3,
+        "nf2026_shaft_med_mm": 0.835,
+        "nf2026_tip_med_mm": 4.03
+      },
+      {
+        "case_name": "Case 039",
+        "category": "2D_AX_TSE_T2",
+        "filename": "Case039_7_AX TSE T2 MONITORING CATH PLACEMENT",
+        "sp_ras": [
+          0.875,
+          0.875,
+          4.0
+        ],
+        "n_gt_in_slab": 20,
+        "n_gt_present": 13,
+        "nf2026_tp_present": 10,
+        "nf2026_recall_present_pct": 76.9,
+        "nf2026_precision_present_pct": 52.6,
+        "nf2026_f1_present_pct": 62.5,
+        "nf2026_shaft_med_mm": 2.358,
+        "nf2026_tip_med_mm": 5.61
+      },
+      {
+        "case_name": "Case 040",
+        "category": "2D_AX_TSE_T2",
+        "filename": "4: AX TSE T2 MONITORING CATH PLACEMENT",
+        "sp_ras": [
+          0.875,
+          0.875,
+          4.0
+        ],
+        "n_gt_in_slab": 21,
+        "n_gt_present": 17,
+        "nf2026_tp_present": 15,
+        "nf2026_recall_present_pct": 88.2,
+        "nf2026_precision_present_pct": 83.3,
+        "nf2026_f1_present_pct": 85.7,
+        "nf2026_shaft_med_mm": 1.32,
+        "nf2026_tip_med_mm": 4.09
+      },
+      {
+        "case_name": "Case 040",
+        "category": "2D_AX_TSE_T2",
+        "filename": "5: AX TSE T2 MONITORING CATH PLACEMENT",
+        "sp_ras": [
+          0.875,
+          0.875,
+          4.0
+        ],
+        "n_gt_in_slab": 21,
+        "n_gt_present": 21,
+        "nf2026_tp_present": 19,
+        "nf2026_recall_present_pct": 90.5,
+        "nf2026_precision_present_pct": 86.4,
+        "nf2026_f1_present_pct": 88.4,
+        "nf2026_shaft_med_mm": 0.81,
+        "nf2026_tip_med_mm": 3.45
+      },
+      {
+        "case_name": "Case 041",
+        "category": "2D_AX_TSE_T2",
+        "filename": "Case041_Series_23_AX TSE T2 MONITORING CATH PLACEMENT",
+        "sp_ras": [
+          0.875,
+          0.875,
+          3.0
+        ],
+        "n_gt_in_slab": 38,
+        "n_gt_present": 38,
+        "nf2026_tp_present": 36,
+        "nf2026_recall_present_pct": 94.7,
+        "nf2026_precision_present_pct": 92.3,
+        "nf2026_f1_present_pct": 93.5,
+        "nf2026_shaft_med_mm": 0.835,
+        "nf2026_tip_med_mm": 2.24
+      },
+      {
+        "case_name": "Case 041",
+        "category": "2D_AX_TSE_T2",
+        "filename": "Series 17 AX TSE T2 MONITORING CATH PLACEMENT.nrrd",
+        "sp_ras": [
+          0.875,
+          0.875,
+          3.0
+        ],
+        "n_gt_in_slab": 38,
+        "n_gt_present": 23,
+        "nf2026_tp_present": 20,
+        "nf2026_recall_present_pct": 87.0,
+        "nf2026_precision_present_pct": 51.3,
+        "nf2026_f1_present_pct": 64.5,
+        "nf2026_shaft_med_mm": 2.625,
+        "nf2026_tip_med_mm": 6.31
+      },
+      {
+        "case_name": "Case 045",
+        "category": "2D_AX_TSE_T2",
+        "filename": "Case045_16_AX TSE T2 MONITORING CATH PLACEMENT",
+        "sp_ras": [
+          0.875,
+          0.875,
+          3.0
+        ],
+        "n_gt_in_slab": 22,
+        "n_gt_present": 12,
+        "nf2026_tp_present": 6,
+        "nf2026_recall_present_pct": 50.0,
+        "nf2026_precision_present_pct": 35.3,
+        "nf2026_f1_present_pct": 41.4,
+        "nf2026_shaft_med_mm": 1.215,
+        "nf2026_tip_med_mm": 25.13
+      },
+      {
+        "case_name": "Case 048",
+        "category": "2D_AX_TSE_T2",
+        "filename": "Case048_26_AX TSE T2 MONITORING CATH PLACEMENT",
+        "sp_ras": [
+          0.875,
+          0.875,
+          5.1
+        ],
+        "n_gt_in_slab": 26,
+        "n_gt_present": 23,
+        "nf2026_tp_present": 20,
+        "nf2026_recall_present_pct": 87.0,
+        "nf2026_precision_present_pct": 52.6,
+        "nf2026_f1_present_pct": 65.6,
+        "nf2026_shaft_med_mm": 1.678,
+        "nf2026_tip_med_mm": 3.63
+      },
+      {
+        "case_name": "Case 049",
+        "category": "2D_AX_TSE_T2",
+        "filename": "Case049_18_AX TSE T2 MONITORING CATH PLACEMENT",
+        "sp_ras": [
+          0.875,
+          0.875,
+          3.0
+        ],
+        "n_gt_in_slab": 14,
+        "n_gt_present": 13,
+        "nf2026_tp_present": 10,
+        "nf2026_recall_present_pct": 76.9,
+        "nf2026_precision_present_pct": 71.4,
+        "nf2026_f1_present_pct": 74.1,
+        "nf2026_shaft_med_mm": 1.226,
+        "nf2026_tip_med_mm": 3.93
+      },
+      {
+        "case_name": "Case 051",
+        "category": "2D_AX_TSE_T2",
+        "filename": "24 AX TSE T2 MONITORING CATH PLACEMENT.MR._.24.1.2013.07.31.09.14.33.618.76278015",
+        "sp_ras": [
+          0.875,
+          0.875,
+          4.0
+        ],
+        "n_gt_in_slab": 11,
+        "n_gt_present": 11,
+        "nf2026_tp_present": 11,
+        "nf2026_recall_present_pct": 100.0,
+        "nf2026_precision_present_pct": 52.4,
+        "nf2026_f1_present_pct": 68.8,
+        "nf2026_shaft_med_mm": 1.367,
+        "nf2026_tip_med_mm": 3.9
+      },
+      {
+        "case_name": "Case 056",
+        "category": "2D_AX_TSE_T2",
+        "filename": "32 AX TSE T2 MONITORING CATH PLACEMENT.MR._.32.1.2013.11.22.15.28.31.909.43903623",
+        "sp_ras": [
+          0.875,
+          0.875,
+          3.6
+        ],
+        "n_gt_in_slab": 15,
+        "n_gt_present": 14,
+        "nf2026_tp_present": 14,
+        "nf2026_recall_present_pct": 100.0,
+        "nf2026_precision_present_pct": 87.5,
+        "nf2026_f1_present_pct": 93.3,
+        "nf2026_shaft_med_mm": 0.754,
+        "nf2026_tip_med_mm": 3.45
+      },
+      {
+        "case_name": "Case 058",
+        "category": "2D_AX_TSE_T2",
+        "filename": "18 AX TSE T2 MONITORING CATH PLACEMENT.MR._.18.22.2013.11.25.10.30.29.213.75483271",
+        "sp_ras": [
+          0.875,
+          0.875,
+          3.0
+        ],
+        "n_gt_in_slab": 11,
+        "n_gt_present": 11,
+        "nf2026_tp_present": 11,
+        "nf2026_recall_present_pct": 100.0,
+        "nf2026_precision_present_pct": 91.7,
+        "nf2026_f1_present_pct": 95.7,
+        "nf2026_shaft_med_mm": 0.613,
+        "nf2026_tip_med_mm": 2.47
+      },
+      {
+        "case_name": "Case 059",
+        "category": "2D_AX_TSE_T2",
+        "filename": "39 AX TSE T2 MONITORING CATH PLACEMENT.MR._.39.1.2013.12.11.14.56.32.535.68594057",
+        "sp_ras": [
+          0.875,
+          0.875,
+          4.0
+        ],
+        "n_gt_in_slab": 42,
+        "n_gt_present": 41,
+        "nf2026_tp_present": 33,
+        "nf2026_recall_present_pct": 80.5,
+        "nf2026_precision_present_pct": 73.3,
+        "nf2026_f1_present_pct": 76.7,
+        "nf2026_shaft_med_mm": 0.931,
+        "nf2026_tip_med_mm": 6.45
+      },
+      {
+        "case_name": "Case 060",
+        "category": "2D_AX_TSE_T2",
+        "filename": "24 AX TSE T2 MONITORING CATH PLACEMENT.MR._.24.1.2013.12.11.15.02.05.478.60227460",
+        "sp_ras": [
+          0.875,
+          0.875,
+          3.0
+        ],
+        "n_gt_in_slab": 16,
+        "n_gt_present": 16,
+        "nf2026_tp_present": 13,
+        "nf2026_recall_present_pct": 81.2,
+        "nf2026_precision_present_pct": 81.2,
+        "nf2026_f1_present_pct": 81.2,
+        "nf2026_shaft_med_mm": 1.493,
+        "nf2026_tip_med_mm": 4.99
+      },
+      {
+        "case_name": "Case 063",
+        "category": "2D_AX_TSE_T2",
+        "filename": "84 AX TSE T2 MONITORING CATH PLACEMENT.nrrd",
+        "sp_ras": [
+          0.875,
+          0.875,
+          4.8
+        ],
+        "n_gt_in_slab": 33,
+        "n_gt_present": 31,
+        "nf2026_tp_present": 30,
+        "nf2026_recall_present_pct": 96.8,
+        "nf2026_precision_present_pct": 71.4,
+        "nf2026_f1_present_pct": 82.2,
+        "nf2026_shaft_med_mm": 0.872,
+        "nf2026_tip_med_mm": 5.0
+      },
+      {
+        "case_name": "Case 063",
+        "category": "2D_AX_TSE_T2",
+        "filename": "82 AX TSE T2 MONITORING CATH PLACEMENT.nrrd",
+        "sp_ras": [
+          0.875,
+          0.875,
+          4.8
+        ],
+        "n_gt_in_slab": 33,
+        "n_gt_present": 31,
+        "nf2026_tp_present": 31,
+        "nf2026_recall_present_pct": 100.0,
+        "nf2026_precision_present_pct": 73.8,
+        "nf2026_f1_present_pct": 84.9,
+        "nf2026_shaft_med_mm": 1.088,
+        "nf2026_tip_med_mm": 6.88
+      },
+      {
+        "case_name": "Case 064",
+        "category": "2D_AX_TSE_T2",
+        "filename": "13 AX TSE T2 MONITORING CATH PLACEMENT.nrrd",
+        "sp_ras": [
+          0.875,
+          0.875,
+          3.0
+        ],
+        "n_gt_in_slab": 26,
+        "n_gt_present": 26,
+        "nf2026_tp_present": 23,
+        "nf2026_recall_present_pct": 88.5,
+        "nf2026_precision_present_pct": 82.1,
+        "nf2026_f1_present_pct": 85.2,
+        "nf2026_shaft_med_mm": 0.79,
+        "nf2026_tip_med_mm": 3.54
+      },
+      {
+        "case_name": "Case 064",
+        "category": "2D_AX_TSE_T2",
+        "filename": "14 AX TSE T2 MONITORING CATH PLACEMENT.nrrd",
+        "sp_ras": [
+          0.875,
+          0.875,
+          3.5
+        ],
+        "n_gt_in_slab": 26,
+        "n_gt_present": 26,
+        "nf2026_tp_present": 24,
+        "nf2026_recall_present_pct": 92.3,
+        "nf2026_precision_present_pct": 82.8,
+        "nf2026_f1_present_pct": 87.3,
+        "nf2026_shaft_med_mm": 0.944,
+        "nf2026_tip_med_mm": 7.85
+      },
+      {
+        "case_name": "Case 065",
+        "category": "2D_AX_TSE_T2",
+        "filename": "13 AX TSE T2 MONITORING CATH PLACEMENT.nrrd",
+        "sp_ras": [
+          0.875,
+          0.875,
+          4.0
+        ],
+        "n_gt_in_slab": 29,
+        "n_gt_present": 29,
+        "nf2026_tp_present": 28,
+        "nf2026_recall_present_pct": 96.5,
+        "nf2026_precision_present_pct": 73.7,
+        "nf2026_f1_present_pct": 83.6,
+        "nf2026_shaft_med_mm": 1.008,
+        "nf2026_tip_med_mm": 19.15
+      },
+      {
+        "case_name": "Case 065",
+        "category": "2D_AX_TSE_T2",
+        "filename": "11 AX TSE T2 MONITORING CATH PLACEMENT.nrrd",
+        "sp_ras": [
+          0.875,
+          0.875,
+          4.0
+        ],
+        "n_gt_in_slab": 29,
+        "n_gt_present": 29,
+        "nf2026_tp_present": 27,
+        "nf2026_recall_present_pct": 93.1,
+        "nf2026_precision_present_pct": 73.0,
+        "nf2026_f1_present_pct": 81.8,
+        "nf2026_shaft_med_mm": 1.169,
+        "nf2026_tip_med_mm": 21.81
+      },
+      {
+        "case_name": "Case 066",
+        "category": "2D_AX_TSE_T2",
+        "filename": "12 AX TSE T2.nrrd",
+        "sp_ras": [
+          0.6875,
+          0.6875,
+          4.8
+        ],
+        "n_gt_in_slab": 24,
+        "n_gt_present": 24,
+        "nf2026_tp_present": 22,
+        "nf2026_recall_present_pct": 91.7,
+        "nf2026_precision_present_pct": 78.6,
+        "nf2026_f1_present_pct": 84.6,
+        "nf2026_shaft_med_mm": 1.045,
+        "nf2026_tip_med_mm": 5.64
+      },
+      {
+        "case_name": "Case 069",
+        "category": "2D_AX_TSE_T2",
+        "filename": "13 AX TSE T2 MONITORING CATH PLACEMENT.nrrd",
+        "sp_ras": [
+          0.875,
+          0.875,
+          3.0
+        ],
+        "n_gt_in_slab": 42,
+        "n_gt_present": 41,
+        "nf2026_tp_present": 41,
+        "nf2026_recall_present_pct": 100.0,
+        "nf2026_precision_present_pct": 87.2,
+        "nf2026_f1_present_pct": 93.2,
+        "nf2026_shaft_med_mm": 1.054,
+        "nf2026_tip_med_mm": 3.81
+      },
+      {
+        "case_name": "Case 069",
+        "category": "2D_AX_TSE_T2",
+        "filename": "15 AX TSE T2 MONITORING CATH PLACEMENT.nrrd",
+        "sp_ras": [
+          0.875,
+          0.875,
+          3.0
+        ],
+        "n_gt_in_slab": 42,
+        "n_gt_present": 42,
+        "nf2026_tp_present": 40,
+        "nf2026_recall_present_pct": 95.2,
+        "nf2026_precision_present_pct": 87.0,
+        "nf2026_f1_present_pct": 90.9,
+        "nf2026_shaft_med_mm": 0.718,
+        "nf2026_tip_med_mm": 4.66
+      },
+      {
+        "case_name": "Case 070",
+        "category": "2D_AX_TSE_T2",
+        "filename": "12 AX TSE T2 MONITORING CATH PLACEMENT.nrrd",
+        "sp_ras": [
+          0.875,
+          0.875,
+          3.0
+        ],
+        "n_gt_in_slab": 21,
+        "n_gt_present": 14,
+        "nf2026_tp_present": 9,
+        "nf2026_recall_present_pct": 64.3,
+        "nf2026_precision_present_pct": 69.2,
+        "nf2026_f1_present_pct": 66.7,
+        "nf2026_shaft_med_mm": 2.287,
+        "nf2026_tip_med_mm": 6.12
+      },
+      {
+        "case_name": "Case 070",
+        "category": "2D_AX_TSE_T2",
+        "filename": "13 AX TSE T2 MONITORING CATH PLACEMENT.nrrd",
+        "sp_ras": [
+          0.875,
+          0.875,
+          3.0
+        ],
+        "n_gt_in_slab": 21,
+        "n_gt_present": 17,
+        "nf2026_tp_present": 12,
+        "nf2026_recall_present_pct": 70.6,
+        "nf2026_precision_present_pct": 57.1,
+        "nf2026_f1_present_pct": 63.2,
+        "nf2026_shaft_med_mm": 2.368,
+        "nf2026_tip_med_mm": 6.4
+      },
+      {
+        "case_name": "Case 071",
+        "category": "2D_AX_TSE_T2",
+        "filename": "18 AX TSE T2 MONITORING CATH PLACEMENT.nrrd",
+        "sp_ras": [
+          0.875,
+          0.875,
+          4.8
+        ],
+        "n_gt_in_slab": 20,
+        "n_gt_present": 20,
+        "nf2026_tp_present": 17,
+        "nf2026_recall_present_pct": 85.0,
+        "nf2026_precision_present_pct": 77.3,
+        "nf2026_f1_present_pct": 81.0,
+        "nf2026_shaft_med_mm": 1.166,
+        "nf2026_tip_med_mm": 4.58
+      },
+      {
+        "case_name": "Case 072",
+        "category": "2D_AX_TSE_T2",
+        "filename": "15 AX TSE T2 MONITORING CATH PLACEMENT.nrrd",
+        "sp_ras": [
+          0.875,
+          0.875,
+          3.0
+        ],
+        "n_gt_in_slab": 27,
+        "n_gt_present": 16,
+        "nf2026_tp_present": 10,
+        "nf2026_recall_present_pct": 62.5,
+        "nf2026_precision_present_pct": 47.6,
+        "nf2026_f1_present_pct": 54.0,
+        "nf2026_shaft_med_mm": 2.012,
+        "nf2026_tip_med_mm": 7.64
+      },
+      {
+        "case_name": "Case 072",
+        "category": "2D_AX_TSE_T2",
+        "filename": "16 AX TSE T2 MONITORING CATH PLACEMENT.nrrd",
+        "sp_ras": [
+          0.875,
+          0.875,
+          3.0
+        ],
+        "n_gt_in_slab": 27,
+        "n_gt_present": 24,
+        "nf2026_tp_present": 18,
+        "nf2026_recall_present_pct": 75.0,
+        "nf2026_precision_present_pct": 66.7,
+        "nf2026_f1_present_pct": 70.6,
+        "nf2026_shaft_med_mm": 2.266,
+        "nf2026_tip_med_mm": 10.69
+      },
+      {
+        "case_name": "Case 075",
+        "category": "2D_AX_TSE_T2",
+        "filename": "4 AX TSE T2 MONITORING CATH PLACEMENT.nrrd",
+        "sp_ras": [
+          0.875,
+          0.875,
+          3.0
+        ],
+        "n_gt_in_slab": 13,
+        "n_gt_present": 7,
+        "nf2026_tp_present": 2,
+        "nf2026_recall_present_pct": 28.6,
+        "nf2026_precision_present_pct": 15.4,
+        "nf2026_f1_present_pct": 20.0,
+        "nf2026_shaft_med_mm": 2.103,
+        "nf2026_tip_med_mm": 12.08
+      },
+      {
+        "case_name": "Case 075",
+        "category": "2D_AX_TSE_T2",
+        "filename": "5 AX TSE T2 MONITORING CATH PLACEMENT.nrrd",
+        "sp_ras": [
+          0.875,
+          0.875,
+          3.0
+        ],
+        "n_gt_in_slab": 13,
+        "n_gt_present": 8,
+        "nf2026_tp_present": 8,
+        "nf2026_recall_present_pct": 100.0,
+        "nf2026_precision_present_pct": 34.8,
+        "nf2026_f1_present_pct": 51.6,
+        "nf2026_shaft_med_mm": 1.272,
+        "nf2026_tip_med_mm": 6.05
+      },
+      {
+        "case_name": "Case 076",
+        "category": "2D_AX_TSE_T2",
+        "filename": "9 AX TSE T2 MONITORING CATH PLACEMENT.nrrd",
+        "sp_ras": [
+          0.875,
+          0.875,
+          3.0
+        ],
+        "n_gt_in_slab": 19,
+        "n_gt_present": 15,
+        "nf2026_tp_present": 12,
+        "nf2026_recall_present_pct": 80.0,
+        "nf2026_precision_present_pct": 70.6,
+        "nf2026_f1_present_pct": 75.0,
+        "nf2026_shaft_med_mm": 1.771,
+        "nf2026_tip_med_mm": 7.56
+      },
+      {
+        "case_name": "Case 076",
+        "category": "2D_AX_TSE_T2",
+        "filename": "11 AX TSE T2 MONITORING CATH PLACEMENT.nrrd",
+        "sp_ras": [
+          0.875,
+          0.875,
+          4.0
+        ],
+        "n_gt_in_slab": 19,
+        "n_gt_present": 17,
+        "nf2026_tp_present": 17,
+        "nf2026_recall_present_pct": 100.0,
+        "nf2026_precision_present_pct": 63.0,
+        "nf2026_f1_present_pct": 77.3,
+        "nf2026_shaft_med_mm": 0.942,
+        "nf2026_tip_med_mm": 7.67
+      },
+      {
+        "case_name": "Case 077",
+        "category": "2D_AX_TSE_T2",
+        "filename": "13 AX TSE T2 MONITORING CATH PLACEMENT.nrrd",
+        "sp_ras": [
+          0.875,
+          0.875,
+          4.0
+        ],
+        "n_gt_in_slab": 13,
+        "n_gt_present": 7,
+        "nf2026_tp_present": 7,
+        "nf2026_recall_present_pct": 100.0,
+        "nf2026_precision_present_pct": 53.9,
+        "nf2026_f1_present_pct": 70.0,
+        "nf2026_shaft_med_mm": 0.668,
+        "nf2026_tip_med_mm": 5.55
+      },
+      {
+        "case_name": "Case 078",
+        "category": "2D_AX_TSE_T2",
+        "filename": "15 AX TSE T2 MONITORING CATH PLACEMENT.nrrd",
+        "sp_ras": [
+          0.875,
+          0.875,
+          3.0
+        ],
+        "n_gt_in_slab": 25,
+        "n_gt_present": 25,
+        "nf2026_tp_present": 22,
+        "nf2026_recall_present_pct": 88.0,
+        "nf2026_precision_present_pct": 81.5,
+        "nf2026_f1_present_pct": 84.6,
+        "nf2026_shaft_med_mm": 0.596,
+        "nf2026_tip_med_mm": 4.55
+      },
+      {
+        "case_name": "Case 078",
+        "category": "2D_AX_TSE_T2",
+        "filename": "14 AX TSE T2 MONITORING CATH PLACEMENT.nrrd",
+        "sp_ras": [
+          0.875,
+          0.875,
+          3.0
+        ],
+        "n_gt_in_slab": 25,
+        "n_gt_present": 17,
+        "nf2026_tp_present": 13,
+        "nf2026_recall_present_pct": 76.5,
+        "nf2026_precision_present_pct": 68.4,
+        "nf2026_f1_present_pct": 72.2,
+        "nf2026_shaft_med_mm": 1.727,
+        "nf2026_tip_med_mm": 10.61
+      },
+      {
+        "case_name": "Case 038",
+        "category": "AX_T1_VIBE_POST",
+        "filename": "4: AX 3D VIBE BH FS pre",
+        "sp_ras": [
+          0.875,
+          0.875,
+          4.0
+        ],
+        "n_gt_in_slab": 15,
+        "n_gt_present": 8,
+        "nf2026_tp_present": 0,
+        "nf2026_recall_present_pct": 0.0,
+        "nf2026_precision_present_pct": 0.0,
+        "nf2026_f1_present_pct": 0.0,
+        "nf2026_shaft_med_mm": null,
+        "nf2026_tip_med_mm": null
+      },
+      {
+        "case_name": "Case 038",
+        "category": "AX_T1_VIBE_POST",
+        "filename": "12: AX 3D VIBE BH POST FS",
+        "sp_ras": [
+          0.875,
+          0.875,
+          4.0
+        ],
+        "n_gt_in_slab": 15,
+        "n_gt_present": 10,
+        "nf2026_tp_present": 7,
+        "nf2026_recall_present_pct": 70.0,
+        "nf2026_precision_present_pct": 50.0,
+        "nf2026_f1_present_pct": 58.3,
+        "nf2026_shaft_med_mm": 1.664,
+        "nf2026_tip_med_mm": 12.53
+      },
+      {
+        "case_name": "Case 038",
+        "category": "AX_T1_VIBE_POST",
+        "filename": "13: AX 3D VIBE BH POST FS",
+        "sp_ras": [
+          0.875,
+          0.875,
+          4.0
+        ],
+        "n_gt_in_slab": 15,
+        "n_gt_present": 10,
+        "nf2026_tp_present": 7,
+        "nf2026_recall_present_pct": 70.0,
+        "nf2026_precision_present_pct": 58.3,
+        "nf2026_f1_present_pct": 63.6,
+        "nf2026_shaft_med_mm": 1.59,
+        "nf2026_tip_med_mm": 15.74
+      },
+      {
+        "case_name": "Case 038",
+        "category": "AX_T1_VIBE_POST",
+        "filename": "14: AX 3D VIBE BH FS POST",
+        "sp_ras": [
+          0.875,
+          0.875,
+          4.0
+        ],
+        "n_gt_in_slab": 15,
+        "n_gt_present": 14,
+        "nf2026_tp_present": 12,
+        "nf2026_recall_present_pct": 85.7,
+        "nf2026_precision_present_pct": 44.4,
+        "nf2026_f1_present_pct": 58.5,
+        "nf2026_shaft_med_mm": 1.45,
+        "nf2026_tip_med_mm": 15.86
+      },
+      {
+        "case_name": "Case 038",
+        "category": "AX_T1_VIBE_POST",
+        "filename": "17: AX 3D VIBE BH FS POST",
+        "sp_ras": [
+          0.4375,
+          0.4375,
+          4.0
+        ],
+        "n_gt_in_slab": 15,
+        "n_gt_present": 12,
+        "nf2026_tp_present": 10,
+        "nf2026_recall_present_pct": 83.3,
+        "nf2026_precision_present_pct": 37.0,
+        "nf2026_f1_present_pct": 51.3,
+        "nf2026_shaft_med_mm": 1.31,
+        "nf2026_tip_med_mm": 7.7
+      },
+      {
+        "case_name": "Case 038",
+        "category": "AX_T1_VIBE_POST",
+        "filename": "21: AX 3D VIBE BH FS POST",
+        "sp_ras": [
+          0.4375,
+          0.4375,
+          4.0
+        ],
+        "n_gt_in_slab": 15,
+        "n_gt_present": 14,
+        "nf2026_tp_present": 13,
+        "nf2026_recall_present_pct": 92.9,
+        "nf2026_precision_present_pct": 48.1,
+        "nf2026_f1_present_pct": 63.4,
+        "nf2026_shaft_med_mm": 1.198,
+        "nf2026_tip_med_mm": 3.99
+      },
+      {
+        "case_name": "Case 041",
+        "category": "AX_T1_VIBE_POST",
+        "filename": "Series 13 AX 3D VIBE BH POST FS.nrrd",
+        "sp_ras": [
+          0.875,
+          0.875,
+          4.0
+        ],
+        "n_gt_in_slab": 38,
+        "n_gt_present": 24,
+        "nf2026_tp_present": 19,
+        "nf2026_recall_present_pct": 79.2,
+        "nf2026_precision_present_pct": 76.0,
+        "nf2026_f1_present_pct": 77.5,
+        "nf2026_shaft_med_mm": 1.689,
+        "nf2026_tip_med_mm": 8.57
+      },
+      {
+        "case_name": "Case 041",
+        "category": "AX_T1_VIBE_POST",
+        "filename": "Series 14 AX 3D VIBE BH POST FS.nrrd",
+        "sp_ras": [
+          0.875,
+          0.875,
+          4.0
+        ],
+        "n_gt_in_slab": 38,
+        "n_gt_present": 24,
+        "nf2026_tp_present": 19,
+        "nf2026_recall_present_pct": 79.2,
+        "nf2026_precision_present_pct": 73.1,
+        "nf2026_f1_present_pct": 76.0,
+        "nf2026_shaft_med_mm": 1.87,
+        "nf2026_tip_med_mm": 8.21
+      },
+      {
+        "case_name": "Case 041",
+        "category": "AX_T1_VIBE_POST",
+        "filename": "Series 15 AX 3D VIBE BH POST FS.nrrd",
+        "sp_ras": [
+          0.875,
+          0.875,
+          4.0
+        ],
+        "n_gt_in_slab": 38,
+        "n_gt_present": 29,
+        "nf2026_tp_present": 22,
+        "nf2026_recall_present_pct": 75.9,
+        "nf2026_precision_present_pct": 62.9,
+        "nf2026_f1_present_pct": 68.8,
+        "nf2026_shaft_med_mm": 2.796,
+        "nf2026_tip_med_mm": 7.45
+      },
+      {
+        "case_name": "Case 041",
+        "category": "AX_T1_VIBE_POST",
+        "filename": "Series 16 AX 3D VIBE BH POST FS.nrrd",
+        "sp_ras": [
+          0.875,
+          0.875,
+          4.0
+        ],
+        "n_gt_in_slab": 38,
+        "n_gt_present": 29,
+        "nf2026_tp_present": 18,
+        "nf2026_recall_present_pct": 62.1,
+        "nf2026_precision_present_pct": 62.1,
+        "nf2026_f1_present_pct": 62.1,
+        "nf2026_shaft_med_mm": 2.763,
+        "nf2026_tip_med_mm": 7.56
+      },
+      {
+        "case_name": "Case 041",
+        "category": "AX_T1_VIBE_POST",
+        "filename": "Series 5 AX 3D VIBE BH FS pre.nrrd",
+        "sp_ras": [
+          0.875,
+          0.875,
+          4.0
+        ],
+        "n_gt_in_slab": 38,
+        "n_gt_present": 23,
+        "nf2026_tp_present": 0,
+        "nf2026_recall_present_pct": 0.0,
+        "nf2026_precision_present_pct": 0.0,
+        "nf2026_f1_present_pct": 0.0,
+        "nf2026_shaft_med_mm": null,
+        "nf2026_tip_med_mm": null
+      },
+      {
+        "case_name": "Case 041",
+        "category": "AX_T1_VIBE_POST",
+        "filename": "Series 6 AX 3D VIBE PRE No FS.nrrd",
+        "sp_ras": [
+          0.875,
+          0.875,
+          4.0
+        ],
+        "n_gt_in_slab": 38,
+        "n_gt_present": 20,
+        "nf2026_tp_present": 0,
+        "nf2026_recall_present_pct": 0.0,
+        "nf2026_precision_present_pct": 0.0,
+        "nf2026_f1_present_pct": 0.0,
+        "nf2026_shaft_med_mm": null,
+        "nf2026_tip_med_mm": null
+      },
+      {
+        "case_name": "Case 024",
+        "category": "AX_3D_wbSSFP_FISP",
+        "filename": "Case24.MR._.13.AX 3D true-fisp.nrrd",
+        "sp_ras": [
+          0.625,
+          0.625,
+          2.0
+        ],
+        "n_gt_in_slab": 13,
+        "n_gt_present": 9,
+        "nf2026_tp_present": 8,
+        "nf2026_recall_present_pct": 88.9,
+        "nf2026_precision_present_pct": 80.0,
+        "nf2026_f1_present_pct": 84.2,
+        "nf2026_shaft_med_mm": 0.481,
+        "nf2026_tip_med_mm": 2.39
+      },
+      {
+        "case_name": "Case 041",
+        "category": "AX_3D_wbSSFP_FISP",
+        "filename": "Series 24 wbSSFP_CV_1.nrrd",
+        "sp_ras": [
+          0.4167,
+          0.4167,
+          2.5
+        ],
+        "n_gt_in_slab": 38,
+        "n_gt_present": 38,
+        "nf2026_tp_present": 38,
+        "nf2026_recall_present_pct": 100.0,
+        "nf2026_precision_present_pct": 90.5,
+        "nf2026_f1_present_pct": 95.0,
+        "nf2026_shaft_med_mm": 0.874,
+        "nf2026_tip_med_mm": 3.96
+      }
+    ]
+  }
+}

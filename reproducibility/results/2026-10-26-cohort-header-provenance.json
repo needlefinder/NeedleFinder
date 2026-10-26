@@ -1,0 +1,1312 @@
+{
+  "generated_at": "2026-10-26",
+  "description": "Immutable header and workstation hardware provenance extracted on edelweiss for the 51 external SSL pelvic MRI volumes (50 distinct subjects), 23 4D intra-procedural serial MRI scans (Cases 68-71), Case 061 non-benchmark BWH pelvic MRI series, and workstation hardware specifications.",
+  "external_ssl_51_volumes": {
+    "n_volumes": 51,
+    "n_distinct_subjects": 50,
+    "n_msd_subjects": 48,
+    "n_bwh_non_benchmark_subjects": 2,
+    "n_bwh_non_benchmark_volumes": 3,
+    "n_needle_free_volumes": 50,
+    "in_plane_min_mm": 0.4688,
+    "in_plane_max_mm": 0.875,
+    "slice_thickness_min_mm": 1.6,
+    "slice_thickness_max_mm": 4.8,
+    "msd_48_volumes": {
+      "n_volumes": 48,
+      "in_plane_min_mm": 0.6,
+      "in_plane_max_mm": 0.75,
+      "slice_thickness_min_mm": 3.0,
+      "slice_thickness_max_mm": 4.0
+    },
+    "case061_bwh_series": {
+      "series_34_3d_space": {
+        "file_name": "34 AX space trial 1.6 SLICE COVER TEMPLATE.MR._.34.1.2014.01.29.12.10.33.826.56237582.nrrd",
+        "spacing_ras_mm": [
+          0.4688,
+          0.4688,
+          1.6
+        ],
+        "in_plane_mm": 0.4688,
+        "slice_thickness_mm": 1.6,
+        "shape_kji": [
+          131,
+          304,
+          304
+        ]
+      },
+      "series_32_2d_tse": {
+        "file_name": "32 AX TSE T2 MONITORING CATH PLACEMENT.MR._.32.22.2014.01.29.12.10.33.826.56232830.nrrd",
+        "spacing_ras_mm": [
+          0.875,
+          0.875,
+          4.8
+        ],
+        "in_plane_mm": 0.875,
+        "slice_thickness_mm": 4.8,
+        "shape_kji": [
+          22,
+          160,
+          160
+        ]
+      }
+    },
+    "per_volume_records": [
+      {
+        "source_tag": "msd_prostate_tr",
+        "file_name": "prostate_00.nii.gz",
+        "subject_id": "MSD_prostate_00.nii.gz",
+        "spacing_ras_mm": [
+          0.6,
+          0.6,
+          4.0
+        ],
+        "in_plane_mm": 0.6,
+        "slice_thickness_mm": 4.0,
+        "shape_kji": [
+          15,
+          240,
+          240
+        ]
+      },
+      {
+        "source_tag": "msd_prostate_tr",
+        "file_name": "prostate_01.nii.gz",
+        "subject_id": "MSD_prostate_01.nii.gz",
+        "spacing_ras_mm": [
+          0.625,
+          0.625,
+          3.6
+        ],
+        "in_plane_mm": 0.625,
+        "slice_thickness_mm": 3.6,
+        "shape_kji": [
+          20,
+          224,
+          224
+        ]
+      },
+      {
+        "source_tag": "msd_prostate_tr",
+        "file_name": "prostate_02.nii.gz",
+        "subject_id": "MSD_prostate_02.nii.gz",
+        "spacing_ras_mm": [
+          0.625,
+          0.625,
+          3.6
+        ],
+        "in_plane_mm": 0.625,
+        "slice_thickness_mm": 3.6,
+        "shape_kji": [
+          24,
+          224,
+          224
+        ]
+      },
+      {
+        "source_tag": "msd_prostate_tr",
+        "file_name": "prostate_04.nii.gz",
+        "subject_id": "MSD_prostate_04.nii.gz",
+        "spacing_ras_mm": [
+          0.6,
+          0.6,
+          4.0
+        ],
+        "in_plane_mm": 0.6,
+        "slice_thickness_mm": 4.0,
+        "shape_kji": [
+          15,
+          240,
+          240
+        ]
+      },
+      {
+        "source_tag": "msd_prostate_tr",
+        "file_name": "prostate_06.nii.gz",
+        "subject_id": "MSD_prostate_06.nii.gz",
+        "spacing_ras_mm": [
+          0.625,
+          0.625,
+          3.6
+        ],
+        "in_plane_mm": 0.625,
+        "slice_thickness_mm": 3.6,
+        "shape_kji": [
+          20,
+          224,
+          224
+        ]
+      },
+      {
+        "source_tag": "msd_prostate_tr",
+        "file_name": "prostate_07.nii.gz",
+        "subject_id": "MSD_prostate_07.nii.gz",
+        "spacing_ras_mm": [
+          0.625,
+          0.625,
+          3.6
+        ],
+        "in_plane_mm": 0.625,
+        "slice_thickness_mm": 3.6,
+        "shape_kji": [
+          20,
+          224,
+          224
+        ]
+      },
+      {
+        "source_tag": "msd_prostate_tr",
+        "file_name": "prostate_10.nii.gz",
+        "subject_id": "MSD_prostate_10.nii.gz",
+        "spacing_ras_mm": [
+          0.625,
+          0.625,
+          3.6
+        ],
+        "in_plane_mm": 0.625,
+        "slice_thickness_mm": 3.6,
+        "shape_kji": [
+          20,
+          224,
+          224
+        ]
+      },
+      {
+        "source_tag": "msd_prostate_tr",
+        "file_name": "prostate_13.nii.gz",
+        "subject_id": "MSD_prostate_13.nii.gz",
+        "spacing_ras_mm": [
+          0.625,
+          0.625,
+          3.6
+        ],
+        "in_plane_mm": 0.625,
+        "slice_thickness_mm": 3.6,
+        "shape_kji": [
+          20,
+          224,
+          224
+        ]
+      },
+      {
+        "source_tag": "msd_prostate_tr",
+        "file_name": "prostate_14.nii.gz",
+        "subject_id": "MSD_prostate_14.nii.gz",
+        "spacing_ras_mm": [
+          0.625,
+          0.625,
+          3.6
+        ],
+        "in_plane_mm": 0.625,
+        "slice_thickness_mm": 3.6,
+        "shape_kji": [
+          20,
+          224,
+          224
+        ]
+      },
+      {
+        "source_tag": "msd_prostate_tr",
+        "file_name": "prostate_16.nii.gz",
+        "subject_id": "MSD_prostate_16.nii.gz",
+        "spacing_ras_mm": [
+          0.625,
+          0.625,
+          3.6
+        ],
+        "in_plane_mm": 0.625,
+        "slice_thickness_mm": 3.6,
+        "shape_kji": [
+          20,
+          224,
+          224
+        ]
+      },
+      {
+        "source_tag": "msd_prostate_tr",
+        "file_name": "prostate_17.nii.gz",
+        "subject_id": "MSD_prostate_17.nii.gz",
+        "spacing_ras_mm": [
+          0.625,
+          0.625,
+          3.6
+        ],
+        "in_plane_mm": 0.625,
+        "slice_thickness_mm": 3.6,
+        "shape_kji": [
+          20,
+          224,
+          224
+        ]
+      },
+      {
+        "source_tag": "msd_prostate_tr",
+        "file_name": "prostate_18.nii.gz",
+        "subject_id": "MSD_prostate_18.nii.gz",
+        "spacing_ras_mm": [
+          0.75,
+          0.75,
+          4.0
+        ],
+        "in_plane_mm": 0.75,
+        "slice_thickness_mm": 4.0,
+        "shape_kji": [
+          18,
+          192,
+          192
+        ]
+      },
+      {
+        "source_tag": "msd_prostate_tr",
+        "file_name": "prostate_20.nii.gz",
+        "subject_id": "MSD_prostate_20.nii.gz",
+        "spacing_ras_mm": [
+          0.625,
+          0.625,
+          3.6
+        ],
+        "in_plane_mm": 0.625,
+        "slice_thickness_mm": 3.6,
+        "shape_kji": [
+          20,
+          224,
+          224
+        ]
+      },
+      {
+        "source_tag": "msd_prostate_tr",
+        "file_name": "prostate_21.nii.gz",
+        "subject_id": "MSD_prostate_21.nii.gz",
+        "spacing_ras_mm": [
+          0.625,
+          0.625,
+          3.6
+        ],
+        "in_plane_mm": 0.625,
+        "slice_thickness_mm": 3.6,
+        "shape_kji": [
+          20,
+          224,
+          224
+        ]
+      },
+      {
+        "source_tag": "msd_prostate_tr",
+        "file_name": "prostate_24.nii.gz",
+        "subject_id": "MSD_prostate_24.nii.gz",
+        "spacing_ras_mm": [
+          0.625,
+          0.625,
+          3.6
+        ],
+        "in_plane_mm": 0.625,
+        "slice_thickness_mm": 3.6,
+        "shape_kji": [
+          20,
+          224,
+          224
+        ]
+      },
+      {
+        "source_tag": "msd_prostate_tr",
+        "file_name": "prostate_25.nii.gz",
+        "subject_id": "MSD_prostate_25.nii.gz",
+        "spacing_ras_mm": [
+          0.625,
+          0.625,
+          3.6
+        ],
+        "in_plane_mm": 0.625,
+        "slice_thickness_mm": 3.6,
+        "shape_kji": [
+          19,
+          224,
+          224
+        ]
+      },
+      {
+        "source_tag": "msd_prostate_tr",
+        "file_name": "prostate_28.nii.gz",
+        "subject_id": "MSD_prostate_28.nii.gz",
+        "spacing_ras_mm": [
+          0.6042,
+          0.6042,
+          4.0
+        ],
+        "in_plane_mm": 0.6042,
+        "slice_thickness_mm": 4.0,
+        "shape_kji": [
+          11,
+          240,
+          240
+        ]
+      },
+      {
+        "source_tag": "msd_prostate_tr",
+        "file_name": "prostate_29.nii.gz",
+        "subject_id": "MSD_prostate_29.nii.gz",
+        "spacing_ras_mm": [
+          0.6,
+          0.6,
+          4.0
+        ],
+        "in_plane_mm": 0.6,
+        "slice_thickness_mm": 4.0,
+        "shape_kji": [
+          15,
+          240,
+          240
+        ]
+      },
+      {
+        "source_tag": "msd_prostate_tr",
+        "file_name": "prostate_31.nii.gz",
+        "subject_id": "MSD_prostate_31.nii.gz",
+        "spacing_ras_mm": [
+          0.625,
+          0.625,
+          3.6
+        ],
+        "in_plane_mm": 0.625,
+        "slice_thickness_mm": 3.6,
+        "shape_kji": [
+          20,
+          224,
+          224
+        ]
+      },
+      {
+        "source_tag": "msd_prostate_tr",
+        "file_name": "prostate_32.nii.gz",
+        "subject_id": "MSD_prostate_32.nii.gz",
+        "spacing_ras_mm": [
+          0.625,
+          0.625,
+          3.6
+        ],
+        "in_plane_mm": 0.625,
+        "slice_thickness_mm": 3.6,
+        "shape_kji": [
+          20,
+          224,
+          224
+        ]
+      },
+      {
+        "source_tag": "msd_prostate_tr",
+        "file_name": "prostate_34.nii.gz",
+        "subject_id": "MSD_prostate_34.nii.gz",
+        "spacing_ras_mm": [
+          0.6,
+          0.6,
+          4.0
+        ],
+        "in_plane_mm": 0.6,
+        "slice_thickness_mm": 4.0,
+        "shape_kji": [
+          15,
+          240,
+          240
+        ]
+      },
+      {
+        "source_tag": "msd_prostate_tr",
+        "file_name": "prostate_35.nii.gz",
+        "subject_id": "MSD_prostate_35.nii.gz",
+        "spacing_ras_mm": [
+          0.625,
+          0.625,
+          3.6
+        ],
+        "in_plane_mm": 0.625,
+        "slice_thickness_mm": 3.6,
+        "shape_kji": [
+          20,
+          224,
+          224
+        ]
+      },
+      {
+        "source_tag": "msd_prostate_tr",
+        "file_name": "prostate_37.nii.gz",
+        "subject_id": "MSD_prostate_37.nii.gz",
+        "spacing_ras_mm": [
+          0.75,
+          0.75,
+          4.0
+        ],
+        "in_plane_mm": 0.75,
+        "slice_thickness_mm": 4.0,
+        "shape_kji": [
+          15,
+          192,
+          192
+        ]
+      },
+      {
+        "source_tag": "msd_prostate_tr",
+        "file_name": "prostate_38.nii.gz",
+        "subject_id": "MSD_prostate_38.nii.gz",
+        "spacing_ras_mm": [
+          0.625,
+          0.625,
+          3.6
+        ],
+        "in_plane_mm": 0.625,
+        "slice_thickness_mm": 3.6,
+        "shape_kji": [
+          20,
+          224,
+          224
+        ]
+      },
+      {
+        "source_tag": "msd_prostate_tr",
+        "file_name": "prostate_39.nii.gz",
+        "subject_id": "MSD_prostate_39.nii.gz",
+        "spacing_ras_mm": [
+          0.6,
+          0.6,
+          4.0
+        ],
+        "in_plane_mm": 0.6,
+        "slice_thickness_mm": 4.0,
+        "shape_kji": [
+          15,
+          240,
+          240
+        ]
+      },
+      {
+        "source_tag": "msd_prostate_tr",
+        "file_name": "prostate_40.nii.gz",
+        "subject_id": "MSD_prostate_40.nii.gz",
+        "spacing_ras_mm": [
+          0.625,
+          0.625,
+          3.6
+        ],
+        "in_plane_mm": 0.625,
+        "slice_thickness_mm": 3.6,
+        "shape_kji": [
+          20,
+          224,
+          224
+        ]
+      },
+      {
+        "source_tag": "msd_prostate_tr",
+        "file_name": "prostate_41.nii.gz",
+        "subject_id": "MSD_prostate_41.nii.gz",
+        "spacing_ras_mm": [
+          0.75,
+          0.75,
+          3.0
+        ],
+        "in_plane_mm": 0.75,
+        "slice_thickness_mm": 3.0,
+        "shape_kji": [
+          18,
+          192,
+          192
+        ]
+      },
+      {
+        "source_tag": "msd_prostate_tr",
+        "file_name": "prostate_42.nii.gz",
+        "subject_id": "MSD_prostate_42.nii.gz",
+        "spacing_ras_mm": [
+          0.625,
+          0.625,
+          3.6
+        ],
+        "in_plane_mm": 0.625,
+        "slice_thickness_mm": 3.6,
+        "shape_kji": [
+          22,
+          224,
+          224
+        ]
+      },
+      {
+        "source_tag": "msd_prostate_tr",
+        "file_name": "prostate_43.nii.gz",
+        "subject_id": "MSD_prostate_43.nii.gz",
+        "spacing_ras_mm": [
+          0.625,
+          0.625,
+          3.6
+        ],
+        "in_plane_mm": 0.625,
+        "slice_thickness_mm": 3.6,
+        "shape_kji": [
+          20,
+          224,
+          224
+        ]
+      },
+      {
+        "source_tag": "msd_prostate_tr",
+        "file_name": "prostate_44.nii.gz",
+        "subject_id": "MSD_prostate_44.nii.gz",
+        "spacing_ras_mm": [
+          0.625,
+          0.625,
+          3.6
+        ],
+        "in_plane_mm": 0.625,
+        "slice_thickness_mm": 3.6,
+        "shape_kji": [
+          20,
+          224,
+          224
+        ]
+      },
+      {
+        "source_tag": "msd_prostate_tr",
+        "file_name": "prostate_46.nii.gz",
+        "subject_id": "MSD_prostate_46.nii.gz",
+        "spacing_ras_mm": [
+          0.625,
+          0.625,
+          3.6
+        ],
+        "in_plane_mm": 0.625,
+        "slice_thickness_mm": 3.6,
+        "shape_kji": [
+          20,
+          224,
+          224
+        ]
+      },
+      {
+        "source_tag": "msd_prostate_tr",
+        "file_name": "prostate_47.nii.gz",
+        "subject_id": "MSD_prostate_47.nii.gz",
+        "spacing_ras_mm": [
+          0.625,
+          0.625,
+          3.6
+        ],
+        "in_plane_mm": 0.625,
+        "slice_thickness_mm": 3.6,
+        "shape_kji": [
+          20,
+          224,
+          224
+        ]
+      },
+      {
+        "source_tag": "msd_prostate_ts",
+        "file_name": "prostate_03.nii.gz",
+        "subject_id": "MSD_prostate_03.nii.gz",
+        "spacing_ras_mm": [
+          0.625,
+          0.625,
+          3.6
+        ],
+        "in_plane_mm": 0.625,
+        "slice_thickness_mm": 3.6,
+        "shape_kji": [
+          20,
+          224,
+          224
+        ]
+      },
+      {
+        "source_tag": "msd_prostate_ts",
+        "file_name": "prostate_05.nii.gz",
+        "subject_id": "MSD_prostate_05.nii.gz",
+        "spacing_ras_mm": [
+          0.625,
+          0.625,
+          3.6
+        ],
+        "in_plane_mm": 0.625,
+        "slice_thickness_mm": 3.6,
+        "shape_kji": [
+          20,
+          224,
+          224
+        ]
+      },
+      {
+        "source_tag": "msd_prostate_ts",
+        "file_name": "prostate_08.nii.gz",
+        "subject_id": "MSD_prostate_08.nii.gz",
+        "spacing_ras_mm": [
+          0.6,
+          0.6,
+          4.0
+        ],
+        "in_plane_mm": 0.6,
+        "slice_thickness_mm": 4.0,
+        "shape_kji": [
+          15,
+          240,
+          240
+        ]
+      },
+      {
+        "source_tag": "msd_prostate_ts",
+        "file_name": "prostate_09.nii.gz",
+        "subject_id": "MSD_prostate_09.nii.gz",
+        "spacing_ras_mm": [
+          0.6,
+          0.6,
+          4.0
+        ],
+        "in_plane_mm": 0.6,
+        "slice_thickness_mm": 4.0,
+        "shape_kji": [
+          17,
+          240,
+          240
+        ]
+      },
+      {
+        "source_tag": "msd_prostate_ts",
+        "file_name": "prostate_11.nii.gz",
+        "subject_id": "MSD_prostate_11.nii.gz",
+        "spacing_ras_mm": [
+          0.625,
+          0.625,
+          3.6
+        ],
+        "in_plane_mm": 0.625,
+        "slice_thickness_mm": 3.6,
+        "shape_kji": [
+          20,
+          224,
+          224
+        ]
+      },
+      {
+        "source_tag": "msd_prostate_ts",
+        "file_name": "prostate_12.nii.gz",
+        "subject_id": "MSD_prostate_12.nii.gz",
+        "spacing_ras_mm": [
+          0.625,
+          0.625,
+          3.6
+        ],
+        "in_plane_mm": 0.625,
+        "slice_thickness_mm": 3.6,
+        "shape_kji": [
+          20,
+          224,
+          224
+        ]
+      },
+      {
+        "source_tag": "msd_prostate_ts",
+        "file_name": "prostate_15.nii.gz",
+        "subject_id": "MSD_prostate_15.nii.gz",
+        "spacing_ras_mm": [
+          0.625,
+          0.625,
+          3.6
+        ],
+        "in_plane_mm": 0.625,
+        "slice_thickness_mm": 3.6,
+        "shape_kji": [
+          20,
+          224,
+          224
+        ]
+      },
+      {
+        "source_tag": "msd_prostate_ts",
+        "file_name": "prostate_19.nii.gz",
+        "subject_id": "MSD_prostate_19.nii.gz",
+        "spacing_ras_mm": [
+          0.625,
+          0.625,
+          3.6
+        ],
+        "in_plane_mm": 0.625,
+        "slice_thickness_mm": 3.6,
+        "shape_kji": [
+          20,
+          224,
+          224
+        ]
+      },
+      {
+        "source_tag": "msd_prostate_ts",
+        "file_name": "prostate_22.nii.gz",
+        "subject_id": "MSD_prostate_22.nii.gz",
+        "spacing_ras_mm": [
+          0.6,
+          0.6,
+          4.0
+        ],
+        "in_plane_mm": 0.6,
+        "slice_thickness_mm": 4.0,
+        "shape_kji": [
+          15,
+          240,
+          240
+        ]
+      },
+      {
+        "source_tag": "msd_prostate_ts",
+        "file_name": "prostate_23.nii.gz",
+        "subject_id": "MSD_prostate_23.nii.gz",
+        "spacing_ras_mm": [
+          0.625,
+          0.625,
+          3.6
+        ],
+        "in_plane_mm": 0.625,
+        "slice_thickness_mm": 3.6,
+        "shape_kji": [
+          20,
+          224,
+          224
+        ]
+      },
+      {
+        "source_tag": "msd_prostate_ts",
+        "file_name": "prostate_26.nii.gz",
+        "subject_id": "MSD_prostate_26.nii.gz",
+        "spacing_ras_mm": [
+          0.625,
+          0.625,
+          3.6
+        ],
+        "in_plane_mm": 0.625,
+        "slice_thickness_mm": 3.6,
+        "shape_kji": [
+          20,
+          224,
+          224
+        ]
+      },
+      {
+        "source_tag": "msd_prostate_ts",
+        "file_name": "prostate_27.nii.gz",
+        "subject_id": "MSD_prostate_27.nii.gz",
+        "spacing_ras_mm": [
+          0.625,
+          0.625,
+          3.6
+        ],
+        "in_plane_mm": 0.625,
+        "slice_thickness_mm": 3.6,
+        "shape_kji": [
+          20,
+          224,
+          224
+        ]
+      },
+      {
+        "source_tag": "msd_prostate_ts",
+        "file_name": "prostate_30.nii.gz",
+        "subject_id": "MSD_prostate_30.nii.gz",
+        "spacing_ras_mm": [
+          0.625,
+          0.625,
+          3.6
+        ],
+        "in_plane_mm": 0.625,
+        "slice_thickness_mm": 3.6,
+        "shape_kji": [
+          20,
+          224,
+          224
+        ]
+      },
+      {
+        "source_tag": "msd_prostate_ts",
+        "file_name": "prostate_33.nii.gz",
+        "subject_id": "MSD_prostate_33.nii.gz",
+        "spacing_ras_mm": [
+          0.625,
+          0.625,
+          3.6
+        ],
+        "in_plane_mm": 0.625,
+        "slice_thickness_mm": 3.6,
+        "shape_kji": [
+          20,
+          224,
+          224
+        ]
+      },
+      {
+        "source_tag": "msd_prostate_ts",
+        "file_name": "prostate_36.nii.gz",
+        "subject_id": "MSD_prostate_36.nii.gz",
+        "spacing_ras_mm": [
+          0.625,
+          0.625,
+          3.6
+        ],
+        "in_plane_mm": 0.625,
+        "slice_thickness_mm": 3.6,
+        "shape_kji": [
+          20,
+          224,
+          224
+        ]
+      },
+      {
+        "source_tag": "msd_prostate_ts",
+        "file_name": "prostate_45.nii.gz",
+        "subject_id": "MSD_prostate_45.nii.gz",
+        "spacing_ras_mm": [
+          0.6,
+          0.6,
+          4.0
+        ],
+        "in_plane_mm": 0.6,
+        "slice_thickness_mm": 4.0,
+        "shape_kji": [
+          15,
+          240,
+          240
+        ]
+      },
+      {
+        "source_tag": "bwh_nonbenchmark_case061_3d_space",
+        "file_name": "34 AX space trial 1.6 SLICE COVER TEMPLATE.MR._.34.1.2014.01.29.12.10.33.826.56237582.nrrd",
+        "subject_id": "BWH_Case061",
+        "spacing_ras_mm": [
+          0.4688,
+          0.4688,
+          1.6
+        ],
+        "in_plane_mm": 0.4688,
+        "slice_thickness_mm": 1.6,
+        "shape_kji": [
+          131,
+          304,
+          304
+        ]
+      },
+      {
+        "source_tag": "bwh_nonbenchmark_case061_2d_tse",
+        "file_name": "32 AX TSE T2 MONITORING CATH PLACEMENT.MR._.32.22.2014.01.29.12.10.33.826.56232830.nrrd",
+        "subject_id": "BWH_Case061",
+        "spacing_ras_mm": [
+          0.875,
+          0.875,
+          4.8
+        ],
+        "in_plane_mm": 0.875,
+        "slice_thickness_mm": 4.8,
+        "shape_kji": [
+          22,
+          160,
+          160
+        ]
+      },
+      {
+        "source_tag": "bwh_nonbenchmark_case100_prostate_3d_space",
+        "file_name": "33 AX space trial 1.6 SLICE COVER TEMPLATE.nrrd",
+        "subject_id": "BWH_Case100",
+        "spacing_ras_mm": [
+          0.4688,
+          0.4688,
+          1.6
+        ],
+        "in_plane_mm": 0.4688,
+        "slice_thickness_mm": 1.6,
+        "shape_kji": [
+          95,
+          304,
+          304
+        ]
+      }
+    ]
+  },
+  "serial_4d_23_scans": {
+    "n_patients": 4,
+    "n_scans": 23,
+    "in_plane_min_mm": 0.4688,
+    "in_plane_max_mm": 0.875,
+    "slice_thickness_min_mm": 1.6,
+    "slice_thickness_max_mm": 4.8,
+    "per_scan_records": [
+      {
+        "case_num": 68,
+        "filename": "6 AX TSE T2 MONITORING CATH PLACEMENT.nrrd",
+        "spacing_mm": [
+          0.875,
+          0.875,
+          3.9
+        ],
+        "in_plane_mm": 0.875,
+        "slice_thickness_mm": 3.9,
+        "sizes": [
+          320,
+          256,
+          30
+        ]
+      },
+      {
+        "case_num": 68,
+        "filename": "7 AX TSE T2 MONITORING CATH PLACEMENT.nrrd",
+        "spacing_mm": [
+          0.875,
+          0.875,
+          3.9
+        ],
+        "in_plane_mm": 0.875,
+        "slice_thickness_mm": 3.9,
+        "sizes": [
+          320,
+          256,
+          30
+        ]
+      },
+      {
+        "case_num": 68,
+        "filename": "8 AX TSE T2 MONITORING CATH PLACEMENT.nrrd",
+        "spacing_mm": [
+          0.875,
+          0.875,
+          3.9
+        ],
+        "in_plane_mm": 0.875,
+        "slice_thickness_mm": 3.9,
+        "sizes": [
+          320,
+          256,
+          30
+        ]
+      },
+      {
+        "case_num": 68,
+        "filename": "9 AX TSE T2 MONITORING CATH PLACEMENT.nrrd",
+        "spacing_mm": [
+          0.875,
+          0.875,
+          3.9
+        ],
+        "in_plane_mm": 0.875,
+        "slice_thickness_mm": 3.9,
+        "sizes": [
+          320,
+          256,
+          30
+        ]
+      },
+      {
+        "case_num": 68,
+        "filename": "11 AX space trial 1.6 SLICE COVER TEMPLATE.nrrd",
+        "spacing_mm": [
+          0.4688,
+          0.4688,
+          1.6
+        ],
+        "in_plane_mm": 0.4688,
+        "slice_thickness_mm": 1.6,
+        "sizes": [
+          640,
+          416,
+          96
+        ]
+      },
+      {
+        "case_num": 68,
+        "filename": "12 AX space trial 1.6 SLICE COVER TEMPLATE.nrrd",
+        "spacing_mm": [
+          0.4688,
+          0.4688,
+          1.6
+        ],
+        "in_plane_mm": 0.4688,
+        "slice_thickness_mm": 1.6,
+        "sizes": [
+          640,
+          416,
+          96
+        ]
+      },
+      {
+        "case_num": 69,
+        "filename": "9 AX TSE T2 MONITORING CATH PLACEMENT.nrrd",
+        "spacing_mm": [
+          0.875,
+          0.875,
+          3.0
+        ],
+        "in_plane_mm": 0.875,
+        "slice_thickness_mm": 3.0,
+        "sizes": [
+          320,
+          256,
+          44
+        ]
+      },
+      {
+        "case_num": 69,
+        "filename": "11 AX TSE T2 MONITORING CATH PLACEMENT.nrrd",
+        "spacing_mm": [
+          0.875,
+          0.875,
+          3.0
+        ],
+        "in_plane_mm": 0.875,
+        "slice_thickness_mm": 3.0,
+        "sizes": [
+          320,
+          256,
+          44
+        ]
+      },
+      {
+        "case_num": 69,
+        "filename": "13 AX TSE T2 MONITORING CATH PLACEMENT.nrrd",
+        "spacing_mm": [
+          0.875,
+          0.875,
+          3.0
+        ],
+        "in_plane_mm": 0.875,
+        "slice_thickness_mm": 3.0,
+        "sizes": [
+          320,
+          256,
+          44
+        ]
+      },
+      {
+        "case_num": 69,
+        "filename": "15 AX TSE T2 MONITORING CATH PLACEMENT.nrrd",
+        "spacing_mm": [
+          0.875,
+          0.875,
+          3.0
+        ],
+        "in_plane_mm": 0.875,
+        "slice_thickness_mm": 3.0,
+        "sizes": [
+          320,
+          256,
+          44
+        ]
+      },
+      {
+        "case_num": 69,
+        "filename": "17 AX space trial 1.6 SLICE COVER TEMPLATE.nrrd",
+        "spacing_mm": [
+          0.4688,
+          0.4688,
+          1.6
+        ],
+        "in_plane_mm": 0.4688,
+        "slice_thickness_mm": 1.6,
+        "sizes": [
+          640,
+          416,
+          112
+        ]
+      },
+      {
+        "case_num": 70,
+        "filename": "6 AX TSE T2 MONITORING CATH PLACEMENT.nrrd",
+        "spacing_mm": [
+          0.875,
+          0.875,
+          3.0
+        ],
+        "in_plane_mm": 0.875,
+        "slice_thickness_mm": 3.0,
+        "sizes": [
+          320,
+          256,
+          22
+        ]
+      },
+      {
+        "case_num": 70,
+        "filename": "11 AX TSE T2 MONITORING CATH PLACEMENT.nrrd",
+        "spacing_mm": [
+          0.875,
+          0.875,
+          3.0
+        ],
+        "in_plane_mm": 0.875,
+        "slice_thickness_mm": 3.0,
+        "sizes": [
+          320,
+          256,
+          34
+        ]
+      },
+      {
+        "case_num": 70,
+        "filename": "12 AX TSE T2 MONITORING CATH PLACEMENT.nrrd",
+        "spacing_mm": [
+          0.875,
+          0.875,
+          3.0
+        ],
+        "in_plane_mm": 0.875,
+        "slice_thickness_mm": 3.0,
+        "sizes": [
+          320,
+          256,
+          34
+        ]
+      },
+      {
+        "case_num": 70,
+        "filename": "13 AX TSE T2 MONITORING CATH PLACEMENT.nrrd",
+        "spacing_mm": [
+          0.875,
+          0.875,
+          3.0
+        ],
+        "in_plane_mm": 0.875,
+        "slice_thickness_mm": 3.0,
+        "sizes": [
+          320,
+          256,
+          34
+        ]
+      },
+      {
+        "case_num": 70,
+        "filename": "14 AX space trial 1.6 SLICE COVER TEMPLATE.nrrd",
+        "spacing_mm": [
+          0.4688,
+          0.4688,
+          1.6
+        ],
+        "in_plane_mm": 0.4688,
+        "slice_thickness_mm": 1.6,
+        "sizes": [
+          640,
+          416,
+          144
+        ]
+      },
+      {
+        "case_num": 71,
+        "filename": "7 AX TSE T2 MONITORING CATH PLACEMENT.nrrd",
+        "spacing_mm": [
+          0.875,
+          0.875,
+          3.0
+        ],
+        "in_plane_mm": 0.875,
+        "slice_thickness_mm": 3.0,
+        "sizes": [
+          320,
+          256,
+          22
+        ]
+      },
+      {
+        "case_num": 71,
+        "filename": "9 AX TSE T2 MONITORING CATH PLACEMENT.nrrd",
+        "spacing_mm": [
+          0.875,
+          0.875,
+          4.0
+        ],
+        "in_plane_mm": 0.875,
+        "slice_thickness_mm": 4.0,
+        "sizes": [
+          320,
+          256,
+          22
+        ]
+      },
+      {
+        "case_num": 71,
+        "filename": "11 AX TSE T2 MONITORING CATH PLACEMENT.nrrd",
+        "spacing_mm": [
+          0.875,
+          0.875,
+          4.0
+        ],
+        "in_plane_mm": 0.875,
+        "slice_thickness_mm": 4.0,
+        "sizes": [
+          320,
+          256,
+          22
+        ]
+      },
+      {
+        "case_num": 71,
+        "filename": "13 AX TSE T2 MONITORING CATH PLACEMENT.nrrd",
+        "spacing_mm": [
+          0.875,
+          0.875,
+          4.0
+        ],
+        "in_plane_mm": 0.875,
+        "slice_thickness_mm": 4.0,
+        "sizes": [
+          320,
+          256,
+          22
+        ]
+      },
+      {
+        "case_num": 71,
+        "filename": "15 AX TSE T2 MONITORING CATH PLACEMENT.nrrd",
+        "spacing_mm": [
+          0.875,
+          0.875,
+          4.0
+        ],
+        "in_plane_mm": 0.875,
+        "slice_thickness_mm": 4.0,
+        "sizes": [
+          320,
+          256,
+          22
+        ]
+      },
+      {
+        "case_num": 71,
+        "filename": "18 AX TSE T2 MONITORING CATH PLACEMENT.nrrd",
+        "spacing_mm": [
+          0.875,
+          0.875,
+          4.8
+        ],
+        "in_plane_mm": 0.875,
+        "slice_thickness_mm": 4.8,
+        "sizes": [
+          320,
+          256,
+          22
+        ]
+      },
+      {
+        "case_num": 71,
+        "filename": "19 AX space trial 1.6 SLICE COVER TEMPLATE.nrrd",
+        "spacing_mm": [
+          0.4688,
+          0.4688,
+          1.6
+        ],
+        "in_plane_mm": 0.4688,
+        "slice_thickness_mm": 1.6,
+        "sizes": [
+          640,
+          416,
+          144
+        ]
+      }
+    ]
+  },
+  "workstation_hardware": {
+    "cpu_model": "AMD Ryzen Threadripper PRO 7965WX 24-Cores",
+    "cpu_physical_cores": 24,
+    "cpu_logical_threads": 48,
+    "system_ram_gb": 256,
+    "system_ram_gib_usable": 251,
+    "gpu_model": "NVIDIA GeForce RTX 4090",
+    "gpu_vram_gb": 24,
+    "gpu_vram_mib": 24564
+  }
+}

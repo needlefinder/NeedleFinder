@@ -31,17 +31,16 @@ def source_fingerprint():
     hashes={}
     for name in sorted(set(paths)-{''}):
         p=ROOT/name
-        publication_source = name.startswith('vault/paper/') and p.suffix in {'.md', '.tex', '.bib', '.csv'}
-        if p.is_file() and (p.suffix in CODE_SUFFIXES or publication_source or p.name in {'CMakeLists.txt','.coveragerc'}):
+        if p.is_file() and (p.suffix in CODE_SUFFIXES or p.name in {'CMakeLists.txt','.coveragerc'}):
             hashes[name]=sha256(p)
     return hashlib.sha256(json.dumps(hashes,sort_keys=True).encode()).hexdigest()
 
 
 def lock_artifacts():
     files=list((ROOT/'NeedleFinder/NeedleFinderLib').glob('*.onnx'))+list((ROOT/'NeedleFinder/NeedleFinderLib').glob('*.npz'))
-    files+=sorted((ROOT/'vault/sources').glob('2026-10-*.json'))
-    files+=sorted((ROOT/'vault/reports/figures/data').glob('*.npz'))
-    files += [ROOT/'vault/sources'/name for name in (
+    files+=sorted((ROOT/'reproducibility/results').glob('2026-10-*.json'))
+    files+=sorted((ROOT/'reproducibility/results/figures_data').glob('*.npz'))
+    files += [ROOT/'reproducibility/results'/name for name in (
         '2026-10-23-cases-meta-54-clean.pkl',
         '2026-10-23-stage2-clean-final-oof-predictions.pkl')]
     files.append(ROOT/'NeedleFinder/Testing/clinical_mri_frozen_baseline.json')

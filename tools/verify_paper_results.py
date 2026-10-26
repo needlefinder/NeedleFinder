@@ -10,7 +10,7 @@ from pathlib import Path
 import numpy as np
 
 ROOT = Path(__file__).resolve().parents[1]
-SOURCE = ROOT / 'vault/sources/2026-10-23-unified-clean-nested-benchmark.json'
+SOURCE = ROOT / 'reproducibility/results/2026-10-23-unified-clean-nested-benchmark.json'
 
 
 def verify(source=SOURCE):

@@ -1,0 +1,416 @@
+{
+  "step": "Step 3: Strictly Nested Stage 1 Training + Rich 3D Augmentations + Dual-Rater Labels + 5-Fold Inner Ensembling & 4-View TTA",
+  "elapsed_sec": 2602.1,
+  "nested_cv_protocol": {
+    "n_outer_folds": 5,
+    "n_inner_folds_per_outer_fold": 5,
+    "total_inner_models_trained": 25,
+    "total_inner_oof_files_saved": 216,
+    "total_outer_oof_files_saved": 54,
+    "outer_test_views_per_volume": 20,
+    "strictly_zero_outer_test_leakage": true
+  },
+  "full_54_cases_outer_oof_progression": {
+    "0_old_stage1_baseline_54cases": {
+      "n_cases": 54,
+      "voxel_mask_dice_mean": 0.5277,
+      "voxel_mask_dice_median": 0.5401,
+      "voxel_core_recall_pct": 85.07,
+      "voxel_mask_precision_pct": 61.53,
+      "stage1b_tubes_all_catheters": {
+        "n_gt": 1063,
+        "n_pred": 1581,
+        "closest_matched": 1008,
+        "closest_recall_pct": 94.83,
+        "hungarian_1to1_matched": 998,
+        "hungarian_1to1_recall_pct": 93.89,
+        "precision_1to1_pct": 63.12,
+        "f1_1to1_pct": 75.49,
+        "mean_shaft_xy_mm": 0.5809,
+        "tip_3d_mean_mm": 8.9738
+      },
+      "stage1b_tubes_long_catheters": {
+        "n_gt": 759,
+        "n_pred": 1388,
+        "closest_matched": 740,
+        "closest_recall_pct": 97.5,
+        "hungarian_1to1_matched": 735,
+        "hungarian_1to1_recall_pct": 96.84,
+        "precision_1to1_pct": 52.95,
+        "f1_1to1_pct": 68.47
+      }
+    },
+    "1_nested_stage1_single_inner_model_no_tta_54cases": {
+      "n_cases": 54,
+      "voxel_mask_dice_mean": 0.5044,
+      "voxel_mask_dice_median": 0.522,
+      "voxel_core_recall_pct": 80.84,
+      "voxel_mask_precision_pct": 60.27,
+      "stage1b_tubes_all_catheters": {
+        "n_gt": 1063,
+        "n_pred": 1617,
+        "closest_matched": 1001,
+        "closest_recall_pct": 94.17,
+        "hungarian_1to1_matched": 989,
+        "hungarian_1to1_recall_pct": 93.04,
+        "precision_1to1_pct": 61.16,
+        "f1_1to1_pct": 73.81,
+        "mean_shaft_xy_mm": 0.5824,
+        "tip_3d_mean_mm": 8.9919
+      },
+      "stage1b_tubes_long_catheters": {
+        "n_gt": 759,
+        "n_pred": 1357,
+        "closest_matched": 740,
+        "closest_recall_pct": 97.5,
+        "hungarian_1to1_matched": 734,
+        "hungarian_1to1_recall_pct": 96.71,
+        "precision_1to1_pct": 54.09,
+        "f1_1to1_pct": 69.38
+      }
+    },
+    "2_nested_stage1_5fold_inner_ensemble_no_tta_54cases": {
+      "n_cases": 54,
+      "voxel_mask_dice_mean": 0.5041,
+      "voxel_mask_dice_median": 0.5287,
+      "voxel_core_recall_pct": 82.53,
+      "voxel_mask_precision_pct": 59.8,
+      "stage1b_tubes_all_catheters": {
+        "n_gt": 1063,
+        "n_pred": 1629,
+        "closest_matched": 1005,
+        "closest_recall_pct": 94.54,
+        "hungarian_1to1_matched": 995,
+        "hungarian_1to1_recall_pct": 93.6,
+        "precision_1to1_pct": 61.08,
+        "f1_1to1_pct": 73.92,
+        "mean_shaft_xy_mm": 0.5749,
+        "tip_3d_mean_mm": 9.2333
+      },
+      "stage1b_tubes_long_catheters": {
+        "n_gt": 759,
+        "n_pred": 1367,
+        "closest_matched": 741,
+        "closest_recall_pct": 97.63,
+        "hungarian_1to1_matched": 733,
+        "hungarian_1to1_recall_pct": 96.57,
+        "precision_1to1_pct": 53.62,
+        "f1_1to1_pct": 68.96
+      }
+    },
+    "3_nested_stage1_5fold_inner_ensemble_plus_4view_tta_54cases": {
+      "n_cases": 54,
+      "voxel_mask_dice_mean": 0.5034,
+      "voxel_mask_dice_median": 0.5289,
+      "voxel_core_recall_pct": 82.21,
+      "voxel_mask_precision_pct": 59.97,
+      "stage1b_tubes_all_catheters": {
+        "n_gt": 1063,
+        "n_pred": 1613,
+        "closest_matched": 1003,
+        "closest_recall_pct": 94.36,
+        "hungarian_1to1_matched": 991,
+        "hungarian_1to1_recall_pct": 93.23,
+        "precision_1to1_pct": 61.44,
+        "f1_1to1_pct": 74.07,
+        "mean_shaft_xy_mm": 0.5741,
+        "tip_3d_mean_mm": 9.2155
+      },
+      "stage1b_tubes_long_catheters": {
+        "n_gt": 759,
+        "n_pred": 1365,
+        "closest_matched": 741,
+        "closest_recall_pct": 97.63,
+        "hungarian_1to1_matched": 733,
+        "hungarian_1to1_recall_pct": 96.57,
+        "precision_1to1_pct": 53.7,
+        "f1_1to1_pct": 69.02
+      }
+    }
+  },
+  "fold0_controlled_item_by_item_ablation_11cases": {
+    "0_old_baseline_acsv_klim_leaky_val": {
+      "n_cases": 11,
+      "voxel_mask_dice_mean": 0.5337,
+      "voxel_mask_dice_median": 0.5086,
+      "voxel_core_recall_pct": 91.61,
+      "voxel_mask_precision_pct": 57.54,
+      "stage1b_tubes_all_catheters": {
+        "n_gt": 231,
+        "n_pred": 326,
+        "closest_matched": 223,
+        "closest_recall_pct": 96.54,
+        "hungarian_1to1_matched": 221,
+        "hungarian_1to1_recall_pct": 95.67,
+        "precision_1to1_pct": 67.79,
+        "f1_1to1_pct": 79.35,
+        "mean_shaft_xy_mm": 0.6003,
+        "tip_3d_mean_mm": 8.8032
+      },
+      "stage1b_tubes_long_catheters": {
+        "n_gt": 174,
+        "n_pred": 290,
+        "closest_matched": 170,
+        "closest_recall_pct": 97.7,
+        "hungarian_1to1_matched": 169,
+        "hungarian_1to1_recall_pct": 97.13,
+        "precision_1to1_pct": 58.28,
+        "f1_1to1_pct": 72.84
+      }
+    },
+    "1_item1_nested_cv_and_ref_free_klim_only": {
+      "n_cases": 11,
+      "voxel_mask_dice_mean": 0.5146,
+      "voxel_mask_dice_median": 0.5547,
+      "voxel_core_recall_pct": 84.64,
+      "voxel_mask_precision_pct": 58.46,
+      "stage1b_tubes_all_catheters": {
+        "n_gt": 231,
+        "n_pred": 332,
+        "closest_matched": 219,
+        "closest_recall_pct": 94.81,
+        "hungarian_1to1_matched": 218,
+        "hungarian_1to1_recall_pct": 94.37,
+        "precision_1to1_pct": 65.66,
+        "f1_1to1_pct": 77.44,
+        "mean_shaft_xy_mm": 0.5846,
+        "tip_3d_mean_mm": 8.9541
+      },
+      "stage1b_tubes_long_catheters": {
+        "n_gt": 174,
+        "n_pred": 296,
+        "closest_matched": 171,
+        "closest_recall_pct": 98.28,
+        "hungarian_1to1_matched": 171,
+        "hungarian_1to1_recall_pct": 98.28,
+        "precision_1to1_pct": 57.77,
+        "f1_1to1_pct": 72.77
+      }
+    },
+    "2_plus_item5_ssl_pretraining_51vols": {
+      "n_cases": 11,
+      "voxel_mask_dice_mean": 0.5176,
+      "voxel_mask_dice_median": 0.5818,
+      "voxel_core_recall_pct": 84.65,
+      "voxel_mask_precision_pct": 58.57,
+      "stage1b_tubes_all_catheters": {
+        "n_gt": 231,
+        "n_pred": 332,
+        "closest_matched": 219,
+        "closest_recall_pct": 94.81,
+        "hungarian_1to1_matched": 217,
+        "hungarian_1to1_recall_pct": 93.94,
+        "precision_1to1_pct": 65.36,
+        "f1_1to1_pct": 77.09,
+        "mean_shaft_xy_mm": 0.5969,
+        "tip_3d_mean_mm": 8.4335
+      },
+      "stage1b_tubes_long_catheters": {
+        "n_gt": 174,
+        "n_pred": 292,
+        "closest_matched": 170,
+        "closest_recall_pct": 97.7,
+        "hungarian_1to1_matched": 168,
+        "hungarian_1to1_recall_pct": 96.55,
+        "precision_1to1_pct": 57.53,
+        "f1_1to1_pct": 72.1
+      }
+    },
+    "3_plus_item3_multirater_lb_ame_supervision": {
+      "n_cases": 11,
+      "voxel_mask_dice_mean": 0.5244,
+      "voxel_mask_dice_median": 0.6086,
+      "voxel_core_recall_pct": 83.66,
+      "voxel_mask_precision_pct": 60.79,
+      "stage1b_tubes_all_catheters": {
+        "n_gt": 231,
+        "n_pred": 332,
+        "closest_matched": 220,
+        "closest_recall_pct": 95.24,
+        "hungarian_1to1_matched": 218,
+        "hungarian_1to1_recall_pct": 94.37,
+        "precision_1to1_pct": 65.66,
+        "f1_1to1_pct": 77.44,
+        "mean_shaft_xy_mm": 0.6024,
+        "tip_3d_mean_mm": 8.6669
+      },
+      "stage1b_tubes_long_catheters": {
+        "n_gt": 174,
+        "n_pred": 289,
+        "closest_matched": 170,
+        "closest_recall_pct": 97.7,
+        "hungarian_1to1_matched": 168,
+        "hungarian_1to1_recall_pct": 96.55,
+        "precision_1to1_pct": 58.13,
+        "f1_1to1_pct": 72.57
+      }
+    },
+    "4_plus_item2a_rich_3d_augmentations_single_model": {
+      "n_cases": 11,
+      "voxel_mask_dice_mean": 0.5043,
+      "voxel_mask_dice_median": 0.5551,
+      "voxel_core_recall_pct": 84.4,
+      "voxel_mask_precision_pct": 57.16,
+      "stage1b_tubes_all_catheters": {
+        "n_gt": 231,
+        "n_pred": 346,
+        "closest_matched": 221,
+        "closest_recall_pct": 95.67,
+        "hungarian_1to1_matched": 220,
+        "hungarian_1to1_recall_pct": 95.24,
+        "precision_1to1_pct": 63.58,
+        "f1_1to1_pct": 76.26,
+        "mean_shaft_xy_mm": 0.6044,
+        "tip_3d_mean_mm": 8.3651
+      },
+      "stage1b_tubes_long_catheters": {
+        "n_gt": 174,
+        "n_pred": 288,
+        "closest_matched": 171,
+        "closest_recall_pct": 98.28,
+        "hungarian_1to1_matched": 169,
+        "hungarian_1to1_recall_pct": 97.13,
+        "precision_1to1_pct": 58.68,
+        "f1_1to1_pct": 73.16
+      }
+    },
+    "5_plus_item2b_5fold_inner_ensemble_no_tta": {
+      "n_cases": 11,
+      "voxel_mask_dice_mean": 0.4919,
+      "voxel_mask_dice_median": 0.5275,
+      "voxel_core_recall_pct": 86.07,
+      "voxel_mask_precision_pct": 54.46,
+      "stage1b_tubes_all_catheters": {
+        "n_gt": 231,
+        "n_pred": 353,
+        "closest_matched": 221,
+        "closest_recall_pct": 95.67,
+        "hungarian_1to1_matched": 220,
+        "hungarian_1to1_recall_pct": 95.24,
+        "precision_1to1_pct": 62.32,
+        "f1_1to1_pct": 75.34,
+        "mean_shaft_xy_mm": 0.6068,
+        "tip_3d_mean_mm": 8.4428
+      },
+      "stage1b_tubes_long_catheters": {
+        "n_gt": 174,
+        "n_pred": 292,
+        "closest_matched": 171,
+        "closest_recall_pct": 98.28,
+        "hungarian_1to1_matched": 170,
+        "hungarian_1to1_recall_pct": 97.7,
+        "precision_1to1_pct": 58.22,
+        "f1_1to1_pct": 72.96
+      }
+    },
+    "6_plus_item2c_5fold_inner_ensemble_plus_4view_tta_full": {
+      "n_cases": 11,
+      "voxel_mask_dice_mean": 0.4922,
+      "voxel_mask_dice_median": 0.5273,
+      "voxel_core_recall_pct": 85.81,
+      "voxel_mask_precision_pct": 54.58,
+      "stage1b_tubes_all_catheters": {
+        "n_gt": 231,
+        "n_pred": 347,
+        "closest_matched": 221,
+        "closest_recall_pct": 95.67,
+        "hungarian_1to1_matched": 220,
+        "hungarian_1to1_recall_pct": 95.24,
+        "precision_1to1_pct": 63.4,
+        "f1_1to1_pct": 76.12,
+        "mean_shaft_xy_mm": 0.6058,
+        "tip_3d_mean_mm": 8.5664
+      },
+      "stage1b_tubes_long_catheters": {
+        "n_gt": 174,
+        "n_pred": 292,
+        "closest_matched": 171,
+        "closest_recall_pct": 98.28,
+        "hungarian_1to1_matched": 170,
+        "hungarian_1to1_recall_pct": 97.7,
+        "precision_1to1_pct": 58.22,
+        "f1_1to1_pct": 72.96
+      }
+    }
+  },
+  "inner_models_val_metrics": {
+    "outer0_inner0": {
+      "best_epoch": 42,
+      "inner_val_dice": 0.4857,
+      "inner_val_core_recall": 0.7739,
+      "inner_val_score": 0.8726
+    },
+    "outer0_inner1": {
+      "status": "cached_from_disk"
+    },
+    "outer0_inner2": {
+      "status": "cached_from_disk"
+    },
+    "outer0_inner3": {
+      "status": "cached_from_disk"
+    },
+    "outer0_inner4": {
+      "status": "cached_from_disk"
+    },
+    "outer1_inner0": {
+      "status": "cached_from_disk"
+    },
+    "outer1_inner1": {
+      "status": "cached_from_disk"
+    },
+    "outer1_inner2": {
+      "status": "cached_from_disk"
+    },
+    "outer1_inner3": {
+      "status": "cached_from_disk"
+    },
+    "outer1_inner4": {
+      "status": "cached_from_disk"
+    },
+    "outer2_inner0": {
+      "status": "cached_from_disk"
+    },
+    "outer2_inner1": {
+      "status": "cached_from_disk"
+    },
+    "outer2_inner2": {
+      "status": "cached_from_disk"
+    },
+    "outer2_inner3": {
+      "status": "cached_from_disk"
+    },
+    "outer2_inner4": {
+      "status": "cached_from_disk"
+    },
+    "outer3_inner0": {
+      "status": "cached_from_disk"
+    },
+    "outer3_inner1": {
+      "status": "cached_from_disk"
+    },
+    "outer3_inner2": {
+      "status": "cached_from_disk"
+    },
+    "outer3_inner3": {
+      "status": "cached_from_disk"
+    },
+    "outer3_inner4": {
+      "status": "cached_from_disk"
+    },
+    "outer4_inner0": {
+      "status": "cached_from_disk"
+    },
+    "outer4_inner1": {
+      "status": "cached_from_disk"
+    },
+    "outer4_inner2": {
+      "status": "cached_from_disk"
+    },
+    "outer4_inner3": {
+      "status": "cached_from_disk"
+    },
+    "outer4_inner4": {
+      "status": "cached_from_disk"
+    }
+  }
+}

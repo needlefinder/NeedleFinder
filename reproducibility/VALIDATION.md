@@ -13,7 +13,7 @@ This update supersedes the earlier October 25–26 candidate validation status.
 | Clinical regression | Four MRI cases, 67 references; frozen prediction and orientation checks passed |
 | Real Slicer smoke | Slicer 5.12.4: MRML transforms, VTK array/bounds, native core passed |
 | Manuscript numeric registry | 1,317 keys verified; zero changed; strict text check passed |
-| Archived OOF trajectory re-evaluation | All-catheter cohort, 54 cases, tau 50 and 35: counts, F1, shaft/tip means and medians match |
+| Archived OOF trajectory re-evaluation | All-catheter cohort, 54 cases, tau 50 and 35: counts, F1, shaft/tip means and medians match (`reproducibility/results/`) |
 | Stage 1 25-checkpoint & split provenance (`edelweiss`) | All 25 `unet3d_outer{0..4}_inner{0..4}.pt` checkpoints and `.provenance.json` sidecars verified against `splits-54.json` and `cases_meta_54_clean.pkl` (`44d6be12...`) |
 | Stage 1 live GPU inference & 4-view TTA parity (`edelweiss`) | `unet3d_outer0_inner0.pt` across 9 inner-val cases: `val_dice=0.4857`, `val_rec=0.7739`, `0.0` max diff vs archived `inner_oof_f0_case_*.npz` |
 | 54-case GYN MRI guard invariance (`edelweiss`) | All 54 BWH clinical GYN MRI cases satisfy `is_ct_hu == False` and `z_ijk_axis == 2` |
@@ -47,18 +47,15 @@ python tools/validate.py clinical
 python tools/validate.py paper_reproduction
 python tools/verify_paper_results.py --output reproducibility/runs/evidence/archived-summary.csv
 python tools/verify_archived_oof.py
-python vault/paper/nfnumbers.py verify
-python vault/paper/nfnumbers.py check --strict
 python tools/release.py verify
 python tools/release.py check
 ```
 
-`nfnumbers.py` needs PyYAML; it was run with `/usr/bin/python3` here. Clinical
-inputs default to `/tmp/needlefinder_benchmarks`; set `NEEDLEFINDER_TEST_DATA`
-elsewhere. Validation receipts now hash the effective default clinical inputs and
-the coverage measurement. Source fingerprints now include manuscript Markdown,
-LaTeX, bibliography and CSV sources. The artifact inventory includes October 26
-results, the clinical baseline and the two OOF pickle inputs.
+Clinical inputs default to `/tmp/needlefinder_benchmarks`; set `NEEDLEFINDER_TEST_DATA`
+elsewhere. Validation receipts hash the effective default clinical inputs and
+the coverage measurement. The artifact inventory (`reproducibility/artifacts.lock.json`)
+locks all 42 production ONNX/NPZ weights, clinical regression baselines, and
+archived benchmark JSON/NPZ/PKL results in `reproducibility/results/`.
 
 This machine can run Slicer without a display using its installed Qt 5 plugin:
 
@@ -94,12 +91,12 @@ Specifically, the `paper_reproduction` gate verifies:
    MRI volumes confirms `is_ct_hu == False` and `z_ijk_axis == 2` for all 54
    patients.
 3. **Recovery of missing helper modules:**
-   `vault/paper/benchmarks_clean/test_stage2_transfer.py` was recovered and
-   verified to compile to 100% identical Python 3.13 bytecode (`co_code` and
-   `co_names`) against `__pycache__/test_stage2_transfer.cpython-313.pyc` on
-   `edelweiss`, and `train_baselines_pmb2026.py` was added to
-   `vault/paper/benchmarks_rerun/` with `reproducibility.paths.resolve_path`
-   support so all benchmark scripts import cleanly.
+   `benchmarks/clean/test_stage2_transfer.py` was recovered and verified to
+   compile to 100% identical Python 3.13 bytecode (`co_code` and `co_names`)
+   against `__pycache__/test_stage2_transfer.cpython-313.pyc` on `edelweiss`, and
+   `train_baselines_pmb2026.py` was added to `benchmarks/rerun/` with
+   `reproducibility.paths.resolve_path` support so all benchmark scripts import
+   cleanly.
 4. **Qualification on training vs live GPU inference:**
    `paper_reproduction` verifies all 25 Stage 1 checkpoint SHA-256 digests and
    `.provenance.json` sidecars against `splits-54.json`, runs live GPU Stage 1

@@ -28,145 +28,145 @@
       "bytes": 127449,
       "sha256": "47e318d1234570891b8246dfb0a98fa05bcf346fe694f5571c5c62eda1c3096c"
     },
-    "vault/reports/figures/data/qualitative_cases.npz": {
-      "bytes": 896626,
-      "sha256": "e301ef08f824731dce2cb2cfc2623c520fd595be9261a4d2e7413ba2b736991b"
-    },
-    "vault/reports/figures/data/qualitative_predictions.npz": {
-      "bytes": 118493,
-      "sha256": "0dc737f0a388fcefa4cd100c441ebb408b118570e1278981e5eb74ced6e228dd"
-    },
-    "vault/reports/figures/data/tip_error_972_matched.npz": {
-      "bytes": 24593,
-      "sha256": "96d37d1b7b93bd5ebb172ab61be9e7a46b1a2454a62601a0f1c55883de864e40"
-    },
-    "vault/sources/2026-10-21-54cases-benchmark.json": {
+    "reproducibility/results/2026-10-21-54cases-benchmark.json": {
       "bytes": 323612,
       "sha256": "0942b7fdffdb5f4314a93e65a29187d5df95ca6d0e48a9a056c69f3e4b1378cb"
     },
-    "vault/sources/2026-10-21-auto-needle-detection-benchmark.json": {
+    "reproducibility/results/2026-10-21-auto-needle-detection-benchmark.json": {
       "bytes": 83538,
       "sha256": "14f3e3028a08b22d5611b66ad8c5025742ed3663bd31d3264efa4245c79eaa8c"
     },
-    "vault/sources/2026-10-22-interobserver-543-benchmark.json": {
+    "reproducibility/results/2026-10-22-interobserver-543-benchmark.json": {
       "bytes": 5175,
       "sha256": "54b1529e382b8e350ef11b959250062469d2c274943874ac72f6dcfbaa4d4153"
     },
-    "vault/sources/2026-10-22-irgm-poly3-rows-recheck.json": {
+    "reproducibility/results/2026-10-22-irgm-poly3-rows-recheck.json": {
       "bytes": 2447,
       "sha256": "eca29f51bb4e49b27e651d3436cb1c69f4e22001ce21dc0fabff9b0d6ae66ec2"
     },
-    "vault/sources/2026-10-22-oof-overwrite-regeneration-report.json": {
+    "reproducibility/results/2026-10-22-oof-overwrite-regeneration-report.json": {
       "bytes": 1070,
       "sha256": "674e06251804a5fb50fc2f600f9086a15e70e6bdd3a393fc371e52a5f8eda650"
     },
-    "vault/sources/2026-10-22-public-pelvic-mri-specificity-benchmark.json": {
+    "reproducibility/results/2026-10-22-public-pelvic-mri-specificity-benchmark.json": {
       "bytes": 63234,
       "sha256": "c3ff9b274c798e99d13859e45d0deeea343bd2967771ddb988f2f472926f4713"
     },
-    "vault/sources/2026-10-22-table3-observers-and-nf.json": {
+    "reproducibility/results/2026-10-22-table3-observers-and-nf.json": {
       "bytes": 20781,
       "sha256": "e00a59c5ae6f5245fcadd7678a1b26cf052f21cbad551941e2e7160eef06c970"
     },
-    "vault/sources/2026-10-22-unified-apples-to-apples-benchmark.json": {
+    "reproducibility/results/2026-10-22-unified-apples-to-apples-benchmark.json": {
       "bytes": 913567,
       "sha256": "e51b276c6f33659af395c9048f989fa5cbb38d396d35173fa1961bd44eca632d"
     },
-    "vault/sources/2026-10-22-wilcoxon-recheck-synth-vs-irgm.json": {
+    "reproducibility/results/2026-10-22-wilcoxon-recheck-synth-vs-irgm.json": {
       "bytes": 25660,
       "sha256": "656ce32d2219216f1c7ce8791780184e23b477878a065314a6e062294f496fa2"
     },
-    "vault/sources/2026-10-23-cases-meta-54-clean.pkl": {
+    "reproducibility/results/2026-10-23-cases-meta-54-clean.pkl": {
       "bytes": 4413650,
       "sha256": "44d6be12b0f8b3e7e85327b70108a83106ff899e69f555a5516377ba905252a4"
     },
-    "vault/sources/2026-10-23-exp1-tg43-dosimetry.json": {
+    "reproducibility/results/2026-10-23-exp1-tg43-dosimetry.json": {
       "bytes": 843528,
       "sha256": "ff5e83792ed51d3dceabad7873fa585302a2d67eccc24a69c2ba95265be44d7f"
     },
-    "vault/sources/2026-10-23-exp2-uncertainty-conformal-grubbs.json": {
+    "reproducibility/results/2026-10-23-exp2-uncertainty-conformal-grubbs.json": {
       "bytes": 46621,
       "sha256": "ecaae4a7beac41618ad2e55807bffb7064fcffa3375f539c5e7fd6c8453b071c"
     },
-    "vault/sources/2026-10-23-exp3-prostate-and-cross-sequence.json": {
+    "reproducibility/results/2026-10-23-exp3-prostate-and-cross-sequence.json": {
       "bytes": 121465,
       "sha256": "420f4feb2cd4e94aa05d28e875c4a647523bc2d0ba8e8dfce3e4eaa11a32aa8a"
     },
-    "vault/sources/2026-10-23-exp4-4d-insertion-and-ct.json": {
+    "reproducibility/results/2026-10-23-exp4-4d-insertion-and-ct.json": {
       "bytes": 72061,
       "sha256": "f81a7e044746b96308c7386c4ad9ec5b3f1eaacdbbebf6a3966527908a8f7218"
     },
-    "vault/sources/2026-10-23-failure-analysis.json": {
+    "reproducibility/results/2026-10-23-failure-analysis.json": {
       "bytes": 399512,
       "sha256": "bd82ae734e88e28aa0cd55d7c39975fb6e149a0866fec60a5eb4aee3140c6881"
     },
-    "vault/sources/2026-10-23-per-case-timing-benchmark.json": {
+    "reproducibility/results/2026-10-23-per-case-timing-benchmark.json": {
       "bytes": 45492,
       "sha256": "d86f3375c29257e6f5402f0c0c2343b19cfd7b99a2599d1b1c93adb7cbd3f0fe"
     },
-    "vault/sources/2026-10-23-public-pelvic-mri-specificity-clean.json": {
+    "reproducibility/results/2026-10-23-public-pelvic-mri-specificity-clean.json": {
       "bytes": 63234,
       "sha256": "c3ff9b274c798e99d13859e45d0deeea343bd2967771ddb988f2f472926f4713"
     },
-    "vault/sources/2026-10-23-stage2-and-tip-clean-eval.json": {
+    "reproducibility/results/2026-10-23-stage2-and-tip-clean-eval.json": {
       "bytes": 109485,
       "sha256": "861953f0215e7ea9149e73de3337c3245408fea46774ad6c15fab59018c32b07"
     },
-    "vault/sources/2026-10-23-stage2-and-tip-clean-final.json": {
+    "reproducibility/results/2026-10-23-stage2-and-tip-clean-final.json": {
       "bytes": 109731,
       "sha256": "15a69ca6df146dc6c9115885ee5dcde0aa835f050c0678a393b744f5f5c5475f"
     },
-    "vault/sources/2026-10-23-stage2-clean-final-oof-predictions.pkl": {
+    "reproducibility/results/2026-10-23-stage2-clean-final-oof-predictions.pkl": {
       "bytes": 7882707,
       "sha256": "cbd5960037f9c6a160b8ff4e973d7f01ef6be50305833da4f88cb98017d79612"
     },
-    "vault/sources/2026-10-23-stage2b-calibration-and-reason-codes.json": {
+    "reproducibility/results/2026-10-23-stage2b-calibration-and-reason-codes.json": {
       "bytes": 491450,
       "sha256": "a51716601c060b127897dc3281899d0d899a7a77d385ecf249a8708b11a1d675"
     },
-    "vault/sources/2026-10-23-synth-cache-provenance-rerun.json": {
+    "reproducibility/results/2026-10-23-synth-cache-provenance-rerun.json": {
       "bytes": 148,
       "sha256": "9ed533c5732ae460494798979a7778ae462b2bae6b5cbf7d03081f203b46b059"
     },
-    "vault/sources/2026-10-23-table3-observers-and-nf-clean.json": {
+    "reproducibility/results/2026-10-23-table3-observers-and-nf-clean.json": {
       "bytes": 26634,
       "sha256": "a59a4dcc107f25a9fe53652cd44459fd31c955da6b6218f1c3f8d60ca2e4fbc8"
     },
-    "vault/sources/2026-10-23-table3-observers-and-nf-rerun.json": {
+    "reproducibility/results/2026-10-23-table3-observers-and-nf-rerun.json": {
       "bytes": 26634,
       "sha256": "a59a4dcc107f25a9fe53652cd44459fd31c955da6b6218f1c3f8d60ca2e4fbc8"
     },
-    "vault/sources/2026-10-23-unified-clean-nested-benchmark.json": {
+    "reproducibility/results/2026-10-23-unified-clean-nested-benchmark.json": {
       "bytes": 1726920,
       "sha256": "5f6892e478564de5bf2d4051349a0b2046f362b5b7a42e5a2f31f9611e79ad7b"
     },
-    "vault/sources/2026-10-23-unified-rerun-benchmark.json": {
+    "reproducibility/results/2026-10-23-unified-rerun-benchmark.json": {
       "bytes": 1726920,
       "sha256": "5f6892e478564de5bf2d4051349a0b2046f362b5b7a42e5a2f31f9611e79ad7b"
     },
-    "vault/sources/2026-10-24-exp1-protocolB-top2-review-wilcoxon.json": {
+    "reproducibility/results/2026-10-24-exp1-protocolB-top2-review-wilcoxon.json": {
       "bytes": 1111,
       "sha256": "f9274278c1e3a9f69cde49f1036bb91373b862e2fffb902ae5b6e2923d9c63bc"
     },
-    "vault/sources/2026-10-24-peer-reviewed-baselines-and-fusion.json": {
+    "reproducibility/results/2026-10-24-peer-reviewed-baselines-and-fusion.json": {
       "bytes": 183180,
       "sha256": "59fcf46daad8811bf94d8bccbdd7f6c88be1a334a045c1d4b3341207504e5928"
     },
-    "vault/sources/2026-10-25-adhesion-subgroup-wilcoxon-vs-mri-baselines.json": {
+    "reproducibility/results/2026-10-25-adhesion-subgroup-wilcoxon-vs-mri-baselines.json": {
       "bytes": 33476,
       "sha256": "9e75058a2a92909859f5475b923da15ea8db85809e820437084985db8f0d7545"
     },
-    "vault/sources/2026-10-25-exp2-part2d-flipped-shaft-noninferiority.json": {
+    "reproducibility/results/2026-10-25-exp2-part2d-flipped-shaft-noninferiority.json": {
       "bytes": 17026,
       "sha256": "199db2dd4ef45de69dd812bffb785377a21c9bb44118e08fe55d425c89495790"
     },
-    "vault/sources/2026-10-26-cohort-header-provenance.json": {
+    "reproducibility/results/2026-10-26-cohort-header-provenance.json": {
       "bytes": 29201,
       "sha256": "da514276d5e189d2842f2447dfbf511bc8a89ae0f847e66ad231b9f70d4c4949"
     },
-    "vault/sources/2026-10-26-exp4-zero-config-ct-update.json": {
+    "reproducibility/results/2026-10-26-exp4-zero-config-ct-update.json": {
       "bytes": 73512,
       "sha256": "19a55b5be8d812f679d550d0d352c210315848e5398eb05c1c9aa98ae2cf0746"
+    },
+    "reproducibility/results/figures_data/qualitative_cases.npz": {
+      "bytes": 896626,
+      "sha256": "e301ef08f824731dce2cb2cfc2623c520fd595be9261a4d2e7413ba2b736991b"
+    },
+    "reproducibility/results/figures_data/qualitative_predictions.npz": {
+      "bytes": 118493,
+      "sha256": "0dc737f0a388fcefa4cd100c441ebb408b118570e1278981e5eb74ced6e228dd"
+    },
+    "reproducibility/results/figures_data/tip_error_972_matched.npz": {
+      "bytes": 24593,
+      "sha256": "96d37d1b7b93bd5ebb172ab61be9e7a46b1a2454a62601a0f1c55883de864e40"
     }
   },
   "schema_version": 1

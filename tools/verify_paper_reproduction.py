@@ -41,8 +41,8 @@ for mod in ["vtk", "vtk.util", "vtk.util.numpy_support", "slicer", "slicer.util"
 
 sys.path.insert(0, str(repo_root))
 sys.path.insert(0, str(repo_root / "NeedleFinder"))
-sys.path.insert(0, str(repo_root / "vault/paper/benchmarks_rerun"))
-sys.path.insert(0, str(repo_root / "vault/paper/benchmarks_clean"))
+sys.path.insert(0, str(repo_root / "benchmarks/rerun"))
+sys.path.insert(0, str(repo_root / "benchmarks/clean"))
 
 from NeedleFinderLib.DatasetSplits import nested_split
 from NeedleFinderLib.EvaluationMetrics import evaluate_method_unified
@@ -126,7 +126,7 @@ for v_idx in split00["inner_val"]:
 val_dice = round(float(np.mean(dices)), 4)
 val_rec = round(float(np.mean(recs)), 4)
 max_oof_diff = max(max_oof_diffs)
-step3_ref = json.loads((repo_root / "vault/paper/benchmarks_clean/step3_nested_stage1_summary.json").read_text())["inner_models_val_metrics"]["outer0_inner0"]
+step3_ref = json.loads((repo_root / "benchmarks/clean/step3_nested_stage1_summary.json").read_text())["inner_models_val_metrics"]["outer0_inner0"]
 s1_ok = (val_dice == step3_ref["inner_val_dice"]) and (val_rec == step3_ref["inner_val_core_recall"]) and (max_oof_diff <= 1e-5)
 record_check("stage1_live_gpu_inference_and_tta_parity", s1_ok,
              {"val_dice": val_dice, "val_core_recall": val_rec, "max_inner_oof_diff": max_oof_diff, "gpu": gpu_name}, time.perf_counter() - tc)
@@ -175,8 +175,8 @@ for st in s2_preds_data["tip_models_5fold_states"]:
     m.eval()
     tip_models_22ch.append(m)
 
-unified_ref = json.loads((repo_root / "vault/sources/2026-10-23-unified-clean-nested-benchmark.json").read_text())
-fusion_ref = json.loads((repo_root / "vault/sources/2026-10-24-peer-reviewed-baselines-and-fusion.json").read_text())
+unified_ref = json.loads((repo_root / "reproducibility/results/2026-10-23-unified-clean-nested-benchmark.json").read_text())
+fusion_ref = json.loads((repo_root / "reproducibility/results/2026-10-24-peer-reviewed-baselines-and-fusion.json").read_text())
 
 # Decode 4a (No-SynthBrachy3T, tau=50%), 4b (tau=50% & tau=35%), and 4c (Inner-OOF Cross-Fit, tau=50%)
 pa_4a = decode_clean_stage2_preds(
@@ -310,16 +310,16 @@ record_check("peer_reviewed_baselines_1_to_6_and_wilcoxon", baselines_ok, baseli
 
 # 6. Verify Table 3 (40 dual-traced patients), MSD Specificity (48 scans), and Experiments 1-4 provenance & metrics
 tc = time.perf_counter()
-t3_ref = json.loads((repo_root / "vault/sources/2026-10-23-table3-observers-and-nf-clean.json").read_text())
-msd_ref = json.loads((repo_root / "vault/sources/2026-10-23-public-pelvic-mri-specificity-clean.json").read_text())
-exp1_ref = json.loads((repo_root / "vault/sources/2026-10-23-exp1-tg43-dosimetry.json").read_text())
-exp2_ref = json.loads((repo_root / "vault/sources/2026-10-23-exp2-uncertainty-conformal-grubbs.json").read_text())
-exp2_flip_ref = json.loads((repo_root / "vault/sources/2026-10-25-exp2-part2d-flipped-shaft-noninferiority.json").read_text())
-exp3_ref = json.loads((repo_root / "vault/sources/2026-10-23-exp3-prostate-and-cross-sequence.json").read_text())
-exp4_ref = json.loads((repo_root / "vault/sources/2026-10-23-exp4-4d-insertion-and-ct.json").read_text())
-exp4_ct_ref = json.loads((repo_root / "vault/sources/2026-10-26-exp4-zero-config-ct-update.json").read_text())
+t3_ref = json.loads((repo_root / "reproducibility/results/2026-10-23-table3-observers-and-nf-clean.json").read_text())
+msd_ref = json.loads((repo_root / "reproducibility/results/2026-10-23-public-pelvic-mri-specificity-clean.json").read_text())
+exp1_ref = json.loads((repo_root / "reproducibility/results/2026-10-23-exp1-tg43-dosimetry.json").read_text())
+exp2_ref = json.loads((repo_root / "reproducibility/results/2026-10-23-exp2-uncertainty-conformal-grubbs.json").read_text())
+exp2_flip_ref = json.loads((repo_root / "reproducibility/results/2026-10-25-exp2-part2d-flipped-shaft-noninferiority.json").read_text())
+exp3_ref = json.loads((repo_root / "reproducibility/results/2026-10-23-exp3-prostate-and-cross-sequence.json").read_text())
+exp4_ref = json.loads((repo_root / "reproducibility/results/2026-10-23-exp4-4d-insertion-and-ct.json").read_text())
+exp4_ct_ref = json.loads((repo_root / "reproducibility/results/2026-10-26-exp4-zero-config-ct-update.json").read_text())
 
-tip_npz = np.load(repo_root / "vault/reports/figures/data/tip_error_972_matched.npz")
+tip_npz = np.load(repo_root / "reproducibility/results/figures_data/tip_error_972_matched.npz")
 e_par = float(np.sum(tip_npz["ds_parallel_mm"] ** 2) / np.sum(tip_npz["e_tip_3d_mm"] ** 2) * 100.0)
 tost_dict = exp2_flip_ref["part2d_grubbs_three_cornered_hat_and_tost"]["tost_non_inferiority_and_equivalence_tests"]
 all_8_noninf = all(v["non_inferiority_p_value_wilcoxon"] < 0.05 for v in tost_dict.values()) and len(tost_dict) == 8
@@ -403,9 +403,8 @@ def main():
             "--exclude=reproducibility/runs", "--exclude=*.pkl", "--exclude=__pycache__",
             "reproducibility",
             "NeedleFinder/NeedleFinderLib",
-            "vault/paper/benchmarks_clean",
-            "vault/sources",
-            "vault/reports/figures/data/tip_error_972_matched.npz",
+            "benchmarks/clean",
+            "benchmarks/rerun",
             f"{args.ssh_host}:{args.remote_repo}/"
         ]
         subprocess.run(sync_cmd, cwd=ROOT, check=True)
