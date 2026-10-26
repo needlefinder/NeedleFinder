@@ -1,9 +1,12 @@
 cff-version: 1.2.0
-message: "Cite the version-specific archived release used in your work. This checkout is a release candidate; no paper-release DOI has been minted."
+message: "Cite the version-specific release tag (paper-media-2026-v1) and commit SHA used in your work. No external Zenodo DOI has been minted yet."
 title: "NeedleFinder"
 type: software
+version: "paper-media-2026-v1"
+date-released: "2026-10-26"
 authors:
   - family-names: Pernelle
     given-names: Guillaume
 repository-code: "https://github.com/needlefinder/NeedleFinder"
+url: "https://github.com/needlefinder/NeedleFinder/releases/tag/paper-media-2026-v1"
 license: BSD-3-Clause

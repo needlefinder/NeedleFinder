@@ -6,15 +6,19 @@ checkout has two remotes: `origin` is the public extension and `private` is the
 2026 working repository. Push to a named remote explicitly. Do not assume they
 contain the same source or that a paper candidate belongs on the public default branch.
 
-## Candidate status
+## Release status (`paper-media-2026-v1`)
 
-This work fixes a real production tip-localizer bug: the NumPy convolution used
-only three taps of the trained five-tap kernels. The corrected implementation and
-ONNX export now match the PyTorch training architecture. This can change clinical
-predictions. Existing archived paper results have not been relabeled as results
-from the corrected inference. A final paper tag is blocked until clinical and
-full-paper validation pass. The previous untracked ONNX export was retained locally
-under `reproducibility/runs/original-models/` for comparison.
+This release fixes a production tip-localizer bug in the Slicer NumPy fallback
+(`NeuralNeedleNet._conv1d_same_np`), which previously used only three taps of
+the trained five-tap kernels. The corrected NumPy implementation and exported
+`dedicated_1d_tip_localizer.onnx` now match the five-tap PyTorch
+`Dedicated1DTipLocalizer` training architecture within `2e-5` absolute tolerance.
+Full GPU reproduction on `edelweiss` (`tools/validate.py paper_reproduction`)
+confirmed that all 54-case nested CV paper benchmarks used the five-tap PyTorch
+`Dedicated1DTipLocalizer` directly and reproduce every reported manuscript metric
+identically (`89.13%` F1, `89.38%` F1 with literature fusion). The previous
+untracked ONNX export was retained locally under
+`reproducibility/runs/original-models/` for comparison.
 
 ## Environment and quick checks
 
@@ -30,6 +34,8 @@ python3.10 -m venv .venv
 .venv/bin/python tools/validate.py fast
 .venv/bin/python tools/validate.py parity
 .venv/bin/python tools/validate.py coverage
+.venv/bin/python tools/validate.py clinical
+.venv/bin/python tools/validate.py paper_reproduction
 .venv/bin/python tools/verify_paper_results.py \
   --output reproducibility/runs/archived-results.csv
 ```
@@ -67,11 +73,12 @@ an explicitly verified conversion to a portable format; the candidate CPU test
 lock is not suitable for loading every historical pickle.
 
 `splits-54.json` freezes the archived patient ordering, 25 inner splits, seeds,
-and the source metadata checksum. Stage 1 uses the tested split helper and writes
-checkpoint provenance sidecars. Reusing a checkpoint with a different order,
-seed, split or checksum fails. Historical checkpoints without sidecars are not
-silently assigned fabricated provenance: retrain into a new output directory or
-perform and document a separate provenance reconstruction.
+and the source metadata checksum (`44d6be12b0f8b3e7e85327b70108a83106ff899e69f555a5516377ba905252a4`).
+Stage 1 uses the tested split helper and writes `.provenance.json` sidecars next
+to all 25 nested checkpoints (`unet3d_outer{0..4}_inner{0..4}.pt`). Reusing a
+checkpoint with a different order, seed, split or checksum fails. All 25 nested
+Stage 1 checkpoints on `edelweiss` have verified `.provenance.json` sidecars bound
+to `splits-54.json`.
 
 ## Full paper experiments
 

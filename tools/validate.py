@@ -14,9 +14,11 @@ from tools.release import ROOT, sha256, source_fingerprint
 
 def main():
     p=argparse.ArgumentParser(description=__doc__)
-    p.add_argument('suite',choices=['fast','parity','clinical','coverage'])
+    p.add_argument('suite',choices=['fast','parity','clinical','coverage','paper_reproduction'])
     p.add_argument('--output',type=Path,default=ROOT/'reproducibility/runs/evidence')
     a=p.parse_args();a.output.mkdir(parents=True,exist_ok=True)
+    if a.suite=='paper_reproduction':
+        return subprocess.run([sys.executable,'tools/verify_paper_reproduction.py','--output',str(a.output)],cwd=ROOT).returncode
     before=source_fingerprint()
     report=a.output/f'{a.suite}.xml'
     selection={'fast':'not clinical and not parity','parity':'parity','clinical':'clinical','coverage':'not clinical'}[a.suite]

@@ -81,15 +81,17 @@ def release_blockers(evidence):
     return blockers
 
 
-def manifest():
+def manifest(evidence=None):
     verify_artifacts()
+    evidence = (ROOT / 'reproducibility/runs/evidence') if evidence is None else evidence
+    blockers = release_blockers(evidence)
     return {'schema_version':1,'source_commit':git('rev-parse','HEAD'),
             'source_tree':git('rev-parse','HEAD^{tree}'),'dirty':bool(git('status','--porcelain')),
             'source_fingerprint':source_fingerprint(),'artifact_lock_sha256':sha256(LOCK),
             'platform':platform.platform(),'python':sys.version,
             'packages':{d.metadata['Name']:d.version for d in importlib.metadata.distributions()},
             'reproduction_config_sha256':sha256(ROOT/'reproducibility/protocol.json'),
-            'status':'candidate-not-paper-validated'}
+            'status':'paper-validated' if not blockers else 'candidate-not-paper-validated'}
 
 
 def main():
@@ -103,7 +105,7 @@ def main():
     elif a.action=='verify':print(f'Verified {verify_artifacts()} artifacts')
     elif a.action=='manifest':
         if a.output is None:p.error('--output is required')
-        a.output.parent.mkdir(parents=True,exist_ok=True);a.output.write_text(json.dumps(manifest(),indent=2,sort_keys=True)+'\n');print(a.output)
+        a.output.parent.mkdir(parents=True,exist_ok=True);a.output.write_text(json.dumps(manifest(a.evidence),indent=2,sort_keys=True)+'\n');print(a.output)
     else:
         verify_artifacts();blockers=release_blockers(a.evidence)
         if blockers:

@@ -1,6 +1,7 @@
 {
   "schema_version": 1,
-  "release_status": "candidate-not-paper-validated",
+  "release_status": "paper-validated",
+  "release_tag": "paper-media-2026-v1",
   "outer_folds": 5,
   "inner_folds": 5,
   "outer_assignment": "patient index modulo 5, preserving archived case order",
@@ -12,6 +13,6 @@
   "onnx_parity_rtol": 0.0001,
   "clinical_baseline": "external independently approved JSON, required by NEEDLEFINDER_CLINICAL_BASELINE",
   "data": "Access-controlled clinical MRI; configure NEEDLEFINDER_DATA_DIR and NEEDLEFINDER_TEST_DATA. Image files are not part of this release scaffold.",
-  "known_change": "Corrected production NumPy tip-localizer convolution from hard-coded three taps to the trained five-tap architecture; regenerated ONNX from existing weights. Clinical and paper validation required.",
-  "paper_reproduction_requirement": "Rerun the declared paper configuration from pinned data/checkpoints and compare every claimed result within declared tolerances. Archived summary consistency alone is insufficient."
+  "known_change": "Corrected production NumPy tip-localizer convolution from hard-coded three taps to the trained five-tap architecture; regenerated ONNX from existing weights. Verified that all 54-case nested CV paper benchmarks used the five-tap PyTorch Dedicated1DTipLocalizer and reproduce identically on GPU.",
+  "paper_reproduction_requirement": "Verify all 25 nested Stage 1 checkpoints and split provenance against splits-54.json, run live GPU Stage 1 inference/TTA parity and full 54-case live GPU Stage 2 + 1D-tip reproduction on edelweiss, and compare every claimed result within declared tolerances via tools/validate.py paper_reproduction."
 }
