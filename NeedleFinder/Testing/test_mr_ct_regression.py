@@ -138,7 +138,7 @@ class TestMRAndCTRegression(unittest.TestCase):
     def test_04_clinical_mri_zero_regression_and_orientation_invariance(self):
         """
         Verify on the 4 real clinical 3T pelvic MRI benchmark cases (67 ground-truth needles) that:
-          1. All cross-modality / OOD guards remain strictly inactive (0.000000 mm trajectory diff vs baseline).
+          1. Predictions match the frozen baseline within its recorded numerical tolerances.
           2. Sagittal/Coronal axis canonicalization recovers exact world-RAS coordinates when transposed.
         """
         bench_dir = os.environ.get("NEEDLEFINDER_TEST_DATA", "/tmp/needlefinder_benchmarks")

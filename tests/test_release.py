@@ -19,6 +19,9 @@ def test_empty_or_escaping_artifact_lock_is_rejected(tmp_path,monkeypatch):
 
 
 def test_release_requires_all_fresh_non_skipped_reports(tmp_path,monkeypatch):
+    source=tmp_path/'source';source.mkdir()
+    monkeypatch.setattr(release,'ROOT',source)
+    coverage=source/'coverage.json';coverage.write_text('{}')
     monkeypatch.setattr(release,'git',lambda *args:'')
     monkeypatch.setattr(release,'source_fingerprint',lambda:'current')
     assert len(release.release_blockers(tmp_path))==len(release.REQUIRED_CHECKS)
@@ -26,8 +29,13 @@ def test_release_requires_all_fresh_non_skipped_reports(tmp_path,monkeypatch):
         report=tmp_path/f'{name}.xml';report.write_text('<report/>')
         record=dict(status='passed',source_fingerprint='current',skipped=0,
                     report=report.name,report_sha256=release.sha256(report))
+        if name=='coverage':
+            record['external_inputs']={'coverage_report_sha256':release.sha256(coverage)}
         (tmp_path/f'{name}.json').write_text(json.dumps(record))
     assert release.release_blockers(tmp_path)==[]
     record['source_fingerprint']='stale';record['skipped']=1
     (tmp_path/'fast.json').write_text(json.dumps(record))
     assert len(release.release_blockers(tmp_path))==2
+
+    coverage.write_text('{"tampered": true}')
+    assert 'coverage: missing/modified coverage measurement' in release.release_blockers(tmp_path)

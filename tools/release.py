@@ -31,15 +31,20 @@ def source_fingerprint():
     hashes={}
     for name in sorted(set(paths)-{''}):
         p=ROOT/name
-        if p.is_file() and (p.suffix in CODE_SUFFIXES or p.name in {'CMakeLists.txt','.coveragerc'}):
+        publication_source = name.startswith('vault/paper/') and p.suffix in {'.md', '.tex', '.bib', '.csv'}
+        if p.is_file() and (p.suffix in CODE_SUFFIXES or publication_source or p.name in {'CMakeLists.txt','.coveragerc'}):
             hashes[name]=sha256(p)
     return hashlib.sha256(json.dumps(hashes,sort_keys=True).encode()).hexdigest()
 
 
 def lock_artifacts():
     files=list((ROOT/'NeedleFinder/NeedleFinderLib').glob('*.onnx'))+list((ROOT/'NeedleFinder/NeedleFinderLib').glob('*.npz'))
-    files+=sorted((ROOT/'vault/sources').glob('2026-10-2[345]-*.json'))
+    files+=sorted((ROOT/'vault/sources').glob('2026-10-*.json'))
     files+=sorted((ROOT/'vault/reports/figures/data').glob('*.npz'))
+    files += [ROOT/'vault/sources'/name for name in (
+        '2026-10-23-cases-meta-54-clean.pkl',
+        '2026-10-23-stage2-clean-final-oof-predictions.pkl')]
+    files.append(ROOT/'NeedleFinder/Testing/clinical_mri_frozen_baseline.json')
     return {'schema_version':1,'files':{str(p.relative_to(ROOT)):{'sha256':sha256(p),'bytes':p.stat().st_size} for p in sorted(files)}}
 
 
@@ -64,6 +69,11 @@ def release_blockers(evidence):
         r=json.loads(receipt.read_text())
         if r.get('status')!='passed' or r.get('source_fingerprint')!=current:
             blockers.append(f'{check}: failed or stale source fingerprint')
+        if check == 'coverage':
+            coverage_report = ROOT/'coverage.json'
+            expected = r.get('external_inputs', {}).get('coverage_report_sha256')
+            if not coverage_report.is_file() or sha256(coverage_report) != expected:
+                blockers.append('coverage: missing/modified coverage measurement')
         if r.get('skipped',0):blockers.append(f'{check}: skipped tests are not release evidence')
         report=evidence/r.get('report','missing')
         if not report.is_file() or sha256(report)!=r.get('report_sha256'):
